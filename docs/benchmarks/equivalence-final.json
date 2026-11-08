@@ -1,0 +1,54 @@
+{
+  "bitwise_equal": true,
+  "reference_directory": "build/equivalence/baseline",
+  "files": [
+    "prefill_21-logits.bin",
+    "prefill_21-state.bin",
+    "decode-logits.bin",
+    "decode-state.bin"
+  ],
+  "compared_bytes": 892928,
+  "runs": {
+    "optimized": [
+      {
+        "phase": "open",
+        "seconds": 0.080699,
+        "token": 0,
+        "logits_hash": "58c0316c287d6325",
+        "state_hash": "9c1bda7f8c872325",
+        "major_faults": 5,
+        "max_rss_bytes": 1490944,
+        "staged_bytes": 0,
+        "read_calls": 0,
+        "advice_calls": 0,
+        "read_failures": 0
+      },
+      {
+        "phase": "prefill_21",
+        "seconds": 9.062903,
+        "token": 51871,
+        "logits_hash": "c9e54cc1de2684c9",
+        "state_hash": "b370bb3890a4400e",
+        "major_faults": 36,
+        "max_rss_bytes": 894238720,
+        "staged_bytes": 16181624832,
+        "read_calls": 1929,
+        "advice_calls": 0,
+        "read_failures": 0
+      },
+      {
+        "phase": "decode",
+        "seconds": 5.246276,
+        "token": 16,
+        "logits_hash": "68d5318fc63d9103",
+        "state_hash": "a44087018da49b9d",
+        "major_faults": 47,
+        "max_rss_bytes": 894238720,
+        "staged_bytes": 32363249664,
+        "read_calls": 3858,
+        "advice_calls": 0,
+        "read_failures": 0
+      }
+    ]
+  }
+}

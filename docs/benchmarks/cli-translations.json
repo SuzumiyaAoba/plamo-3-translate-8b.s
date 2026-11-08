@@ -1,0 +1,18 @@
+[
+  {
+    "option": "-j",
+    "input": "Hello.",
+    "output": "こんにちは。\n",
+    "stderr": "",
+    "returncode": 0,
+    "seconds": 16.410239041
+  },
+  {
+    "option": "-e",
+    "input": "こんにちは。",
+    "output": "Hello.\n",
+    "stderr": "",
+    "returncode": 0,
+    "seconds": 20.825106750000003
+  }
+]

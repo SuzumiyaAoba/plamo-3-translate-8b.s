@@ -1,0 +1,23 @@
+$ build/bench-matvec
+matvec bitwise equivalence: PASS
+128 MiB weights: old 18.86 ms, new 4.99 ms, 3.78x (4-row 6.74 ms)
+
+$ build/bench-matmul
+1 tokens,128 MiB: matvec 4.645 ms, matmul 4.763 ms, 0.98x (4-token tile 4.725 ms; 8x3 tile 4.694 ms; 8x2 tile 5.005 ms)
+4 tokens,128 MiB: matvec 18.965 ms, matmul 7.785 ms, 2.44x (4-token tile 7.765 ms; 8x3 tile 7.888 ms; 8x2 tile 8.051 ms)
+8 tokens,128 MiB: matvec 39.220 ms, matmul 12.794 ms, 3.07x (4-token tile 15.564 ms; 8x3 tile 13.063 ms; 8x2 tile 14.350 ms)
+16 tokens,128 MiB: matvec 78.590 ms, matmul 25.822 ms, 3.04x (4-token tile 31.652 ms; 8x3 tile 25.856 ms; 8x2 tile 28.215 ms)
+32 tokens,128 MiB: matvec 158.886 ms, matmul 51.160 ms, 3.11x (4-token tile 63.645 ms; 8x3 tile 50.992 ms; 8x2 tile 56.923 ms)
+
+$ build/test-simd-attention
+attention 1025x128: 0.236 -> 0.063 ms (3.74x)
+SIMD Attention / RoPE: PASS (bitwise, tails, signed inputs, stride)
+
+$ build/test-simd-activation
+SIMD activations: PASS (71 shapes, bitwise incl. in-place/tails); SwiGLU 0.033 -> 0.013 ms (2.58x)
+
+$ build/test-cache-simd
+SIMD cache moves: PASS (bitwise overlap/tails); sliding 2049x512 0.418 -> 0.152 ms (2.75x)
+
+$ build/test-cache-rope-cached
+cached RoPE: PASS (bitwise, reset/scale change/sliding); 1025 keys 0.479 -> 0.001 ms (684.9x)

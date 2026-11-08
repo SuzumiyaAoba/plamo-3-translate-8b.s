@@ -1,0 +1,39 @@
+{
+  "description": "Before this optimization: four-row matvec, single-token layer-major prefill, mapped BF16 weights.",
+  "environment": {
+    "machine": "arm64",
+    "macos": "26.5.1",
+    "memory_bytes": 25769803776
+  },
+  "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+  "case": "Official en->ja Hello. prompt, 21 input tokens, one decode step",
+  "phases": [
+    {
+      "phase": "open",
+      "seconds": 0.053819,
+      "token": 0,
+      "logits_hash": "58c0316c287d6325",
+      "state_hash": "9c1bda7f8c872325",
+      "major_faults": 7,
+      "max_rss_bytes": 1490944
+    },
+    {
+      "phase": "prefill_21",
+      "seconds": 50.282824,
+      "token": 51871,
+      "logits_hash": "c9e54cc1de2684c9",
+      "state_hash": "b370bb3890a4400e",
+      "major_faults": 987742,
+      "max_rss_bytes": 8474853376
+    },
+    {
+      "phase": "decode",
+      "seconds": 34.793012,
+      "token": 16,
+      "logits_hash": "68d5318fc63d9103",
+      "state_hash": "a44087018da49b9d",
+      "major_faults": 1975463,
+      "max_rss_bytes": 8474853376
+    }
+  ]
+}

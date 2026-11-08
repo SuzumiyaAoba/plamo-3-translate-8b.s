@@ -1,0 +1,94 @@
+{
+  "bitwise_equal": true,
+  "files": [
+    "prefill_21-logits.bin",
+    "prefill_21-state.bin",
+    "decode-logits.bin",
+    "decode-state.bin"
+  ],
+  "compared_bytes": 892928,
+  "runs": {
+    "baseline": [
+      {
+        "phase": "open",
+        "seconds": 0.071326,
+        "token": 0,
+        "logits_hash": "58c0316c287d6325",
+        "state_hash": "9c1bda7f8c872325",
+        "major_faults": 5,
+        "max_rss_bytes": 1507328,
+        "staged_bytes": 0,
+        "read_calls": 0,
+        "advice_calls": 0,
+        "read_failures": 0
+      },
+      {
+        "phase": "prefill_21",
+        "seconds": 47.850669,
+        "token": 51871,
+        "logits_hash": "c9e54cc1de2684c9",
+        "state_hash": "b370bb3890a4400e",
+        "major_faults": 985614,
+        "max_rss_bytes": 9698050048,
+        "staged_bytes": 0,
+        "read_calls": 0,
+        "advice_calls": 0,
+        "read_failures": 0
+      },
+      {
+        "phase": "decode",
+        "seconds": 34.504567,
+        "token": 16,
+        "logits_hash": "68d5318fc63d9103",
+        "state_hash": "a44087018da49b9d",
+        "major_faults": 1973335,
+        "max_rss_bytes": 9698050048,
+        "staged_bytes": 0,
+        "read_calls": 0,
+        "advice_calls": 0,
+        "read_failures": 0
+      }
+    ],
+    "optimized": [
+      {
+        "phase": "open",
+        "seconds": 0.087406,
+        "token": 0,
+        "logits_hash": "58c0316c287d6325",
+        "state_hash": "9c1bda7f8c872325",
+        "major_faults": 9,
+        "max_rss_bytes": 1490944,
+        "staged_bytes": 0,
+        "read_calls": 0,
+        "advice_calls": 0,
+        "read_failures": 0
+      },
+      {
+        "phase": "prefill_21",
+        "seconds": 9.403297,
+        "token": 51871,
+        "logits_hash": "c9e54cc1de2684c9",
+        "state_hash": "b370bb3890a4400e",
+        "major_faults": 94,
+        "max_rss_bytes": 894877696,
+        "staged_bytes": 16181624832,
+        "read_calls": 1929,
+        "advice_calls": 0,
+        "read_failures": 0
+      },
+      {
+        "phase": "decode",
+        "seconds": 5.111376,
+        "token": 16,
+        "logits_hash": "68d5318fc63d9103",
+        "state_hash": "a44087018da49b9d",
+        "major_faults": 104,
+        "max_rss_bytes": 894877696,
+        "staged_bytes": 32363249664,
+        "read_calls": 3858,
+        "advice_calls": 0,
+        "read_failures": 0
+      }
+    ]
+  }
+}

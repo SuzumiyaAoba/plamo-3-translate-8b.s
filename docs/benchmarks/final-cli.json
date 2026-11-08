@@ -1,0 +1,11 @@
+{
+  "command": [
+    "build/plamo",
+    "-j",
+    "Hello."
+  ],
+  "seconds": 14.964780834,
+  "returncode": 0,
+  "stdout": "こんにちは。\n",
+  "stderr": ""
+}

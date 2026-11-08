@@ -1,0 +1,6 @@
+#!@shell@
+set -euo pipefail
+
+data_dir=${PLAMO_DATA_DIR:-${XDG_DATA_HOME:-${HOME:?Set HOME or PLAMO_DATA_DIR}/.local/share}/plamo-3-translate-8b}
+export SSL_CERT_FILE=${SSL_CERT_FILE:-@caBundle@}
+exec "@python@" "@script@" --directory "$data_dir/models/plamo" "$@"

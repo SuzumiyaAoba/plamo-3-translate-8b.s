@@ -1,0 +1,66 @@
+{
+  "repository": "pfnet/plamo-3-translate-8b",
+  "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+  "files": {
+    "config.json": {
+      "size": 1333,
+      "sha256": "6c352f2d4f542596654cebb149479aeda9b2f050778d407b7b66e36fd9c9b26b"
+    },
+    "tokenizer.jsonl": {
+      "size": 3526723,
+      "sha256": "bdce9e430e65931b28c56de2054f52b4cf8ed59b322db125e016d724d06dbb0e"
+    },
+    "tokenizer_config.json": {
+      "size": 1575,
+      "sha256": "5468ed5c68b5cf4cf971bcb34be6bfbfd749fe30cc5bc65ace5835ae3bff65b3"
+    },
+    "special_tokens_map.json": {
+      "size": 587,
+      "sha256": "1004b03ad5c184693765d25d8d682e831727b43b84e321fc9dc14d9ef3d1466a"
+    },
+    "chat_template.jinja": {
+      "size": 5406,
+      "sha256": "633ae24b5166d2c958d9b0a39523f2cc5bd6832752ec2ab0285793cab6415323"
+    },
+    "generation_config.json": {
+      "size": 120,
+      "sha256": "0410d30499cd9db0a83ecbd59a2811b1c4f63f7c9412126a43e8d2b96ec44a85"
+    },
+    "model.safetensors.index.json": {
+      "size": 28136,
+      "sha256": "e9d12315d0bf3d02fcfa0f3ec648c32874c1985746067144d1cd030eb43a2fa1"
+    },
+    "modeling_plamo.py": {
+      "size": 45413,
+      "sha256": "498ff5f52b565315325ffff29b6c5e628a55156a4df5cd2bacb48a9c8697f32b"
+    },
+    "tokenization_plamo.py": {
+      "size": 22389,
+      "sha256": "68b769d516541603857ce9d2813e48193efe41abb64c1091311b973d491724d9"
+    },
+    "LICENSE/en": {
+      "size": 7629,
+      "sha256": "d9979039b8f1a96fa81e1be61c4550d06f8542b25119e3f765c7c011a68597fb"
+    },
+    "LICENSE/ja": {
+      "size": 8720,
+      "sha256": "988b37b0b21ca130ad84a092429e4e5bceec5f86dfe85a8ca3e06ea703b960ca"
+    },
+    "model-00001-of-00004.safetensors": {
+      "size": 4781783376,
+      "sha256": "2bb697527d3003a96b699366c186e23efecf9af03d882cb2697290213a69a4c3"
+    },
+    "model-00002-of-00004.safetensors": {
+      "size": 4781851248,
+      "sha256": "08ae648fc9834efd79266032e797bbc361113dc02d65006d6b49ef18387d2ef3"
+    },
+    "model-00003-of-00004.safetensors": {
+      "size": 4781851288,
+      "sha256": "23ec2db0f3aae7982e50d20d7cd600e6d27bde217e4a761a1915196bc9cffc41"
+    },
+    "model-00004-of-00004.safetensors": {
+      "size": 2718054312,
+      "sha256": "1bad10b23b66c221c4fb04106315faf6b6d401f9e2d72cb78947063cac1ceb77"
+    }
+  }
+}

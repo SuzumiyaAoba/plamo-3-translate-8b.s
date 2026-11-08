@@ -1,0 +1,49 @@
+#!@shell@
+set -euo pipefail
+
+usage() {
+    printf '%s\n' \
+        'usage: plamo [-g|-j|-e] TEXT' \
+        '  TEXT       print token IDs' \
+        '  -g TEXT    generate from a raw prompt' \
+        '  -j TEXT    translate English to Japanese' \
+        '  -e TEXT    translate Japanese to English' \
+        '' \
+        'First download the original model files:' \
+        '  nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#download-model -- --weights' \
+        '' \
+        "Data: \$PLAMO_DATA_DIR/models/plamo" \
+        "Default PLAMO_DATA_DIR: \${XDG_DATA_HOME:-\$HOME/.local/share}/plamo-3-translate-8b" \
+        'Built with PLaMo. Model files have their own PLaMo Community License.'
+}
+
+if (( $# == 0 )) || [[ ${1:-} == --help || ${1:-} == -h ]]; then
+    usage
+    exit 0
+fi
+if (( $# > 2 )) || { (( $# == 2 )) && [[ $1 != -g && $1 != -j && $1 != -e ]]; }; then
+    usage >&2
+    exit 2
+fi
+
+data_dir=${PLAMO_DATA_DIR:-${XDG_DATA_HOME:-${HOME:?Set HOME or PLAMO_DATA_DIR}/.local/share}/plamo-3-translate-8b}
+model_dir=$data_dir/models/plamo
+if [[ ! -r $model_dir/tokenizer.jsonl ]]; then
+    printf 'plamo: model files are missing from %s\nRun plamo-download --weights (or the download-model Nix app).\n' "$model_dir" >&2
+    exit 1
+fi
+if [[ -f $model_dir/REVISION ]] && [[ $(< "$model_dir/REVISION") != 19ecab3fb31424ee937b7503730318b50e55771c ]]; then
+    printf 'plamo: model revision does not match this implementation: %s\n' "$model_dir" >&2
+    exit 1
+fi
+if (( $# == 2 )); then
+    for shard in 00001 00002 00003 00004; do
+        if [[ ! -r $model_dir/model-$shard-of-00004.safetensors ]]; then
+            printf 'plamo: weight shards are missing. Run plamo-download --weights.\n' >&2
+            exit 1
+        fi
+    done
+fi
+
+cd -- "$data_dir"
+exec "@engine@" "$@"
