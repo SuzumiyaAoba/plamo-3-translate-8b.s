@@ -52,5 +52,6 @@
       "decode_steps": 1
     }
   },
-  "real_model_resident_performance_measured": false
+  "real_model_resident_performance_measured": false,
+  "memory_estimate_method_at_measurement": "free + file-backed pages; final capacity guard additionally subtracts speculative overlap"
 }

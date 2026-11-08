@@ -17,7 +17,10 @@ uint64_t plamo_reclaimable_memory(void) {
     mach_port_deallocate(mach_task_self(), host);
     long page = sysconf(_SC_PAGESIZE);
     if (result != KERN_SUCCESS || page <= 0) return 0;
-    return ((uint64_t)info.free_count + info.external_page_count) * (uint64_t)page;
+    /* Speculative file pages can be included in both counters. Count them once. */
+    uint64_t file_pages = info.external_page_count;
+    uint64_t overlap = info.speculative_count < file_pages ? info.speculative_count : file_pages;
+    return ((uint64_t)info.free_count + file_pages - overlap) * (uint64_t)page;
 }
 
 uint64_t plamo_physical_memory(void) {

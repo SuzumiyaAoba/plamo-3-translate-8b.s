@@ -43,6 +43,7 @@ static int copy_tests(void) {
     plamo_resident_release(out, 2);
     if (out[0].base || out[1].base) return 7;
     if (plamo_resident_copy(source, fds, 2, UINT64_MAX, out, error, sizeof error) || out[0].base || out[1].base) return 8;
+    if (plamo_resident_copy(source, fds, 2, UINT64_C(1) << 62, out, error, sizeof error) || out[0].base || out[1].base) return 16;
     int64_t bad_fds[] = {fds[0], -1};
     if (plamo_resident_copy(source, bad_fds, 2, 0, out, error, sizeof error)) return 9;
     /* Failure after the first completed shard must roll back every new mapping. */
