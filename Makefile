@@ -44,6 +44,7 @@ test: build/test-cache-rope-cached build/test-simd-attention build/test-simd-act
 	./build/test-simd-activation
 	./build/test-weight-io
 	./build/test-cache-simd
+	./build/test-runtime
 build/test-math: src/math.s src/prefetch.s tests/math.c
 	mkdir -p build
 	$(CC) $(CFLAGS) $^ -o $@
@@ -51,10 +52,14 @@ clean:
 	rm -rf build
 
 .PHONY: all
-all: build/plamo
+all: build/plamo build/plamo-worker
 build/plamo: src/main.s $(filter-out src/main.s,$(wildcard src/*.s))
 	mkdir -p build
 	$(CC) -arch arm64 -nostdlib -Wl,-e,_start $^ -lSystem -o $@
+
+build/plamo-worker: $(filter-out src/main.s,$(wildcard src/*.s)) runtime/worker.c runtime/engine.c runtime/resident.c runtime/engine.h runtime/model.h runtime/resident.h
+	mkdir -p build
+	$(CC) $(CFLAGS) $(filter %.s %.c,$^) -o $@
 
 build/test-io: src/io.s tests/io_adapter.s tests/io.c
 	mkdir -p build
@@ -218,3 +223,8 @@ build/test-cache-simd: src/cache.s tests/cache_reference.s tests/cache_simd.c te
 build/test-model-open-retry: src/arena.s src/model_open.s src/prefetch.s src/io.s src/bind.s src/resolve.s src/find.s src/tensor.s src/json.s src/load.s src/model_init.s src/weight_schema.s src/model_layout.s src/rope_constants.s tests/model_open_retry.c
 	mkdir -p build
 	$(CC) $(CFLAGS) $^ -o $@
+
+test: build/test-runtime
+build/test-runtime: $(filter-out src/main.s,$(wildcard src/*.s)) runtime/engine.c runtime/resident.c runtime/engine.h runtime/model.h runtime/resident.h tests/runtime.c
+	mkdir -p build
+	$(CC) $(CFLAGS) $(filter %.s %.c,$^) -o $@

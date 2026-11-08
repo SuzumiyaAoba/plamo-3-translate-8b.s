@@ -27,6 +27,11 @@
           program = "${plamo}/bin/plamo-download";
           meta.description = "Download and verify original model files outside the Nix store";
         };
+        serve = {
+          type = "app";
+          program = "${plamo}/bin/plamo-server";
+          meta.description = "Run a local HTTP API with one persistent model worker";
+        };
       };
 
       devShells.${system}.default = pkgs.mkShell {

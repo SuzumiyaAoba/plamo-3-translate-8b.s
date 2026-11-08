@@ -1,0 +1,56 @@
+{
+  "environment": {
+    "machine": "arm64",
+    "physical_memory_bytes": 25769803776
+  },
+  "mode": {
+    "mode": "stream",
+    "weight_bytes": 17063540224,
+    "preloaded_weight_bytes": 0,
+    "estimated_reclaimable_bytes_at_start": 8919236608,
+    "physical_bytes": 25769803776,
+    "reserve_bytes": 2147483648,
+    "note": "insufficient reclaimable memory for BF16 weights plus 2 GiB reserve"
+  },
+  "worker_reused_for_both_requests": true,
+  "sample": {
+    "source_characters": 585,
+    "prompt_tokens": 125,
+    "generation_limit": 4,
+    "complete_translation_measured": false,
+    "usage": {
+      "prompt_tokens": 125,
+      "completion_tokens": 4,
+      "total_tokens": 129
+    },
+    "timings": {
+      "tokenize_seconds": 0.000334,
+      "prefill_seconds": 29.285092,
+      "decode_seconds": 16.611155,
+      "first_token_seconds": 29.28607,
+      "total_seconds": 45.897154,
+      "decode_steps": 3
+    },
+    "weight_io": {
+      "staged_bytes": 64726499328,
+      "read_calls": 7716
+    }
+  },
+  "hello_after_sample": {
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 21,
+      "completion_tokens": 1,
+      "total_tokens": 22
+    },
+    "timings": {
+      "tokenize_seconds": 0.000637,
+      "prefill_seconds": 9.435637,
+      "decode_seconds": 5.539088,
+      "first_token_seconds": 9.436952,
+      "total_seconds": 14.975954,
+      "decode_steps": 1
+    }
+  },
+  "real_model_resident_performance_measured": false
+}

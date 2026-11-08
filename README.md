@@ -2,7 +2,7 @@
 
 Apple Silicon / macOS 向けの手書き AArch64 アセンブリによる PLaMo-3-Translate-8B 推論実装です。公式 BF16 重みを直接読み込み、英日翻訳の実行と公式 FP32 参照との一致を確認しています。
 
-[gpt2.s](https://github.com/ArneshBanerjee/gpt2.s) と同様に、実行時の C / libc / Python / Metal / Accelerate 呼び出しを使いません。Darwin syscall で公式 safetensors と tokenizer.jsonl を変換せず読みます。ヘッダーは mmap、大きな BF16 行列は最大1 GiBの再利用領域へのまとめ読みを使います。libSystem は macOS ローダーのためにリンクしますが、`nm -u build/plamo` は空です。
+[gpt2.s](https://github.com/ArneshBanerjee/gpt2.s) と同様に、単発CLIの推論本体は C / libc / Python / Metal / Accelerate 呼び出しを使いません。Darwin syscall で公式 safetensors と tokenizer.jsonl を変換せず読みます。ヘッダーは mmap、大きな BF16 行列は最大1 GiBの再利用領域へのまとめ読みを使います。libSystem は macOS ローダーのためにリンクしますが、`nm -u build/plamo` は空です。
 
 ## Nixで利用する（推奨）
 
@@ -52,7 +52,26 @@ PLAMO_DATA_DIR="$PWD" nix run . -- -j 'Hello.'
 
 `flake.lock` がNixpkgsを固定します。`nix flake check` は合成データによる演算テスト、ダウンローダー・起動コマンドのオフラインテスト、生成ソースの再現性、推論バイナリの未解決シンボルがないことを検証します。Nixがflakesを無効としてエラーにする場合は、`~/.config/nix/nix.conf` に `experimental-features = nix-command flakes` を設定してください。
 
-Nixの起動コマンドは保存先を選んでアセンブリ本体を実行するシェルです。Pythonはモデル取得専用で、推論中には呼び出しません。アセンブリ本体は `result/libexec/plamo` にもインストールされます。
+単発CLIのNix起動コマンドは保存先を選んでアセンブリ本体を実行するシェルです。このCLIではPythonはモデル取得専用で、推論中には呼び出しません。アセンブリ本体は `result/libexec/plamo` にもインストールされます。
+
+## 常駐API
+
+```sh
+nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#serve -- --memory auto --port 8000
+```
+
+別ターミナルから:
+
+```sh
+curl http://127.0.0.1:8000/health
+curl -N http://127.0.0.1:8000/translate \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Hello.","source_lang":"en","target_lang":"ja","stream":true}'
+```
+
+1つのワーカーがモデルと語彙を保持し、リクエスト間ではKV・RoPEの状態をリセットします。`auto`は十分な余裕があれば元のBF16重み約17 GBを読み取り専用の匿名メモリへ先に読み込み、不足する場合は従来の省メモリI/Oへ戻ります。完全常駐を要求する場合は`--memory resident`を指定してください。重みと2 GiBの余裕分、計約19.2 GBの再利用可能メモリが起動時の目安です。
+
+空き不足では常駐APIだけで生成が速くなるわけではありません。実際のモードと理由は`/health`に表示します。APIの制約、ストリーミング、計測結果は[常駐APIの説明](docs/API.md)を参照してください。APIの制御層はCとPython標準ライブラリ、推論カーネルは既存のアセンブリです。
 
 ## Nixを使わずに実行
 
@@ -96,7 +115,7 @@ python3 tools/verify_boundaries.py
 nm -u build/plamo
 ```
 
-C は小規模な演算テストのハーネスにだけ使います。公式語彙107,520行・323テンソルの読み込みを検証済みです。区間 Unigram は独立参照210ケース、境界検出は公式正規表現と各2035ケースで比較しています。
+C は演算テストのハーネスと、API用のモデル常駐・状態管理に使います。単発CLIの推論はアセンブリだけです。公式語彙107,520行・323テンソルの読み込みを検証済みです。区間 Unigram は独立参照210ケース、境界検出は公式正規表現と各2035ケースで比較しています。
 
 公式コードとの直接比較には別途 PyTorch、Transformers 4.57.1、Numba、safetensors が必要です。
 

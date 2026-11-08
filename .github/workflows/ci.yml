@@ -27,4 +27,5 @@ jobs:
         run: |
           nix run . -- --help
           nix run .#download-model -- --help
+          nix run .#serve -- --help
           nix develop --command make all test test-tools
