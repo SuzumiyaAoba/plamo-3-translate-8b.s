@@ -1,5 +1,4 @@
 #!@shell@
 set -euo pipefail
 
-data_dir=${PLAMO_DATA_DIR:-${XDG_DATA_HOME:-${HOME:?Set HOME or PLAMO_DATA_DIR}/.local/share}/plamo-3-translate-8b}
-exec "@python@" "@script@" --worker "@worker@" --data-dir "$data_dir" "$@"
+exec "@python@" "@script@" --worker-directory "@workers@" --cache "$@"

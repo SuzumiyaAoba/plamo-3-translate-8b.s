@@ -1,6 +1,5 @@
 """HTTP, worker lifecycle and streaming tests; no model files or network downloads."""
 import http.client
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -13,9 +12,8 @@ import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("plamo_server", ROOT / "tools/server.py")
-api = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(api)
+from tools import server as api
+from tools.model_catalog import MODELS, profile
 
 FAKE_WORKER = r'''
 import json, os, select, struct, sys, time
@@ -28,7 +26,7 @@ def read_exact(count):
         if not part: return None
         result+=part
     return result
-send({'event':'ready','protocol':1,'worker_pid':os.getpid(),'load_seconds':0.01,
+send({'event':'ready','protocol':1,'model':'plamo-3-translate-8b','revision':'19ecab3fb31424ee937b7503730318b50e55771c','worker_pid':os.getpid(),'load_seconds':0.01,
       'memory':{'mode':'resident','weight_bytes':128,'preloaded_weight_bytes':128}})
 while True:
     header=read_exact(16)
@@ -212,6 +210,37 @@ class ServerTests(unittest.TestCase):
 
 
 class NativeWorkerArgumentsTests(unittest.TestCase):
+    def test_missing_model_explains_the_selected_download(self):
+        import subprocess
+        for size in MODELS:
+            worker = profile(size).build_directory(ROOT) / 'plamo-worker'
+            if not worker.exists():
+                self.skipTest('run make models first')
+            with self.subTest(model=size), tempfile.TemporaryDirectory() as folder:
+                result = subprocess.run([worker], cwd=folder, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1)
+                event = json.loads(result.stdout)
+                self.assertEqual(event['event'], 'error')
+                self.assertIn('--model ' + size, event['message'])
+
+    def test_wrong_model_worker_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            executable = root / 'wrong-worker'
+            executable.write_text(f'#!{sys.executable}\n' + FAKE_WORKER)
+            executable.chmod(0o755)
+            worker = api.PersistentWorker(executable, root, startup_timeout=5, model_profile=profile('31b'))
+            try:
+                deadline = time.monotonic() + 5
+                while worker.health()['status'] == 'loading' and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                health = worker.health()
+                self.assertEqual(health['status'], 'failed')
+                self.assertEqual(health['model'], 'plamo-3-translate-31b')
+                self.assertIn('worker model/revision', health['error'])
+            finally:
+                worker.close()
+
     def test_native_help_needs_no_model(self):
         import subprocess
         worker = ROOT / "build/plamo-worker"
@@ -223,15 +252,16 @@ class NativeWorkerArgumentsTests(unittest.TestCase):
 
     def test_server_rejects_a_different_revision_before_starting_worker(self):
         import subprocess
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            marker = root / "models/plamo/REVISION"
-            marker.parent.mkdir(parents=True)
-            marker.write_text("another-revision\n")
-            result = subprocess.run([sys.executable, ROOT / "tools/server.py", "--worker", sys.executable,
-                                     "--data-dir", root], capture_output=True, text=True)
-            self.assertEqual(result.returncode, 2)
-            self.assertIn("revision does not match", result.stderr)
+        for size in MODELS:
+            with self.subTest(model=size), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                marker = root / profile(size).directory / "REVISION"
+                marker.parent.mkdir(parents=True)
+                marker.write_text("another-revision\n")
+                result = subprocess.run([sys.executable, ROOT / "tools/server.py", "--model", size,
+                                         "--worker", sys.executable, "--data-dir", root], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("revision does not match", result.stderr)
 
 
 if __name__ == "__main__":

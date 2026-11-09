@@ -7,10 +7,10 @@
 公式モデルを取得済みなら、次で起動できます。
 
 ```sh
-nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#serve -- --memory auto --port 8000
+nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#serve -- --model 2b --memory auto --port 8000
 ```
 
-初回の取得は `nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#download-model -- --weights` です。データ保存先はCLIと同じ `PLAMO_DATA_DIR` を使います。開発時の `./models/plamo` を利用する場合:
+初回の取得は `nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#download-model -- --model 2b --weights` です。`--model`には`0.8b`・`2b`・`8b`・`31b`を指定できます。省略時は`PLAMO_MODEL`または8Bです。1サーバーにつき1モデルを保持し、変更時は再起動します。データ保存先はCLIと同じ `PLAMO_DATA_DIR` を使います。開発時の `./models/plamo` を利用する場合:
 
 ```sh
 PLAMO_DATA_DIR="$PWD" nix run .#serve -- --memory auto
@@ -25,7 +25,7 @@ python3 tools/server.py --data-dir "$PWD" --memory auto
 curl http://127.0.0.1:8000/health
 ```
 
-`status`、`busy`、`worker_pid`、読み込み時間、実際に選択したメモリモード、先に読み込んだ重みのバイト数、空きの推定値、フォールバックの理由が返ります。起動中でもHTTPの状態確認は応答します。
+`status`、`busy`、`model`、公式リポジトリ・固定リビジョン、`worker_pid`、読み込み時間、実際に選択したメモリモード、先に読み込んだ重みのバイト数、空きの推定値、フォールバックの理由が返ります。起動中でもHTTPの状態確認は応答します。
 
 既定の待ち受けは127.0.0.1です。別のホストへbindする場合は`PLAMO_API_KEY`を設定し、クライアントから`Authorization: Bearer ...`を付けてください。
 
@@ -37,7 +37,9 @@ curl http://127.0.0.1:8000/health
 | `resident` | 元のBF16ファイルを匿名メモリへ読み込み、すべてのテンソルをその領域へ付け替える。余裕が不足する場合は起動失敗にする |
 | `stream` | ファイルのmmap・FD・語彙は保持し、大きな射影は最大1 GiBの領域へまとめて読む従来方式 |
 
-このリビジョンの4ファイルは合計 **17,063,540,224バイト（約15.89 GiB）** です。`resident`の起動時判定は、これに2 GiBを加えた **19,211,023,872バイト（約17.89 GiB）** を使います。リクエストのKV・入力処理用メモリも必要です。
+8Bの4ファイルは合計 **17,063,540,224バイト（約15.89 GiB）** です。`resident`の起動時判定は、これに2 GiBを加えた **19,211,023,872バイト（約17.89 GiB）** を使います。リクエストのKV・入力処理用メモリも必要です。
+
+他モデルの常駐判定（重み＋2 GiB）は0.8Bで3.66 GiB、2Bで7.36 GiB、31Bで61.15 GiBです。KV・入力処理・OSのメモリは別途必要です。31Bの全重みは約63.51 GBあり、24 GiBのMacでは常駐できません。31Bの`stream`では1 GiBを超える行列をmmapから直接読みます。
 
 判定にはmacOSのfreeページとfile-backedページを使い、重なる可能性のあるspeculativeページを差し引いて保守的に見積もります。数値はOSが再利用できる量の推定であり、確保の保証ではありません。読み込み中も余裕を確認し、圧迫が増えた場合は新しい領域を解放して中断します。
 
@@ -88,6 +90,8 @@ curl http://127.0.0.1:8000/tokenize \
 
 ## 検証と性能の範囲
 
+0.8B・2Bでは実モデルの`resident`と`stream`で内部状態・logitsのハッシュが一致し、実HTTP APIの英日・日英翻訳を確認しています。31Bは全ヘッダー・ローダー・トークン化までで、実翻訳は未検証です。[モデル別の検証範囲](MODELS.md)を参照してください。
+
 アセンブリ本体の上にCの常駐ワーカーとPython標準ライブラリのHTTP層を追加しています。HTTP要求ごとにCLIを起動する方式ではありません。推論カーネルは既存の手書きアセンブリです。外部のMLライブラリは使いません。
 
 - 元のBF16バイトのコピー、オフセットを保ったテンソルの付け替え、途中失敗時の全解放を合成ファイルで検証。
@@ -97,9 +101,13 @@ curl http://127.0.0.1:8000/tokenize \
 - キャンセル後の次リクエストでも、同じ基準のハッシュへ戻ることを実モデルで確認。
 - HTTP・SSE・分割UTF-8・同時要求・状態確認・キャンセル・ワーカー異常・入力拒否を、モデル不要のテストで検証。
 
+以下の既存ハッシュとの比較と後述の測定は8Bのものです。0.8B・2Bも同じ検証ツールで連続要求を確認できます。
+
 実モデルの再検証:
 
 ```sh
+python3 tools/verify_api.py --model 2b
+python3 tools/verify_api.py --model 2b --translate --memory auto
 python3 tools/verify_api.py
 python3 tools/verify_api.py --translate --memory stream
 # 十分な空きがある環境で、先読み後の完全一致も検証する場合

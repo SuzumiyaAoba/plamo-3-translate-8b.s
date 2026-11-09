@@ -1,0 +1,100 @@
+{
+  "implementation_version": "0.3.0",
+  "verified_at_utc": "2026-11-09T01:09:12.522058+00:00",
+  "physical_memory_bytes": 25769803776,
+  "quantization": false,
+  "models": {
+    "0.8b": {
+      "repository": "pfnet/plamo-3-translate-0.8b",
+      "revision": "573eb1be9fd8c44402650810c680104e5aec81e8",
+      "weight_bytes": 1780709128,
+      "file_count": 1,
+      "tensor_count": 163,
+      "native_sparse_loader_retry_and_idempotency": "pass",
+      "original_weights_sha256_checked_at_download": true,
+      "original_bf16_tensor_shapes_and_native_binding": "pass",
+      "persistent_requests_and_cancellation": "pass",
+      "tokenizer_cli_worker_cases": 31,
+      "resident_and_stream_hashes_equal": true,
+      "hello_verification_hashes": {
+        "prefill_logits_hash": "637005eb121af357",
+        "prefill_state_hash": "dfb2cf1930e0f984",
+        "logits_hash": "542b699332305bda",
+        "state_hash": "4bab6b2ae34c9c08"
+      },
+      "hello_runtime_token_ids": [
+        51871
+      ],
+      "hello_official_fp32_ids": [
+        51871,
+        16
+      ],
+      "hello_translation": "こんにちは。",
+      "resident_preloaded_bytes": 1780709128,
+      "http_model_identity_and_worker_reuse": "pass",
+      "http_en_ja_translation": "プログラミングが好きです。",
+      "http_ja_en_translation": "The weather is nice today."
+    },
+    "2b": {
+      "repository": "pfnet/plamo-3-translate-2b",
+      "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+      "weight_bytes": 5757219984,
+      "file_count": 2,
+      "tensor_count": 243,
+      "native_sparse_loader_retry_and_idempotency": "pass",
+      "original_weights_sha256_checked_at_download": true,
+      "original_bf16_tensor_shapes_and_native_binding": "pass",
+      "persistent_requests_and_cancellation": "pass",
+      "tokenizer_cli_worker_cases": 31,
+      "resident_and_stream_hashes_equal": true,
+      "hello_verification_hashes": {
+        "prefill_logits_hash": "8a78afc05fcbf393",
+        "prefill_state_hash": "184314ebc416b51f",
+        "logits_hash": "1c3c51927302b551",
+        "state_hash": "e6c8b2634a77e2eb"
+      },
+      "hello_runtime_token_ids": [
+        51871
+      ],
+      "hello_official_fp32_ids": [
+        51871,
+        16
+      ],
+      "hello_translation": "こんにちは。",
+      "resident_preloaded_bytes": 5757219984,
+      "http_model_identity_and_worker_reuse": "pass",
+      "http_en_ja_translation": "プログラミングが好きです。",
+      "http_ja_en_translation": "The weather is nice today."
+    },
+    "8b": {
+      "repository": "pfnet/plamo-3-translate-8b",
+      "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+      "weight_bytes": 17063540224,
+      "file_count": 4,
+      "tensor_count": 323,
+      "native_sparse_loader_retry_and_idempotency": "pass",
+      "existing_bitwise_baseline": "pass",
+      "persistent_requests_and_cancellation": "pass",
+      "tokenizer_cli_worker_cases": 31,
+      "hello_verification_hashes": {
+        "prefill_logits_hash": "c9e54cc1de2684c9",
+        "prefill_state_hash": "b370bb3890a4400e",
+        "logits_hash": "68d5318fc63d9103",
+        "state_hash": "a44087018da49b9d"
+      }
+    },
+    "31b": {
+      "repository": "pfnet/plamo-3-translate-31b",
+      "revision": "d6743d65c2cc61a07ff0fb2c3ff3cf7fd8ca36eb",
+      "weight_bytes": 63514989488,
+      "file_count": 14,
+      "tensor_count": 642,
+      "native_sparse_loader_retry_and_idempotency": "pass",
+      "original_headers_native_resolution_and_binding": "pass",
+      "original_weight_payload_downloaded": false,
+      "real_inference_tested": false,
+      "tokenizer_cli_worker_cases": 31,
+      "tied_head_verified": true
+    }
+  }
+}

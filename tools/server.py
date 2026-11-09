@@ -17,9 +17,11 @@ import sys
 import threading
 import time
 from urllib.parse import urlsplit
+try:
+    from .model_catalog import add_model_argument, profile
+except ImportError:
+    from model_catalog import add_model_argument, profile
 
-MODEL = "plamo-3-translate-8b"
-REVISION = json.loads(Path(__file__).with_name("model-manifest.json").read_text())["revision"]
 MAX_BODY = 65536
 MAX_EVENT = 262144
 
@@ -36,8 +38,9 @@ class Disconnected(Exception):
 
 class PersistentWorker:
     """Own the process, protocol, request lock and cancellation in one place."""
-    def __init__(self, executable, data_dir, memory="auto", startup_timeout=180):
+    def __init__(self, executable, data_dir, memory="auto", startup_timeout=180, model_profile=None):
         self.executable, self.data_dir, self.memory = str(executable), str(data_dir), memory
+        self.profile = model_profile or profile()
         self.startup_timeout = startup_timeout
         self._state_lock = threading.Lock()
         self._request_lock = threading.Lock()
@@ -74,6 +77,8 @@ class PersistentWorker:
                 raise RuntimeError(event.get("message", "model startup failed"))
             if event["event"] != "ready" or event.get("protocol") != 1:
                 raise RuntimeError("unsupported model worker protocol")
+            if event.get("model") != self.profile.name or event.get("revision") != self.profile.revision:
+                raise RuntimeError("worker model/revision does not match --model; rebuild or select the matching worker")
             with self._state_lock:
                 if self._closed:
                     return
@@ -110,7 +115,8 @@ class PersistentWorker:
         if state == "ready" and self._process.poll() is not None:
             self._fail("model worker exited; restart the server")
             state, error = "failed", "model worker exited; restart the server"
-        result = {"status": state, "busy": self._request_lock.locked(), "model": MODEL}
+        result = {"status": state, "busy": self._request_lock.locked(), "model": self.profile.name,
+                  "repository": self.profile.repository, "revision": self.profile.revision}
         if info:
             result["worker_pid"] = info["worker_pid"]
             result["load_seconds"] = info["load_seconds"]
@@ -185,7 +191,7 @@ class PersistentWorker:
                         if disconnected:
                             raise Disconnected()
                         result = {key: value for key, value in event.items() if key not in ("event", "verification")}
-                        result.update(translation="".join(parts), model=MODEL,
+                        result.update(translation="".join(parts), model=self.profile.name,
                                       source_lang=request["source_lang"], target_lang=request["target_lang"],
                                       memory_mode=self.health()["memory"]["mode"])
                         return result
@@ -371,26 +377,37 @@ class TranslationHandler(BaseHTTPRequestHandler):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--worker", type=Path, default=Path(__file__).resolve().parents[1] / "build/plamo-worker", help=argparse.SUPPRESS)
-    parser.add_argument("--data-dir", type=Path, default=Path(os.environ.get("PLAMO_DATA_DIR", ".")))
+    add_model_argument(parser)
+    parser.add_argument("--worker", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--worker-directory", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--cache", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--data-dir", type=Path, help="model data root (default: PLAMO_DATA_DIR or current directory)")
     parser.add_argument("--memory", choices=("auto", "resident", "stream"), default="auto",
                         help="auto preloads exact BF16 bytes only when weights + 2 GiB fit the reclaimable-memory estimate")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--startup-timeout", type=float, default=180)
     args = parser.parse_args()
+    try:
+        p = profile(args.model)
+    except ValueError as error:
+        parser.error(str(error))
     api_key = os.environ.get("PLAMO_API_KEY") or None
     if args.host not in ("127.0.0.1", "localhost") and not api_key:
         parser.error("set PLAMO_API_KEY before binding to a non-loopback address")
     if not 1 <= args.port <= 65535 or not math.isfinite(args.startup_timeout) or args.startup_timeout <= 0:
         parser.error("port must be 1..65535 and startup-timeout must be positive")
-    worker_path, data_dir = args.worker.resolve(), args.data_dir.resolve()
+    worker_path = args.worker
+    if worker_path is None:
+        worker_path = (args.worker_directory / ("plamo-worker-" + p.size) if args.worker_directory else
+                       p.build_directory(Path(__file__).resolve().parents[1]) / "plamo-worker")
+    worker_path, data_dir = worker_path.resolve(), (args.data_dir or p.data_root(args.cache)).resolve()
     if not worker_path.is_file() or not data_dir.is_dir():
         parser.error("worker or data directory is missing; build the worker and download model files first")
-    marker = data_dir / "models/plamo/REVISION"
-    if marker.exists() and marker.read_text().strip() != REVISION:
+    marker = data_dir / p.directory / "REVISION"
+    if marker.exists() and marker.read_text().strip() != p.revision:
         parser.error("model revision does not match this implementation; select the pinned model directory")
-    worker = PersistentWorker(worker_path, data_dir, args.memory, args.startup_timeout)
+    worker = PersistentWorker(worker_path, data_dir, args.memory, args.startup_timeout, p)
     previous_term = None
     try:
         def stop(_signum, _frame):

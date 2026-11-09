@@ -2,9 +2,14 @@
 CC = clang
 CFLAGS = -O2 -arch arm64 -Wall -Wextra
 PYTHON ?= python3
-.PHONY: test-tools
-test-tools:
+.PHONY: test-tools profile-probes profile-probe
+test-tools: profile-probes
 	$(PYTHON) -m unittest discover -s tests -p 'test_*.py'
+profile-probes:
+	$(MAKE) MODEL=0.8b profile-probe
+	$(MAKE) MODEL=2b profile-probe
+	$(MAKE) MODEL=8b profile-probe
+	$(MAKE) MODEL=31b profile-probe
 
 .PHONY: test clean
 test: build/test-cache-rope-cached build/test-simd-attention build/test-simd-activation build/test-weight-io build/test-cache-simd build/test-math build/test-io build/test-load build/test-json build/test-tensor build/test-find build/test-activation build/test-model build/test-attention build/test-rope build/test-token build/test-utf8 build/test-unigram build/test-score build/test-string build/test-vocab build/test-trie build/test-encode build/test-vocab-load build/test-boundary build/test-preprocess build/test-qkv build/test-cache build/test-trig build/test-rope-table build/test-cache-rope build/test-mixer build/test-arena build/test-decode build/test-matmul build/test-prefill
@@ -51,14 +56,38 @@ build/test-math: src/math.s src/prefetch.s tests/math.c
 clean:
 	rm -rf build
 
-.PHONY: all
-all: build/plamo build/plamo-worker
-build/plamo: src/main.s $(filter-out src/main.s,$(wildcard src/*.s))
-	mkdir -p build
-	$(CC) -arch arm64 -nostdlib -Wl,-e,_start $^ -lSystem -o $@
+MODEL ?= 8b
+BUILD_DIR ?= $(if $(filter 8b,$(MODEL)),build,build/$(MODEL))
+GENERATED_NAMES = weight_schema.s model_layout.s rope_constants.s model_profile.s
+GENERATED = $(addprefix $(BUILD_DIR)/generated/,$(GENERATED_NAMES))
+CORE = $(filter-out src/main.s $(addprefix src/,$(GENERATED_NAMES)),$(wildcard src/*.s))
+PROFILE_INPUTS = $(wildcard tools/profiles/$(MODEL)/*.json) tools/generate_model.py tools/model_catalog.py tools/weight_schema.py tools/model_layout.py tools/rope_constants.py
 
-build/plamo-worker: $(filter-out src/main.s,$(wildcard src/*.s)) runtime/worker.c runtime/engine.c runtime/resident.c runtime/engine.h runtime/model.h runtime/resident.h
-	mkdir -p build
+.PHONY: all models
+all: $(BUILD_DIR)/plamo $(BUILD_DIR)/plamo-worker
+models:
+	$(MAKE) MODEL=0.8b all
+	$(MAKE) MODEL=2b all
+	$(MAKE) MODEL=8b all
+	$(MAKE) MODEL=31b all
+
+$(BUILD_DIR)/generated/.stamp: $(PROFILE_INPUTS)
+	mkdir -p $(BUILD_DIR)/generated
+	$(PYTHON) tools/generate_model.py --model $(MODEL) --output $(BUILD_DIR)/generated
+	touch $@
+$(GENERATED): $(BUILD_DIR)/generated/.stamp
+
+$(BUILD_DIR)/plamo: src/main.s $(CORE) $(GENERATED) $(BUILD_DIR)/generated/.stamp
+	mkdir -p $(BUILD_DIR)
+	$(CC) -arch arm64 -nostdlib -Wl,-e,_start $(filter %.s,$^) -lSystem -o $@
+
+$(BUILD_DIR)/plamo-worker: $(CORE) $(GENERATED) $(BUILD_DIR)/generated/.stamp runtime/worker.c runtime/engine.c runtime/resident.c runtime/engine.h runtime/model.h runtime/resident.h
+	mkdir -p $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(filter %.s %.c,$^) -o $@
+
+profile-probe: $(BUILD_DIR)/test-profile
+$(BUILD_DIR)/test-profile: src/arena.s src/model_open.s src/prefetch.s src/io.s src/bind.s src/resolve.s src/find.s src/tensor.s src/json.s src/load.s src/model_init.s $(GENERATED) $(BUILD_DIR)/generated/.stamp tests/model_profile.c runtime/model.h
+	mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(filter %.s %.c,$^) -o $@
 
 build/test-io: src/io.s tests/io_adapter.s tests/io.c
@@ -165,7 +194,7 @@ build/test-mixer: src/prefill.s src/batch.s src/matmul.s src/matmul8.s src/matmu
 	mkdir -p build
 	$(CC) $(CFLAGS) $^ -o $@
 
-build/test-model-open: src/arena.s src/model_open.s src/prefetch.s src/io.s src/bind.s src/resolve.s src/find.s src/tensor.s src/json.s src/load.s src/model_init.s src/weight_schema.s src/model_layout.s src/rope_constants.s tests/model_open.c
+build/test-model-open: src/model_profile.s src/arena.s src/model_open.s src/prefetch.s src/io.s src/bind.s src/resolve.s src/find.s src/tensor.s src/json.s src/load.s src/model_init.s src/weight_schema.s src/model_layout.s src/rope_constants.s tests/model_open.c
 	mkdir -p build
 	$(CC) $(CFLAGS) $^ -o $@
 
@@ -173,7 +202,7 @@ build/test-arena: src/arena.s src/io.s tests/arena.c
 	mkdir -p build
 	$(CC) $(CFLAGS) $^ -o $@
 
-build/trace-model: src/math.s src/prefetch.s src/io.s src/load.s src/json.s src/tensor.s src/find.s src/activation.s src/model.s src/attention.s src/rope.s src/token.s src/utf8.s src/unigram.s src/score.s src/string.s src/vocab.s src/trie.s src/encode.s src/vocab_load.s src/boundary.s src/preprocess.s src/marked.s src/qkv.s src/cache.s src/trig.s src/rope_table.s src/rope_constants.s src/cache_rope.s src/mixer.s src/layer.s src/forward.s src/resolve.s src/bind.s src/weight_schema.s src/model_init.s src/model_layout.s src/model_open.s src/arena.s tests/trace_model.c
+build/trace-model: src/model_profile.s src/math.s src/prefetch.s src/io.s src/load.s src/json.s src/tensor.s src/find.s src/activation.s src/model.s src/attention.s src/rope.s src/token.s src/utf8.s src/unigram.s src/score.s src/string.s src/vocab.s src/trie.s src/encode.s src/vocab_load.s src/boundary.s src/preprocess.s src/marked.s src/qkv.s src/cache.s src/trig.s src/rope_table.s src/rope_constants.s src/cache_rope.s src/mixer.s src/layer.s src/forward.s src/resolve.s src/bind.s src/weight_schema.s src/model_init.s src/model_layout.s src/model_open.s src/arena.s tests/trace_model.c
 	mkdir -p build
 	$(CC) $(CFLAGS) $^ -o $@
 
@@ -220,7 +249,7 @@ build/test-cache-simd: src/cache.s tests/cache_reference.s tests/cache_simd.c te
 	mkdir -p build
 	$(CC) $(CFLAGS) $(filter %.s %.c,$^) -o $@
 
-build/test-model-open-retry: src/arena.s src/model_open.s src/prefetch.s src/io.s src/bind.s src/resolve.s src/find.s src/tensor.s src/json.s src/load.s src/model_init.s src/weight_schema.s src/model_layout.s src/rope_constants.s tests/model_open_retry.c
+build/test-model-open-retry: src/model_profile.s src/arena.s src/model_open.s src/prefetch.s src/io.s src/bind.s src/resolve.s src/find.s src/tensor.s src/json.s src/load.s src/model_init.s src/weight_schema.s src/model_layout.s src/rope_constants.s tests/model_open_retry.c
 	mkdir -p build
 	$(CC) $(CFLAGS) $^ -o $@
 

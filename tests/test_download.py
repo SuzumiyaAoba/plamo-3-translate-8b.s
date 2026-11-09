@@ -1,15 +1,13 @@
 """Offline checks for atomic, pinned model downloads."""
 import hashlib
-import importlib.util
 import io
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
 
-SPEC = importlib.util.spec_from_file_location("download", Path(__file__).resolve().parents[1] / "tools/download.py")
-download = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(download)
+from tools import download
+from tools.model_catalog import MODELS, profile
 
 
 class DownloadTests(unittest.TestCase):
@@ -30,6 +28,13 @@ class DownloadTests(unittest.TestCase):
         self.assertEqual((self.directory / "LICENSE/en").read_bytes(), self.payload)
         self.assertFalse((self.directory / "LICENSE/en.part").exists())
         self.assertIn(download.REVISION, opener.call_args.args[0])
+
+    def test_selected_model_controls_the_pinned_download_url(self):
+        for size in MODELS:
+            with self.subTest(model=size):
+                p = profile(size)
+                opener = self.fetch('fixture-' + size, model_profile=p)
+                self.assertIn('/' + p.repository + '/resolve/' + p.revision + '/', opener.call_args.args[0])
 
     def test_cache_checked_without_network(self):
         target = self.directory / "tokenizer.jsonl"

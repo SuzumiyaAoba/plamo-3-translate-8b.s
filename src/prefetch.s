@@ -29,9 +29,14 @@ Lprefetchret:
 _plamo_io_policy: .quad 2
 
 .globl _plamo_weight_mappings
-_plamo_weight_mappings: .space 64
+_plamo_weight_mappings: .space 1024 // capacity 64 {base,size} records
 .globl _plamo_weight_fds
-_plamo_weight_fds: .quad -1,-1,-1,-1
+_plamo_weight_fds:
+    .rept 64
+    .quad -1
+    .endr
+.globl _plamo_weight_mapping_count
+_plamo_weight_mapping_count: .quad 0
 Lweight_staging: .quad 0
 // {bytes_staged,pread_calls,advice_calls,read_failures}, for benchmark diagnostics.
 .globl _plamo_io_stats
@@ -76,6 +81,9 @@ Lweight_not_staged:
     adrp x9, _plamo_weight_mappings@PAGE
     add x9, x9, _plamo_weight_mappings@PAGEOFF
     mov x10, #0
+    adrp x13, _plamo_weight_mapping_count@PAGE
+    ldr x13, [x13, _plamo_weight_mapping_count@PAGEOFF]
+    cbz x13, Lweight_advice
 Lweight_find:
     ldp x11, x12, [x9], #16
     cmp x19, x11
@@ -94,7 +102,7 @@ Lweight_find:
     b Lweight_buffer
 Lweight_next:
     add x10, x10, #1
-    cmp x10, #4
+    cmp x10, x13
     b.lo Lweight_find
     b Lweight_advice
 Lweight_buffer:

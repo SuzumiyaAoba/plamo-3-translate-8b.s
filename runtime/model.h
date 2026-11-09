@@ -21,8 +21,11 @@ _Static_assert(offsetof(struct cache, count) == 24, "assembly cache ABI");
 _Static_assert(offsetof(struct rotation, processed_count) == 56, "assembly rotation ABI");
 
 extern struct model plamo_model;
-extern struct plamo_mapping plamo_weight_mappings[4];
-extern int64_t plamo_weight_fds[4];
+enum { PLAMO_MAX_WEIGHT_FILES = 64 };
+extern struct plamo_mapping plamo_weight_mappings[PLAMO_MAX_WEIGHT_FILES];
+extern int64_t plamo_weight_fds[PLAMO_MAX_WEIGHT_FILES];
+extern uint64_t plamo_weight_mapping_count, plamo_weight_file_count;
+extern const char plamo_vocab_path[], plamo_model_name[], plamo_model_repository[], plamo_model_revision[];
 extern struct plamo_weight_spec plamo_weight_schema[];
 extern uint64_t plamo_model_patches[], plamo_io_policy, plamo_io_stats[4];
 extern int plamo_model_open(void);

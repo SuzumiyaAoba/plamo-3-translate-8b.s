@@ -1,21 +1,36 @@
 #!@shell@
 set -euo pipefail
 
+@modelProfiles@
+
 usage() {
     printf '%s\n' \
-        'usage: plamo [-g|-j|-e] TEXT' \
+        'usage: plamo [--model 0.8b|2b|8b|31b] [-g|-j|-e] TEXT' \
         '  TEXT       print token IDs' \
         '  -g TEXT    generate from a raw prompt' \
         '  -j TEXT    translate English to Japanese' \
         '  -e TEXT    translate Japanese to English' \
+        '  --model    checkpoint size (default: PLAMO_MODEL or 8b)' \
         '' \
         'First download the original model files:' \
-        '  nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#download-model -- --weights' \
+        '  nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#download-model -- --model 2b --weights' \
         '' \
-        "Data: \$PLAMO_DATA_DIR/models/plamo" \
-        "Default PLAMO_DATA_DIR: \${XDG_DATA_HOME:-\$HOME/.local/share}/plamo-3-translate-8b" \
+        "Data root: \$PLAMO_DATA_DIR or \${XDG_DATA_HOME:-\$HOME/.local/share}/plamo-3-translate-SIZE" \
         'Built with PLaMo. Model files have their own PLaMo Community License.'
 }
+
+model=${PLAMO_MODEL:-8b}
+while (( $# )); do
+    case "$1" in
+        --model)
+            if (( $# < 2 )); then usage >&2; exit 2; fi
+            model=$2; shift 2 ;;
+        --model=*) model=${1#--model=}; shift ;;
+        --) shift; break ;;
+        *) break ;;
+    esac
+done
+select_model
 
 if (( $# == 0 )) || [[ ${1:-} == --help || ${1:-} == -h ]]; then
     usage
@@ -26,24 +41,24 @@ if (( $# > 2 )) || { (( $# == 2 )) && [[ $1 != -g && $1 != -j && $1 != -e ]]; };
     exit 2
 fi
 
-data_dir=${PLAMO_DATA_DIR:-${XDG_DATA_HOME:-${HOME:?Set HOME or PLAMO_DATA_DIR}/.local/share}/plamo-3-translate-8b}
-model_dir=$data_dir/models/plamo
+data_dir=${PLAMO_DATA_DIR:-${XDG_DATA_HOME:-${HOME:?Set HOME or PLAMO_DATA_DIR}/.local/share}/$model_name}
+model_dir=$data_dir/$relative_directory
 if [[ ! -r $model_dir/tokenizer.jsonl ]]; then
-    printf 'plamo: model files are missing from %s\nRun plamo-download --weights (or the download-model Nix app).\n' "$model_dir" >&2
+    printf 'plamo: model files are missing from %s\nRun plamo-download --weights --model %s (or the download-model Nix app).\n' "$model_dir" "$model" >&2
     exit 1
 fi
-if [[ -f $model_dir/REVISION ]] && [[ $(< "$model_dir/REVISION") != 19ecab3fb31424ee937b7503730318b50e55771c ]]; then
+if [[ -f $model_dir/REVISION ]] && [[ $(< "$model_dir/REVISION") != "$revision" ]]; then
     printf 'plamo: model revision does not match this implementation: %s\n' "$model_dir" >&2
     exit 1
 fi
 if (( $# == 2 )); then
-    for shard in 00001 00002 00003 00004; do
-        if [[ ! -r $model_dir/model-$shard-of-00004.safetensors ]]; then
-            printf 'plamo: weight shards are missing. Run plamo-download --weights.\n' >&2
+    for shard in "${weight_files[@]}"; do
+        if [[ ! -r $model_dir/$shard ]]; then
+            printf 'plamo: weight files are missing. Run plamo-download --weights --model %s.\n' "$model" >&2
             exit 1
         fi
     done
 fi
 
 cd -- "$data_dir"
-exec "@engine@" "$@"
+exec "@engines@/plamo-$model" "$@"

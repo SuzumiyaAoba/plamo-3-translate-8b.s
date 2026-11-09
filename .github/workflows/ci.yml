@@ -28,4 +28,9 @@ jobs:
           nix run . -- --help
           nix run .#download-model -- --help
           nix run .#serve -- --help
-          nix develop --command make all test test-tools
+          for model in 0.8b 2b 8b 31b; do
+            nix run . -- --model "$model" --help
+            nix run .#download-model -- --model "$model" --help
+            nix run .#serve -- --model "$model" --help
+          done
+          nix develop --command make models test test-tools

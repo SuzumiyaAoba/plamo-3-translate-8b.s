@@ -108,7 +108,10 @@ int main(int argc, char **argv) {
     struct plamo_engine_info info;
     struct plamo_engine *engine = plamo_engine_open(mode, tokenizer_only, &info, error, sizeof error);
     if (!engine) { report_error("startup_failed", error); return 1; }
-    printf("{\"event\":\"ready\",\"protocol\":1,\"worker_pid\":%d,\"load_seconds\":%.9f,\"memory\":{"
+    printf("{\"event\":\"ready\",\"protocol\":1,\"model\":"); json_string(plamo_model_name);
+    printf(",\"repository\":"); json_string(plamo_model_repository);
+    printf(",\"revision\":"); json_string(plamo_model_revision);
+    printf(",\"worker_pid\":%d,\"load_seconds\":%.9f,\"memory\":{"
            "\"mode\":\"%s\",\"weight_bytes\":%" PRIu64 ",\"preloaded_weight_bytes\":%" PRIu64 ","
            "\"estimated_reclaimable_bytes_at_start\":%" PRIu64 ",\"physical_bytes\":%" PRIu64 ",\"reserve_bytes\":%" PRIu64 ",\"note\":",
            getpid(), info.load_seconds, info.memory_mode, info.weight_bytes, info.preloaded_weight_bytes,

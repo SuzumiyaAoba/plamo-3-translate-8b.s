@@ -7,6 +7,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from tools.model_catalog import MODELS, profile
+from tools.generate_launchers import render
 
 ROOT = Path(__file__).resolve().parents[1]
 REVISION = "19ecab3fb31424ee937b7503730318b50e55771c"
@@ -21,11 +23,12 @@ class LauncherTests(unittest.TestCase):
         self.model = self.data / "models/plamo"
         self.model.mkdir(parents=True)
         self.environment = dict(os.environ, PLAMO_DATA_DIR=str(self.data))
-        self.engine = self.root / "probe"
+        self.environment.pop('PLAMO_MODEL', None)
+        self.engine = self.root / "plamo-8b"
         self.engine.write_text(f"#!{sys.executable}\nimport json, os, sys\nprint(json.dumps([os.getcwd(), sys.argv[1:]], ensure_ascii=False))\n")
         self.engine.chmod(0o755)
         self.launcher = self.root / "plamo"
-        self.launcher.write_text((ROOT / "nix/plamo.sh.in").read_text().replace("@engine@", str(self.engine)))
+        self.launcher.write_text((ROOT / "nix/plamo.sh.in").read_text().replace("@engines@", str(self.root)).replace("@modelProfiles@", render()))
         self.shell = shutil.which("bash")
         self.assertIsNotNone(self.shell)
 
@@ -81,6 +84,26 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)[0], str(model.parents[1].resolve()))
 
+    def test_each_model_selects_its_own_engine_and_files(self):
+        for size in MODELS:
+            with self.subTest(model=size):
+                p = profile(size)
+                model_dir = self.data / p.directory
+                model_dir.mkdir(parents=True, exist_ok=True)
+                (model_dir / "tokenizer.jsonl").touch()
+                (model_dir / "REVISION").write_text(p.revision + "\n")
+                if size != "8b":
+                    shutil.copy2(self.engine, self.root / ("plamo-" + size))
+                for weight in p.weights:
+                    (model_dir / weight).touch()
+                result = self.run_launcher("--model", size, "-j", "Hello.")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(json.loads(result.stdout), [str(self.data.resolve()), ["-j", "Hello."]])
+                (model_dir / p.weights[-1]).unlink()
+                missing = self.run_launcher("--model=" + size, "-j", "Hello.")
+                self.assertEqual(missing.returncode, 1)
+                self.assertIn('--model ' + size, missing.stderr)
+
     def test_invalid_arguments(self):
         result = self.run_launcher("--unknown", "text")
         self.assertEqual(result.returncode, 2)
@@ -94,7 +117,7 @@ class LauncherTests(unittest.TestCase):
         self.environment.pop("SSL_CERT_FILE", None)
         result = subprocess.run([self.shell, str(wrapper), "--weights", "--verify"], env=self.environment, text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads(result.stdout), [["--directory", str(self.model), "--weights", "--verify"], "/fixture/ca-bundle.crt"])
+        self.assertEqual(json.loads(result.stdout), [["--cache", "--weights", "--verify"], "/fixture/ca-bundle.crt"])
 
 
 if __name__ == "__main__":

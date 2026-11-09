@@ -59,7 +59,7 @@ Largend:
     ldrb w9, [x20], #1
     cbnz w9, Largend
     sub x20, x20, #1
-    address x0, vocab_path
+    address x0, _plamo_vocab_path
     bl _plamo_map_file
     cbz x0, Lfailure
     mov x21, x0
@@ -228,7 +228,6 @@ Ldigit:
     add sp, sp, #32
     ret
 .section __TEXT,__const
-vocab_path: .asciz "models/plamo/tokenizer.jsonl"
 newline: .ascii "\n"
 usage: .ascii "usage: build/plamo [-g|-j|-e] 'text' (-g raw, -j en-to-ja, -e ja-to-en)\n"
 usage_end:

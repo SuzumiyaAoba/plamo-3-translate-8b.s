@@ -45,6 +45,12 @@ static uint64_t hash(const void *data, size_t count) {
     return value;
 }
 
+static void model_files_error(char *error, size_t cap, const char *message) {
+    /* Generated names always end in the selectable size, e.g. "-2b". */
+    snprintf(error, cap, "%s for %s; run plamo-download --weights --model %s",
+             message, plamo_model_name, strrchr(plamo_model_name, '-') + 1);
+}
+
 void plamo_reset_request(struct model *model) {
     for (uint64_t i = 0; i < model->count; ++i) {
         struct layer *layer = model->layers[i];
@@ -57,23 +63,24 @@ void plamo_reset_request(struct model *model) {
 }
 
 static int preload(struct plamo_engine_info *info, char *error, size_t cap) {
-    struct plamo_mapping copies[4], original[4];
-    memcpy(original, plamo_weight_mappings, sizeof original);
-    if (!plamo_resident_copy(original, plamo_weight_fds, 4, PLAMO_MEMORY_RESERVE, copies, error, cap)) return 0;
-    if (!plamo_rebase_weights(plamo_weight_schema, original, copies, 4)) {
+    struct plamo_mapping copies[PLAMO_MAX_WEIGHT_FILES], original[PLAMO_MAX_WEIGHT_FILES];
+    size_t count = (size_t)plamo_weight_mapping_count;
+    memcpy(original, plamo_weight_mappings, count * sizeof *original);
+    if (!plamo_resident_copy(original, plamo_weight_fds, count, PLAMO_MEMORY_RESERVE, copies, error, cap)) return 0;
+    if (!plamo_rebase_weights(plamo_weight_schema, original, copies, count)) {
         snprintf(error, cap, "a bound tensor is outside the original files");
-        plamo_resident_release(copies, 4);
+        plamo_resident_release(copies, count);
         return 0;
     }
     if (!plamo_model_patch(plamo_model_patches)) {
-        (void)plamo_rebase_weights(plamo_weight_schema, copies, original, 4);
+        (void)plamo_rebase_weights(plamo_weight_schema, copies, original, count);
         (void)plamo_model_patch(plamo_model_patches);
-        plamo_resident_release(copies, 4);
+        plamo_resident_release(copies, count);
         snprintf(error, cap, "cannot update model descriptors for preloaded weights");
         return 0;
     }
-    memcpy(plamo_weight_mappings, copies, sizeof copies);
-    for (size_t i = 0; i < 4; ++i) {
+    memcpy(plamo_weight_mappings, copies, count * sizeof *copies);
+    for (size_t i = 0; i < count; ++i) {
         munmap(original[i].base, (size_t)original[i].bytes);
         close((int)plamo_weight_fds[i]);
         plamo_weight_fds[i] = -1;
@@ -90,11 +97,11 @@ struct plamo_engine *plamo_engine_open(enum plamo_memory_mode mode, int tokenize
     memset(info, 0, sizeof *info);
     struct plamo_engine *e = calloc(1, sizeof *e);
     if (!e) { snprintf(error, cap, "cannot allocate tokenizer state"); return NULL; }
-    int fd = open("models/plamo/tokenizer.jsonl", O_RDONLY);
+    int fd = open(plamo_vocab_path, O_RDONLY);
     struct stat st;
     if (fd < 0 || fstat(fd, &st) || st.st_size <= 0) {
         if (fd >= 0) close(fd);
-        snprintf(error, cap, "tokenizer is missing; run plamo-download first");
+        model_files_error(error, cap, "tokenizer is missing");
         goto fail;
     }
     e->vocab_size = (size_t)st.st_size;
@@ -118,8 +125,8 @@ struct plamo_engine *plamo_engine_open(enum plamo_memory_mode mode, int tokenize
     info->physical_bytes = plamo_physical_memory();
     info->reclaimable_bytes = plamo_reclaimable_memory();
     if (!tokenizer_only) {
-        if (!plamo_model_open()) { snprintf(error, cap, "missing or invalid weight shards; run plamo-download --weights"); goto fail; }
-        for (size_t i = 0; i < 4; ++i) info->weight_bytes += plamo_weight_mappings[i].bytes;
+        if (!plamo_model_open()) { model_files_error(error, cap, "missing or invalid weight files"); goto fail; }
+        for (size_t i = 0; i < plamo_weight_mapping_count; ++i) info->weight_bytes += plamo_weight_mappings[i].bytes;
         if (mode != PLAMO_MEMORY_STREAM && !preload(info, error, cap)) {
             if (mode == PLAMO_MEMORY_RESIDENT) goto fail;
             snprintf(info->memory_note, sizeof info->memory_note, "%s", error);

@@ -1,19 +1,22 @@
 .text
 .p2align 2
-// Initialize fixed model once. Paths relative to repository root.
+// Initialize the compiled model once. Paths are generated from its profile.
 // Returns 1=ready,0=failure; a successful mapping lives for process lifetime.
 // Repeated successful calls are idempotent. Not thread safe.
 .globl _plamo_model_open
 _plamo_model_open:
     stp x19, x30, [sp, #-48]!
     stp x20, x21, [sp, #16]
+    str x22, [sp, #32]
     adrp x19, _plamo_weight_mappings@PAGE
     add x19, x19, _plamo_weight_mappings@PAGEOFF
     adrp x9, Lmodel_ready@PAGE
     ldr x10, [x9, Lmodel_ready@PAGEOFF]
     cbnz x10, Lopensuccess
-    adrp x20, Lmodel_paths@PAGE
-    add x20, x20, Lmodel_paths@PAGEOFF
+    adrp x20, _plamo_weight_paths@PAGE
+    add x20, x20, _plamo_weight_paths@PAGEOFF
+    adrp x9, _plamo_weight_file_count@PAGE
+    ldr x22, [x9, _plamo_weight_file_count@PAGEOFF]
     mov x21, #0
 Lopenmap:
     ldr x0, [x20, x21, lsl #3]
@@ -26,10 +29,12 @@ Lopenmap:
     add x9, x9, _plamo_weight_fds@PAGEOFF
     str x2, [x9, x21, lsl #3]
     add x21, x21, #1
-    cmp x21, #4
+    cmp x21, x22
     b.lo Lopenmap
+    adrp x9, _plamo_weight_mapping_count@PAGE
+    str x22, [x9, _plamo_weight_mapping_count@PAGEOFF]
     mov x0, x19
-    mov x1, #4
+    mov x1, x22
     adrp x2, _plamo_weight_schema@PAGE
     add x2, x2, _plamo_weight_schema@PAGEOFF
     bl _plamo_bind_weights
@@ -78,21 +83,16 @@ Lopencleanup:
     svc #0x80
 Lopenfdclosed:
     add x21, x21, #1
-    cmp x21, #4
+    cmp x21, x22
     b.lo Lopencleanup
+    adrp x9, _plamo_weight_mapping_count@PAGE
+    str xzr, [x9, _plamo_weight_mapping_count@PAGEOFF]
     mov x0, #0
 Lopenreturn:
+    ldr x22, [sp, #32]
     ldp x20, x21, [sp, #16]
     ldp x19, x30, [sp], #48
     ret
-.data
-.p2align 3
-Lmodel_paths: .quad Lmodel_path1,Lmodel_path2,Lmodel_path3,Lmodel_path4
-.section __TEXT,__const
-Lmodel_path1: .asciz "models/plamo/model-00001-of-00004.safetensors"
-Lmodel_path2: .asciz "models/plamo/model-00002-of-00004.safetensors"
-Lmodel_path3: .asciz "models/plamo/model-00003-of-00004.safetensors"
-Lmodel_path4: .asciz "models/plamo/model-00004-of-00004.safetensors"
 .data
 .p2align 3
 Lmodel_ready: .quad 0

@@ -1,0 +1,50 @@
+{
+  "repository": "pfnet/plamo-3-translate-0.8b",
+  "revision": "573eb1be9fd8c44402650810c680104e5aec81e8",
+  "files": {
+    "config.json": {
+      "size": 1332,
+      "sha256": "b825929ff52a9b94f911df21622cde1a2edf0a71c0710ab06b0dc60c83cacbd0"
+    },
+    "tokenizer.jsonl": {
+      "size": 3526723,
+      "sha256": "bdce9e430e65931b28c56de2054f52b4cf8ed59b322db125e016d724d06dbb0e"
+    },
+    "tokenizer_config.json": {
+      "size": 1575,
+      "sha256": "5468ed5c68b5cf4cf971bcb34be6bfbfd749fe30cc5bc65ace5835ae3bff65b3"
+    },
+    "special_tokens_map.json": {
+      "size": 587,
+      "sha256": "1004b03ad5c184693765d25d8d682e831727b43b84e321fc9dc14d9ef3d1466a"
+    },
+    "chat_template.jinja": {
+      "size": 5406,
+      "sha256": "633ae24b5166d2c958d9b0a39523f2cc5bd6832752ec2ab0285793cab6415323"
+    },
+    "generation_config.json": {
+      "size": 120,
+      "sha256": "0410d30499cd9db0a83ecbd59a2811b1c4f63f7c9412126a43e8d2b96ec44a85"
+    },
+    "modeling_plamo.py": {
+      "size": 45413,
+      "sha256": "498ff5f52b565315325ffff29b6c5e628a55156a4df5cd2bacb48a9c8697f32b"
+    },
+    "tokenization_plamo.py": {
+      "size": 22389,
+      "sha256": "68b769d516541603857ce9d2813e48193efe41abb64c1091311b973d491724d9"
+    },
+    "LICENSE/en": {
+      "size": 7629,
+      "sha256": "d9979039b8f1a96fa81e1be61c4550d06f8542b25119e3f765c7c011a68597fb"
+    },
+    "LICENSE/ja": {
+      "size": 8720,
+      "sha256": "988b37b0b21ca130ad84a092429e4e5bceec5f86dfe85a8ca3e06ea703b960ca"
+    },
+    "model.safetensors": {
+      "size": 1780709128,
+      "sha256": "7c9f0066d166c075bdbe83ada3d444e08bd7a6ee3f345f47a1f3c442aa6898c5"
+    }
+  }
+}
