@@ -26,7 +26,11 @@ def read_exact(count):
         if not part: return None
         result+=part
     return result
-send({'event':'ready','protocol':1,'model':'plamo-3-translate-8b','revision':'19ecab3fb31424ee937b7503730318b50e55771c','worker_pid':os.getpid(),'load_seconds':0.01,
+backend=sys.argv[sys.argv.index('--backend')+1] if '--backend' in sys.argv else 'cpu'
+compute={'backend':'metal' if backend.startswith('metal') else 'cpu','device':'Synthetic GPU','gpu_dispatches':0,'errors':0}
+send({'event':'ready','protocol':1,'model':'plamo-3-translate-8b','revision':'19ecab3fb31424ee937b7503730318b50e55771c','worker_pid':os.getpid(),'load_seconds':0.01,'preload_seconds':0.005,
+      'compute':compute,
+      'threads':int(sys.argv[sys.argv.index('--threads')+1]) if '--threads' in sys.argv else 4,
       'memory':{'mode':'resident','weight_bytes':128,'preloaded_weight_bytes':128}})
 while True:
     header=read_exact(16)
@@ -42,7 +46,9 @@ while True:
     if op==2:
         send({'event':'tokenized','prompt_tokens':len(text),'token_ids':list(range(len(text)))})
         continue
-    send({'event':'prefill','prompt_tokens':len(text)})
+    memory = {'mode':'adaptive','weight_bytes':128,'preloaded_weight_bytes':0,
+              'budget_bytes':64,'cached_weight_bytes':0,'staging_bytes':16} if text=='adaptive' else None
+    send({'event':'prefill','prompt_tokens':len(text), **({'memory':memory} if memory else {})})
     output='こんにちは。'.encode()
     chunks=[output[:2],output[2:5],output[5:8],output[8:]]
     reason='stop'; generated=0
@@ -54,7 +60,9 @@ while True:
                 reason='cancelled'; break
         send({'event':'token','token_id':500+i,'hex':chunk.hex()})
         generated+=1
-    send({'event':'done','finish_reason':reason,'usage':{'prompt_tokens':len(text),'completion_tokens':generated,'total_tokens':len(text)+generated},
+    if memory: memory.update(budget_bytes=48, cached_weight_bytes=32)
+    if compute['backend']=='metal': compute['gpu_dispatches']+=4
+    send({'event':'done','finish_reason':reason, 'compute':compute, **({'memory':memory} if memory else {}), 'usage':{'prompt_tokens':len(text),'completion_tokens':generated,'total_tokens':len(text)+generated},
           'timings':{'prefill_seconds':0.01,'decode_seconds':0.02,'total_seconds':0.03},
           'weight_io':{'read_calls':0,'staged_bytes':0},'verification':{'logits_hash':'private-test-field'}})
 '''
@@ -108,6 +116,33 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(result["memory_mode"], "resident")
         self.assertEqual(self.worker.health()["worker_pid"], before)
 
+    def test_compute_threads_are_forwarded_and_reported_in_health(self):
+        root = Path(self.temp.name)
+        worker = api.PersistentWorker(root / 'fake-worker', root, startup_timeout=5, threads=2)
+        self.addCleanup(worker.close)
+        deadline = time.monotonic() + 5
+        while worker.health()['status'] == 'loading' and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertEqual(worker.health()['status'], 'ready')
+        self.assertEqual(worker.health()['threads'], 2)
+        status, _, payload = self.request('GET', '/health')
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(payload)['threads'], 4)
+        self.assertEqual(json.loads(payload)['preload_seconds'], 0.005)
+        self.assertEqual(json.loads(payload)['memory']['preloaded_weight_bytes'], 128)
+
+    def test_metal_selection_and_live_compute_counters(self):
+        root = Path(self.temp.name)
+        worker = api.PersistentWorker(root / 'fake-worker', root, startup_timeout=5, backend='metal')
+        self.addCleanup(worker.close)
+        deadline = time.monotonic() + 5
+        while worker.health()['status'] == 'loading' and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertEqual(worker.health()['status'], 'ready')
+        self.assertEqual(worker.health()['compute']['backend'], 'metal')
+        worker.run(api.validate_request({'text': 'Hello.'}))
+        self.assertEqual(worker.health()['compute']['gpu_dispatches'], 4)
+
     def test_sse_reassembles_utf8_split_between_tokens(self):
         status, headers, payload = self.request(body={"text": "Hello.", "stream": True})
         self.assertEqual(status, 200)
@@ -120,6 +155,19 @@ class ServerTests(unittest.TestCase):
         self.assertEqual("".join(value["text"] for name, value in events if name == "token"), "こんにちは。")
         self.assertEqual(events[-1][0], "done")
         self.assertEqual(events[-1][1]["translation"], "こんにちは。")
+
+    def test_health_and_translation_reflect_adaptive_memory_updates(self):
+        status, _, payload = self.request(body={"text": "adaptive"})
+        result = json.loads(payload)
+        self.assertEqual(status, 200)
+        self.assertEqual(result["memory_mode"], "adaptive")
+        self.assertEqual(result["memory"]["budget_bytes"], 48)
+        status, _, payload = self.request("GET", "/health")
+        self.assertEqual(status, 200)
+        memory = json.loads(payload)["memory"]
+        self.assertEqual(memory["mode"], "adaptive")
+        self.assertEqual(memory["cached_weight_bytes"], 32)
+        self.assertEqual(memory["budget_bytes"], 48)
 
     def test_health_remains_responsive_and_busy_requests_get_429(self):
         responses = []

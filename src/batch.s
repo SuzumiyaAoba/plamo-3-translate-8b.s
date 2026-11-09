@@ -149,6 +149,19 @@ Lbatch_attention:
     ldr x1, [x22, #24]
     mul x2, x21, x23
     bl _plamo_residual
+    // A resident backend can keep the complete MLP on the GPU. It must leave
+    // states untouched when declining, so streamed weights use the same path.
+    adrp x9, _plamo_mlp_kernel@PAGE
+    ldr x9, [x9, _plamo_mlp_kernel@PAGEOFF]
+    cbz x9, Lbatch_mlp
+    mov x0, x26
+    mov x1, x20
+    mov x2, x21
+    adrp x3, _plamo_compute_context@PAGE
+    ldr x3, [x3, _plamo_compute_context@PAGEOFF]
+    blr x9
+    cbnz x0, Lbatch_ok
+Lbatch_mlp:
     mov x0, x20
     ldr x1, [x26, #8]
     ldr x2, [x22]

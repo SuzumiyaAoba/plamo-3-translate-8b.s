@@ -67,6 +67,19 @@ class LauncherTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(result.stdout), [str(self.data.resolve()), [option, "Hello."]])
 
+    def test_native_options_preserved_and_generation_still_requires_shards(self):
+        self.vocabulary()
+        args = ("--backend", "metal", "--memory", "auto", "--threads", "4", "--max-tokens", "12", "-j", "--quoted text")
+        self.assertEqual(self.run_launcher(*args).returncode, 1)
+        for weight in profile('8b').weights:
+            (self.model / weight).touch()
+        result = self.run_launcher(*args)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), [str(self.data.resolve()), list(args)])
+        result = self.run_launcher("--backend", "cpu", "--", "-j")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)[1], ["--backend", "cpu", "--", "-j"])
+
     def test_mismatched_revision_is_rejected(self):
         self.vocabulary()
         (self.model / "REVISION").write_text("wrong\n")
@@ -105,9 +118,13 @@ class LauncherTests(unittest.TestCase):
                 self.assertIn('--model ' + size, missing.stderr)
 
     def test_invalid_arguments(self):
-        result = self.run_launcher("--unknown", "text")
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("usage:", result.stderr)
+        for args in (("--unknown", "text"), ("--threads", "0", "text"), ("--threads", "65", "text"),
+                     ("--threads", "4x", "text"), ("--max-tokens", "4097", "text"),
+                     ("--max-tokens", "99999999999999999999999", "-j", "text")):
+            with self.subTest(args=args):
+                result = self.run_launcher(*args)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("usage:", result.stderr)
 
     def test_downloader_uses_same_directory_and_preserves_arguments(self):
         script = self.root / "download probe.py"

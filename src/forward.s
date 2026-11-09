@@ -8,6 +8,25 @@
 // caches before retrying. Input token failure makes no state changes.
 .globl _plamo_forward
 _plamo_forward:
+    adrp x9, _plamo_forward_kernel@PAGE
+    ldr x9, [x9, _plamo_forward_kernel@PAGEOFF]
+    cbz x9, Lforward_cpu
+    stp x29, x30, [sp, #-32]!
+    stp x0, x1, [sp, #16]
+    adrp x2, _plamo_compute_context@PAGE
+    ldr x2, [x2, _plamo_compute_context@PAGEOFF]
+    blr x9
+    cbz x0, Lforward_fallback
+    // The backend uses -1 for an execution failure, 0 for an untouched
+    // cache miss, and 1 for success. Never retry a partially executed graph.
+    cmp x0, #1
+    cset x0, eq
+    ldp x29, x30, [sp], #32
+    ret
+Lforward_fallback:
+    ldp x0, x1, [sp, #16]
+    ldp x29, x30, [sp], #32
+Lforward_cpu:
     mov x2, #1
     b Lforwardcommon
 // Prefill-only entry: caches/state advance, normalized/logits stay untouched.

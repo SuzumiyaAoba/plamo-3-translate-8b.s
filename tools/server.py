@@ -38,10 +38,12 @@ class Disconnected(Exception):
 
 class PersistentWorker:
     """Own the process, protocol, request lock and cancellation in one place."""
-    def __init__(self, executable, data_dir, memory="auto", startup_timeout=180, model_profile=None):
+    def __init__(self, executable, data_dir, memory="auto", startup_timeout=180, model_profile=None, threads=None, backend="auto"):
         self.executable, self.data_dir, self.memory = str(executable), str(data_dir), memory
         self.profile = model_profile or profile()
         self.startup_timeout = startup_timeout
+        self.threads = threads
+        self.backend = backend
         self._state_lock = threading.Lock()
         self._request_lock = threading.Lock()
         self._state, self._error, self._info = "loading", None, None
@@ -65,8 +67,13 @@ class PersistentWorker:
             with self._state_lock:
                 if self._closed:
                     return
+                command = [self.executable, "--memory", self.memory]
+                if self.threads is not None:
+                    command.extend(["--threads", str(self.threads)])
+                if self.backend != "auto":
+                    command.extend(["--backend", self.backend])
                 self._process = subprocess.Popen(
-                    [self.executable, "--memory", self.memory], cwd=self.data_dir,
+                    command, cwd=self.data_dir,
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 )
             timer = threading.Timer(self.startup_timeout, self._process.kill)
@@ -85,7 +92,10 @@ class PersistentWorker:
                 self._info, self._state = event, "ready"
             memory = event.get("memory", {})
             print(f"plamo-api: model ready; memory={memory.get('mode')}; "
-                  f"preloaded={memory.get('preloaded_weight_bytes', 0):,} bytes", file=sys.stderr, flush=True)
+                  f"preloaded={memory.get('preloaded_weight_bytes', 0):,} bytes; "
+                  f"cache budget={memory.get('budget_bytes', 0):,} bytes; "
+                  f"threads={event.get('threads', 1)}; "
+                  f"backend={event.get('compute', {}).get('backend', 'cpu')}", file=sys.stderr, flush=True)
             if memory.get("note"):
                 print(f"plamo-api: {memory['note']}", file=sys.stderr, flush=True)
         except (OSError, ValueError, RuntimeError) as error:
@@ -120,6 +130,9 @@ class PersistentWorker:
         if info:
             result["worker_pid"] = info["worker_pid"]
             result["load_seconds"] = info["load_seconds"]
+            result["preload_seconds"] = info.get("preload_seconds", 0)
+            result["threads"] = info.get("threads", 1)
+            result["compute"] = info.get("compute", {"backend": "cpu"})
             result["memory"] = info["memory"]
         if error:
             result["error"] = error
@@ -172,6 +185,10 @@ class PersistentWorker:
                 while True:
                     event = self._read_event()
                     kind = event["event"]
+                    updates = {key: event[key] for key in ("memory", "compute") if key in event}
+                    if updates:
+                        with self._state_lock:
+                            self._info = {**self._info, **updates}
                     if kind == "error":
                         status = 400 if event.get("code") == "invalid_input" else 500
                         raise APIError(status, event.get("code", "inference_failed"), event.get("message", "inference failed"))
@@ -383,7 +400,11 @@ def main():
     parser.add_argument("--cache", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--data-dir", type=Path, help="model data root (default: PLAMO_DATA_DIR or current directory)")
     parser.add_argument("--memory", choices=("auto", "resident", "stream"), default="auto",
-                        help="auto preloads exact BF16 bytes only when weights + 2 GiB fit the reclaimable-memory estimate")
+                        help="auto preloads the BF16 cache within available memory, with a 2 GiB reserve")
+    parser.add_argument("--threads", type=int, choices=range(1, 65), metavar="1..64",
+                        help="CPU compute threads (default: performance cores); 1 disables parallelism")
+    parser.add_argument("--backend", choices=("auto", "cpu", "metal", "metal-fp32"), default="auto",
+                        help="auto prefers Metal FP32; metal-fp32 is an alias of metal; cpu uses assembly")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--startup-timeout", type=float, default=180)
@@ -407,7 +428,7 @@ def main():
     marker = data_dir / p.directory / "REVISION"
     if marker.exists() and marker.read_text().strip() != p.revision:
         parser.error("model revision does not match this implementation; select the pinned model directory")
-    worker = PersistentWorker(worker_path, data_dir, args.memory, args.startup_timeout, p)
+    worker = PersistentWorker(worker_path, data_dir, args.memory, args.startup_timeout, p, args.threads, args.backend)
     previous_term = None
     try:
         def stop(_signum, _frame):

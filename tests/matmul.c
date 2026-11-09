@@ -6,6 +6,7 @@ struct matmul {const uint16_t *w; const float *x; float *y; size_t rows,cols,tok
 extern void plamo_bf16_matmul(const struct matmul*);
 extern void plamo_bf16_matmul8x3(const struct matmul*);
 extern void plamo_bf16_matvec(const uint16_t*,const float*,float*,size_t,size_t);
+extern uint64_t plamo_weight_chunk_bytes;
 static uint32_t rng=19;
 static uint32_t next(void){rng=rng*1664525u+1013904223u;return rng;}
 int main(void){
@@ -21,7 +22,19 @@ int main(void){
   if(memcmp(a,b,(t*ys+1)*4)){fprintf(stderr,"matmul mismatch shape %zu,%zu,%zu\n",r,c,t);return 1;}
   for(size_t i=0;i<t*ys+1;i++)a[i]=-123456.f;
   plamo_bf16_matmul8x3(&m);if(memcmp(a,b,(t*ys+1)*4)){fprintf(stderr,"8x3 mismatch shape %zu,%zu,%zu\n",r,c,t);return 2;}
+  // Compare row-window dispatch with the untiled reference, including odd
+  // widths, a window smaller than one row, and empty shapes.
+  const uint64_t windows[]={1,32,128,1024*1024};
+  for(size_t j=0;j<sizeof windows/sizeof *windows;j++){
+   plamo_weight_chunk_bytes=windows[j];
+   for(size_t i=0;i<t*ys+1;i++)a[i]=-123456.f;
+   plamo_bf16_matmul(&m);
+   if(memcmp(a,b,(t*ys+1)*4)){fprintf(stderr,"tiled matmul mismatch shape %zu,%zu,%zu window %llu\n",r,c,t,(unsigned long long)windows[j]);return 3;}
+   for(size_t i=0;i<t;i++)plamo_bf16_matvec(w,x+i*xs,a+i*ys,r,c);
+   if(memcmp(a,b,(t*ys+1)*4)){fprintf(stderr,"tiled matvec mismatch shape %zu,%zu,%zu\n",r,c,t);return 4;}
+  }
+  plamo_weight_chunk_bytes=0;
   free(w);free(x);free(a);free(b);
  }
- puts("batched BF16 matmul: PASS (bitwise, signed data, strides, tails, empty shapes)");
+ puts("batched BF16 matmul: PASS (bitwise, signed data, strides, tails, empty shapes, row windows)");
 }

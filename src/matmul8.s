@@ -4,6 +4,11 @@
 .p2align 4
 .globl _plamo_bf16_matmul8
 _plamo_bf16_matmul8:
+    adrp x1, _plamo_bf16_matmul8_core@PAGE
+    add x1, x1, _plamo_bf16_matmul8_core@PAGEOFF
+    b _plamo_bf16_matmul_acquire
+.globl _plamo_bf16_matmul8_core
+_plamo_bf16_matmul8_core:
     stp x29, x30, [sp, #-96]!
     stp x19, x20, [sp, #16]
     stp x21, x22, [sp, #32]
@@ -17,11 +22,6 @@ _plamo_bf16_matmul8:
     lsl x25, x25, #2
     lsl x26, x26, #2
     lsl x27, x23, #1
-    mov x0, x19
-    mul x1, x22, x23
-    lsl x1, x1, #1
-    bl _plamo_weight_acquire
-    mov x19, x0
 Lmm8tokens:
     cmp x24, #8
     b.lo Lmm8tail
@@ -152,7 +152,7 @@ Lmm8tail:
     mov x5, x24
     lsr x6, x25, #2
     lsr x7, x26, #2
-    bl _plamo_bf16_linear
+    bl _plamo_bf16_linear_core
 Lmm8done:
     ldp x27, x28, [sp, #80]
     ldp x25, x26, [sp, #64]

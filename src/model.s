@@ -61,12 +61,23 @@ Lresidual4:
 
 // x0=MLP branch descriptor (all pointers and dimensions validated):
 // {state,pre_weight,post_weight,gate_up,down,normalized,branch,scratch,hidden,intermediate}
-// state[hidden] updated in place. normalized/branch[hidden], scratch[2*intermediate]
-// are disjoint reusable FP32 buffers. BF16 weights, FP32 activations.
+// Only state[hidden] is a result. The CPU uses disjoint reusable FP32 workspace
+// normalized/branch[hidden], scratch[2*intermediate]; a backend can own its own.
+// BF16 weights, FP32 activations.
 .globl _plamo_mlp_branch
 _plamo_mlp_branch:
     stp x19, x30, [sp, #-16]!
     mov x19, x0
+    adrp x9, _plamo_mlp_kernel@PAGE
+    ldr x9, [x9, _plamo_mlp_kernel@PAGEOFF]
+    cbz x9, Lmlp_cpu
+    ldr x1, [x19]
+    mov x2, #1
+    adrp x3, _plamo_compute_context@PAGE
+    ldr x3, [x3, _plamo_compute_context@PAGEOFF]
+    blr x9
+    cbnz x0, Lmlp_return
+Lmlp_cpu:
     ldp x0, x1, [x19]
     ldr x2, [x19, #40]
     ldr x3, [x19, #64]
@@ -92,6 +103,7 @@ _plamo_mlp_branch:
     ldr x1, [x19, #48]
     ldr x2, [x19, #64]
     bl _plamo_residual
+Lmlp_return:
     ldp x19, x30, [sp], #16
     ret
 .section __TEXT,__const

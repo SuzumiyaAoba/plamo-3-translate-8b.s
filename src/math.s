@@ -4,6 +4,15 @@
 .p2align 2
 .globl _plamo_bf16_matvec
 _plamo_bf16_matvec:
+    adrp x9, _plamo_weight_chunk_bytes@PAGE
+    ldr x9, [x9, _plamo_weight_chunk_bytes@PAGEOFF]
+    cbz x9, Lmv_whole
+    cbz x4, Lmv_whole
+    mul x10, x3, x4
+    lsl x10, x10, #1
+    cmp x10, x9
+    b.hi Lmv_tiled
+Lmv_whole:
     stp x29, x30, [sp, #-64]!
     stp x0, x1, [sp, #16]
     stp x2, x3, [sp, #32]
@@ -16,8 +25,60 @@ _plamo_bf16_matvec:
     ldp x2, x3, [sp, #32]
     ldr x4, [sp, #48]
     ldp x29, x30, [sp], #64
+    b _plamo_bf16_matvec_core
+// Row tiles bound the lifetime of every acquired range to the worker's read
+// window, including heads larger than 1 GiB. Columns/reduction stay unchanged.
+Lmv_tiled:
+    lsl x10, x4, #1
+    udiv x9, x9, x10
+    cbz x9, Lmv_whole // A single unusually wide row uses its original mapping.
+    cmp x9, #8
+    b.lo Lmv_tile_rows
+    and x9, x9, #0xfffffffffffffff8
+Lmv_tile_rows:
+    stp x19, x30, [sp, #-80]!
+    stp x20, x21, [sp, #16]
+    stp x22, x23, [sp, #32]
+    stp x24, x25, [sp, #48]
+    mov x19, x0
+    mov x20, x1
+    mov x21, x2
+    mov x22, x3
+    mov x23, x4
+    mov x24, x9
+Lmv_tile_loop:
+    cmp x22, x24
+    csel x25, x22, x24, lo
+    mov x0, x19
+    mul x1, x25, x23
+    lsl x1, x1, #1
+    bl _plamo_weight_acquire
+    mov x1, x20
+    mov x2, x21
+    mov x3, x25
+    mov x4, x23
+    bl _plamo_bf16_matvec_core
+    mul x9, x25, x23
+    add x19, x19, x9, lsl #1
+    add x21, x21, x25, lsl #2
+    subs x22, x22, x25
+    b.ne Lmv_tile_loop
+    ldp x24, x25, [sp, #48]
+    ldp x22, x23, [sp, #32]
+    ldp x20, x21, [sp, #16]
+    ldp x19, x30, [sp], #80
+    ret
 .globl _plamo_bf16_matvec_core
 _plamo_bf16_matvec_core:
+    // The provider has finished reading before workers borrow this range.
+    adrp x9, _plamo_matvec_kernel@PAGE
+    ldr x9, [x9, _plamo_matvec_kernel@PAGEOFF]
+    cbz x9, _plamo_bf16_matvec_serial
+    adrp x5, _plamo_compute_context@PAGE
+    ldr x5, [x5, _plamo_compute_context@PAGEOFF]
+    br x9
+.globl _plamo_bf16_matvec_serial
+_plamo_bf16_matvec_serial:
     // Eight independent rows, four K-vectors per loop. The accumulator
     // sequence inside every row is unchanged, including final reduction.
     cmp x3, #8

@@ -1,0 +1,3407 @@
+{
+  "timestamp_utc": "2026-11-09T11:07:22.576000+00:00",
+  "environment": {
+    "device": "Apple M2",
+    "machine": "arm64",
+    "macos": "26.5.1",
+    "physical_memory_bytes": 25769803776
+  },
+  "head_revision": "f105eae89a1ca525a70f453395ff1222288b726f",
+  "source_sha256": {
+    "runtime/metal.m": "5a3719ac5ef72bbf50dcd7bfaa6b2b9d4182de958a5e07b2090f09475e48f7e9",
+    "runtime/kernels.metal": "07f81c74198f4742bcf7044ff69edcdeace58e2d67570ca0b2f384d76b1b9a2b",
+    "runtime/engine.c": "3cd08b94d7684622ebbd6a8c08ba798bc004233ad1ff54dc5ca8472549eec725",
+    "runtime/worker.c": "c86bf76c3d2161276bd12690a65d0a0c71e79e9d22b40498a791bb212c844fd4",
+    "tools/verify_api.py": "20824c537dfac5aff4bdc5c60aa0616eb8c159b86de6a99fa614e79f07cdc262",
+    "tools/compare_backends.py": "495ae398a0d1b1b69e15ac45d8e60c72b3171e593273e14c7faecc294243a768"
+  },
+  "method": "Requests serialized, configurations run sequentially, 3 timed requests after model load, tokenizer checks and one cancelled prefill. Startup excluded. CPU uses 4 threads. No concurrent benchmark or test workloads.",
+  "performance": {
+    "0.8b-short": {
+      "cpu": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-0.8b",
+          "repository": "pfnet/plamo-3-translate-0.8b",
+          "revision": "573eb1be9fd8c44402650810c680104e5aec81e8",
+          "worker_pid": 20307,
+          "load_seconds": 0.688567,
+          "threads": 4,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 1780709128,
+            "preloaded_weight_bytes": 1780709128,
+            "estimated_reclaimable_bytes_at_start": 19534168064,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 0,
+            "max_budget_bytes": 0,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 0,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "cpu",
+            "device": "",
+            "precision": "fp32",
+            "residency_sets": false,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 0,
+            "recommended_working_set_bytes": 0,
+            "note": ""
+          }
+        },
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "637005eb121af357",
+          "prefill_state_hash": "dfb2cf1930e0f984",
+          "logits_hash": "542b699332305bda",
+          "state_hash": "4bab6b2ae34c9c08"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.112863,
+          "decode_seconds": 0.043217,
+          "first_token_seconds": 0.113608,
+          "total_seconds": 0.157873
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000103,
+              "prefill_seconds": 0.111571,
+              "decode_seconds": 0.04313,
+              "first_token_seconds": 0.11232,
+              "total_seconds": 0.155379,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000109,
+              "prefill_seconds": 0.114619,
+              "decode_seconds": 0.043217,
+              "first_token_seconds": 0.115375,
+              "total_seconds": 0.158523,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000119,
+              "prefill_seconds": 0.112863,
+              "decode_seconds": 0.044334,
+              "first_token_seconds": 0.113608,
+              "total_seconds": 0.157873,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          }
+        ]
+      },
+      "metal": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-0.8b",
+          "repository": "pfnet/plamo-3-translate-0.8b",
+          "revision": "573eb1be9fd8c44402650810c680104e5aec81e8",
+          "worker_pid": 20349,
+          "load_seconds": 1.040935,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 1780709128,
+            "preloaded_weight_bytes": 1780482048,
+            "estimated_reclaimable_bytes_at_start": 19341312000,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 1847817992,
+            "max_budget_bytes": 1847817992,
+            "cached_weight_bytes": 1780482048,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 74,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "mixed",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 1847984128,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "7e394029ad0dc5af",
+          "prefill_state_hash": "d1f5c296a5985e9b",
+          "logits_hash": "228b3e2bacd47338",
+          "state_hash": "bdfb930bb554ad7a"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.12657,
+          "decode_seconds": 0.035967,
+          "first_token_seconds": 0.127274,
+          "total_seconds": 0.162948
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 9.2e-05,
+              "prefill_seconds": 0.12584,
+              "decode_seconds": 0.035967,
+              "first_token_seconds": 0.126538,
+              "total_seconds": 0.16244,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 207,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.223630542,
+              "allocated_bytes": 1849540608,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 1847817992,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000111,
+              "prefill_seconds": 0.126871,
+              "decode_seconds": 0.038292,
+              "first_token_seconds": 0.127627,
+              "total_seconds": 0.165842,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 345,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.344449209,
+              "allocated_bytes": 1849540608,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 1847817992,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000109,
+              "prefill_seconds": 0.12657,
+              "decode_seconds": 0.035738,
+              "first_token_seconds": 0.127274,
+              "total_seconds": 0.162948,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 483,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.461413624,
+              "allocated_bytes": 1849540608,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 1847817992,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864
+            }
+          }
+        ]
+      },
+      "tokens_and_text_match": true,
+      "speedup": {
+        "prefill_seconds": 0.8917041953069449,
+        "decode_seconds": 1.2015736647482413,
+        "first_token_seconds": 0.8926253594606911,
+        "total_seconds": 0.9688550948768933
+      }
+    },
+    "2b-short": {
+      "cpu": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 20391,
+          "load_seconds": 2.323468,
+          "threads": 4,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5757219984,
+            "estimated_reclaimable_bytes_at_start": 19109199872,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 0,
+            "max_budget_bytes": 0,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 0,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "cpu",
+            "device": "",
+            "precision": "fp32",
+            "residency_sets": false,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 0,
+            "recommended_working_set_bytes": 0,
+            "note": ""
+          }
+        },
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "8a78afc05fcbf393",
+          "prefill_state_hash": "184314ebc416b51f",
+          "logits_hash": "1c3c51927302b551",
+          "state_hash": "e6c8b2634a77e2eb"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.436039,
+          "decode_seconds": 0.108385,
+          "first_token_seconds": 0.436827,
+          "total_seconds": 0.545138
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000102,
+              "prefill_seconds": 0.437841,
+              "decode_seconds": 0.109154,
+              "first_token_seconds": 0.438596,
+              "total_seconds": 0.547679,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000107,
+              "prefill_seconds": 0.431271,
+              "decode_seconds": 0.106796,
+              "first_token_seconds": 0.432072,
+              "total_seconds": 0.538794,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000109,
+              "prefill_seconds": 0.436039,
+              "decode_seconds": 0.108385,
+              "first_token_seconds": 0.436827,
+              "total_seconds": 0.545138,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          }
+        ]
+      },
+      "metal": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 20440,
+          "load_seconds": 2.200728,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5756682240,
+            "estimated_reclaimable_bytes_at_start": 18831638528,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 5824328848,
+            "max_budget_bytes": 5824328848,
+            "cached_weight_bytes": 5756682240,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 138,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "mixed",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 5824184320,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "7a94315d7510a09e",
+          "prefill_state_hash": "bac83ada7ed4527f",
+          "logits_hash": "ca5bd0172ff6b12d",
+          "state_hash": "466d2e9aab0489b7"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.44418,
+          "decode_seconds": 0.10008,
+          "first_token_seconds": 0.444891,
+          "total_seconds": 0.543326
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.00011,
+              "prefill_seconds": 0.444213,
+              "decode_seconds": 0.100262,
+              "first_token_seconds": 0.44492,
+              "total_seconds": 0.545115,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 387,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.851794832,
+              "allocated_bytes": 5826166784,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000107,
+              "prefill_seconds": 0.441786,
+              "decode_seconds": 0.10008,
+              "first_token_seconds": 0.442498,
+              "total_seconds": 0.542512,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 645,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.297863667,
+              "allocated_bytes": 5826166784,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000115,
+              "prefill_seconds": 0.44418,
+              "decode_seconds": 0.098501,
+              "first_token_seconds": 0.444891,
+              "total_seconds": 0.543326,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 903,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.746187667,
+              "allocated_bytes": 5826166784,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864
+            }
+          }
+        ]
+      },
+      "tokens_and_text_match": true,
+      "speedup": {
+        "prefill_seconds": 0.9816718447476248,
+        "decode_seconds": 1.0829836131095123,
+        "first_token_seconds": 0.981874211885608,
+        "total_seconds": 1.003335014337617
+      }
+    },
+    "2b-long": {
+      "cpu": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 20480,
+          "load_seconds": 0.754271,
+          "threads": 4,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5757219984,
+            "estimated_reclaimable_bytes_at_start": 18694078464,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 0,
+            "max_budget_bytes": 0,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 0,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "cpu",
+            "device": "",
+            "precision": "fp32",
+            "residency_sets": false,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 0,
+            "recommended_working_set_bytes": 0,
+            "note": ""
+          }
+        },
+        "text": "Translation quality depends on context, terminology, and the structure of the original document. A useful system should preserve numbers, dates, and product names while producing natural sentences. This benchmark compares the same full precision model on the CPU and the GPU. It measures the delay before the first output token and the time spent generating subsequent tokens, while checking the translated text and the numerical differences between the two implementations.",
+        "direction": "en-ja",
+        "max_tokens": 12,
+        "usage": {
+          "prompt_tokens": 81,
+          "completion_tokens": 12,
+          "total_tokens": 93
+        },
+        "token_ids": [
+          56096,
+          52075,
+          50116,
+          86018,
+          50101,
+          57562,
+          56429,
+          77793,
+          50100,
+          51625,
+          66322,
+          50546
+        ],
+        "translation": "翻訳品質は、文脈、用語、および原文の構造に依存する。",
+        "finish_reason": "length",
+        "verification": {
+          "prefill_logits_hash": "2dadeada06f57748",
+          "prefill_state_hash": "7741c65a001f8ad1",
+          "logits_hash": "e5bd71a85a806aa4",
+          "state_hash": "db7340ffffd2b184"
+        },
+        "seconds_median": {
+          "prefill_seconds": 1.524409,
+          "decode_seconds": 1.200984,
+          "first_token_seconds": 1.525611,
+          "total_seconds": 2.731396
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000499,
+              "prefill_seconds": 1.524409,
+              "decode_seconds": 1.197295,
+              "first_token_seconds": 1.525611,
+              "total_seconds": 2.722832,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000489,
+              "prefill_seconds": 1.521545,
+              "decode_seconds": 1.208716,
+              "first_token_seconds": 1.522757,
+              "total_seconds": 2.731396,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.00048,
+              "prefill_seconds": 1.541622,
+              "decode_seconds": 1.200984,
+              "first_token_seconds": 1.542823,
+              "total_seconds": 2.743734,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          }
+        ]
+      },
+      "metal": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 20545,
+          "load_seconds": 1.108244,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5756682240,
+            "estimated_reclaimable_bytes_at_start": 18493325312,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 5824328848,
+            "max_budget_bytes": 5824328848,
+            "cached_weight_bytes": 5756682240,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 138,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "mixed",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 5824184320,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "text": "Translation quality depends on context, terminology, and the structure of the original document. A useful system should preserve numbers, dates, and product names while producing natural sentences. This benchmark compares the same full precision model on the CPU and the GPU. It measures the delay before the first output token and the time spent generating subsequent tokens, while checking the translated text and the numerical differences between the two implementations.",
+        "direction": "en-ja",
+        "max_tokens": 12,
+        "usage": {
+          "prompt_tokens": 81,
+          "completion_tokens": 12,
+          "total_tokens": 93
+        },
+        "token_ids": [
+          56096,
+          52075,
+          50116,
+          86018,
+          50101,
+          57562,
+          56429,
+          77793,
+          50100,
+          51625,
+          66322,
+          50546
+        ],
+        "translation": "翻訳品質は、文脈、用語、および原文の構造に依存する。",
+        "finish_reason": "length",
+        "verification": {
+          "prefill_logits_hash": "81dd72056e736464",
+          "prefill_state_hash": "4afbbca76007dad5",
+          "logits_hash": "dd689dee1a9b3a37",
+          "state_hash": "940ac16cd2264576"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.772023,
+          "decode_seconds": 1.119064,
+          "first_token_seconds": 0.773106,
+          "total_seconds": 1.895324
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000468,
+              "prefill_seconds": 0.778431,
+              "decode_seconds": 1.115871,
+              "first_token_seconds": 0.779519,
+              "total_seconds": 1.895324,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1548,
+              "cache_hit_bytes": 62474158080,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 1677,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.722718289,
+              "allocated_bytes": 5831770112,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000481,
+              "prefill_seconds": 0.772023,
+              "decode_seconds": 1.119064,
+              "first_token_seconds": 0.773106,
+              "total_seconds": 1.892105,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1548,
+              "cache_hit_bytes": 62474158080,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 3225,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 3.028981328,
+              "allocated_bytes": 5831770112,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000605,
+              "prefill_seconds": 0.771887,
+              "decode_seconds": 1.137194,
+              "first_token_seconds": 0.773091,
+              "total_seconds": 1.910221,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1548,
+              "cache_hit_bytes": 62474158080,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 4773,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 4.367069537,
+              "allocated_bytes": 5831770112,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864
+            }
+          }
+        ]
+      },
+      "tokens_and_text_match": true,
+      "speedup": {
+        "prefill_seconds": 1.974564229304049,
+        "decode_seconds": 1.0732040348005119,
+        "first_token_seconds": 1.9733529425460417,
+        "total_seconds": 1.4411235229438344
+      }
+    },
+    "8b-stream": {
+      "cpu": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-8b",
+          "repository": "pfnet/plamo-3-translate-8b",
+          "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+          "worker_pid": 20600,
+          "load_seconds": 0.123003,
+          "threads": 4,
+          "memory": {
+            "mode": "stream",
+            "weight_bytes": 17063540224,
+            "preloaded_weight_bytes": 0,
+            "estimated_reclaimable_bytes_at_start": 17261805568,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 0,
+            "max_budget_bytes": 0,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 0,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "cpu",
+            "device": "",
+            "precision": "fp32",
+            "residency_sets": false,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 0,
+            "recommended_working_set_bytes": 0,
+            "note": ""
+          }
+        },
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "c9e54cc1de2684c9",
+          "prefill_state_hash": "b370bb3890a4400e",
+          "logits_hash": "68d5318fc63d9103",
+          "state_hash": "a44087018da49b9d"
+        },
+        "seconds_median": {
+          "prefill_seconds": 6.460022,
+          "decode_seconds": 5.287893,
+          "first_token_seconds": 6.460771,
+          "total_seconds": 11.749888
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000108,
+              "prefill_seconds": 6.460022,
+              "decode_seconds": 5.304163,
+              "first_token_seconds": 6.460771,
+              "total_seconds": 11.764866,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "stream",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000105,
+              "prefill_seconds": 6.403505,
+              "decode_seconds": 5.280025,
+              "first_token_seconds": 6.40428,
+              "total_seconds": 11.684233,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "stream",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.00011,
+              "prefill_seconds": 6.461307,
+              "decode_seconds": 5.287893,
+              "first_token_seconds": 6.462064,
+              "total_seconds": 11.749888,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "stream",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          }
+        ]
+      },
+      "metal": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-8b",
+          "repository": "pfnet/plamo-3-translate-8b",
+          "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+          "worker_pid": 20772,
+          "load_seconds": 0.103184,
+          "threads": 1,
+          "memory": {
+            "mode": "stream",
+            "weight_bytes": 17063540224,
+            "preloaded_weight_bytes": 0,
+            "estimated_reclaimable_bytes_at_start": 15950217216,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 67108864,
+            "max_budget_bytes": 13798244352,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "mixed",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 67502080,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "8ccc9b8a9108190a",
+          "prefill_state_hash": "4a2d3f211d0ca42d",
+          "logits_hash": "d43d5c69eb8b3bec",
+          "state_hash": "57a7074c512f0831"
+        },
+        "seconds_median": {
+          "prefill_seconds": 4.838907,
+          "decode_seconds": 3.075421,
+          "first_token_seconds": 4.839627,
+          "total_seconds": 7.914983
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.00051,
+              "prefill_seconds": 4.805048,
+              "decode_seconds": 3.029648,
+              "first_token_seconds": 4.806175,
+              "total_seconds": 7.835756,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 540
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 810,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 4.630323543,
+              "allocated_bytes": 69566464,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "stream",
+              "budget_bytes": 67108864,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000108,
+              "prefill_seconds": 4.838907,
+              "decode_seconds": 3.075421,
+              "first_token_seconds": 4.839627,
+              "total_seconds": 7.914983,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 540
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 1350,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 7.028838792,
+              "allocated_bytes": 69566464,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "stream",
+              "budget_bytes": 67108864,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.00011,
+              "prefill_seconds": 4.89643,
+              "decode_seconds": 3.255302,
+              "first_token_seconds": 4.897159,
+              "total_seconds": 8.152396,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 540
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 1890,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 9.445826375,
+              "allocated_bytes": 69566464,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "stream",
+              "budget_bytes": 67108864,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 67108864
+            }
+          }
+        ]
+      },
+      "tokens_and_text_match": true,
+      "speedup": {
+        "prefill_seconds": 1.335016771349398,
+        "decode_seconds": 1.7194045953383295,
+        "first_token_seconds": 1.334972922500019,
+        "total_seconds": 1.4845120956039957
+      }
+    },
+    "8b-auto": {
+      "cpu": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-8b",
+          "repository": "pfnet/plamo-3-translate-8b",
+          "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+          "worker_pid": 20894,
+          "load_seconds": 0.085872,
+          "threads": 4,
+          "memory": {
+            "mode": "adaptive",
+            "weight_bytes": 17063540224,
+            "preloaded_weight_bytes": 0,
+            "estimated_reclaimable_bytes_at_start": 16810475520,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 14662811648,
+            "max_budget_bytes": 14662811648,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 1,
+            "note": ""
+          },
+          "compute": {
+            "backend": "cpu",
+            "device": "",
+            "precision": "fp32",
+            "residency_sets": false,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 0,
+            "recommended_working_set_bytes": 0,
+            "note": ""
+          }
+        },
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "c9e54cc1de2684c9",
+          "prefill_state_hash": "b370bb3890a4400e",
+          "logits_hash": "68d5318fc63d9103",
+          "state_hash": "a44087018da49b9d"
+        },
+        "seconds_median": {
+          "prefill_seconds": 3.1377,
+          "decode_seconds": 3.989346,
+          "first_token_seconds": 3.139771,
+          "total_seconds": 5.932529
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.010571,
+              "prefill_seconds": 5.962609,
+              "decode_seconds": 5.178512,
+              "first_token_seconds": 5.973854,
+              "total_seconds": 11.152278,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 3187671040,
+              "read_calls": 380,
+              "cache_hits": 490,
+              "cache_hit_bytes": 29175578624,
+              "cache_misses": 50
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "adaptive",
+              "budget_bytes": 14662811648,
+              "cached_weight_bytes": 14587789312,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.001685,
+              "prefill_seconds": 1.940904,
+              "decode_seconds": 3.989346,
+              "first_token_seconds": 1.943343,
+              "total_seconds": 5.932529,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 3187671040,
+              "read_calls": 380,
+              "cache_hits": 490,
+              "cache_hit_bytes": 29175578624,
+              "cache_misses": 50
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "adaptive",
+              "budget_bytes": 14662811648,
+              "cached_weight_bytes": 14587789312,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.001415,
+              "prefill_seconds": 3.1377,
+              "decode_seconds": 2.366549,
+              "first_token_seconds": 3.139771,
+              "total_seconds": 5.506242,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 3187671040,
+              "read_calls": 380,
+              "cache_hits": 490,
+              "cache_hit_bytes": 29175578624,
+              "cache_misses": 50
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "adaptive",
+              "budget_bytes": 14662811648,
+              "cached_weight_bytes": 14587789312,
+              "staging_bytes": 67108864
+            }
+          }
+        ]
+      },
+      "metal": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-8b",
+          "repository": "pfnet/plamo-3-translate-8b",
+          "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+          "worker_pid": 21012,
+          "load_seconds": 0.095917,
+          "threads": 1,
+          "memory": {
+            "mode": "adaptive",
+            "weight_bytes": 17063540224,
+            "preloaded_weight_bytes": 0,
+            "estimated_reclaimable_bytes_at_start": 19176456192,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 17021124608,
+            "max_budget_bytes": 17021124608,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "mixed",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 67502080,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "8ccc9b8a9108190a",
+          "prefill_state_hash": "4a2d3f211d0ca42d",
+          "logits_hash": "d43d5c69eb8b3bec",
+          "state_hash": "57a7074c512f0831"
+        },
+        "seconds_median": {
+          "prefill_seconds": 1.384774,
+          "decode_seconds": 0.26783,
+          "first_token_seconds": 1.385506,
+          "total_seconds": 1.657488
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000489,
+              "prefill_seconds": 1.417259,
+              "decode_seconds": 0.264069,
+              "first_token_seconds": 1.418401,
+              "total_seconds": 1.682398,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 540,
+              "cache_hit_bytes": 32363249664,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 810,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 4.391025625,
+              "allocated_bytes": 16251191296,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "adaptive",
+              "budget_bytes": 17021124608,
+              "cached_weight_bytes": 16181624832,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.00011,
+              "prefill_seconds": 1.384774,
+              "decode_seconds": 0.26783,
+              "first_token_seconds": 1.385506,
+              "total_seconds": 1.653269,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 540,
+              "cache_hit_bytes": 32363249664,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 1350,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 5.863949625,
+              "allocated_bytes": 16251191296,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "adaptive",
+              "budget_bytes": 16925851648,
+              "cached_weight_bytes": 16181624832,
+              "staging_bytes": 67108864
+            }
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.00011,
+              "prefill_seconds": 1.381971,
+              "decode_seconds": 0.274862,
+              "first_token_seconds": 1.382711,
+              "total_seconds": 1.657488,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 540,
+              "cache_hit_bytes": 32363249664,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 1890,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 7.340150707,
+              "allocated_bytes": 16251191296,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "adaptive",
+              "budget_bytes": 16839983104,
+              "cached_weight_bytes": 16181624832,
+              "staging_bytes": 67108864
+            }
+          }
+        ]
+      },
+      "tokens_and_text_match": true,
+      "speedup": {
+        "prefill_seconds": 2.26585710014775,
+        "decode_seconds": 14.895067766867042,
+        "first_token_seconds": 2.2661547477961124,
+        "total_seconds": 3.5792289295608772
+      }
+    }
+  },
+  "numerical_comparisons": {
+    "2b-short": {
+      "timestamp_utc": "2026-11-09T10:55:20.384236+00:00",
+      "model": "plamo-3-translate-2b",
+      "memory": "auto",
+      "text": "Hello.",
+      "direction": "en-ja",
+      "runs": {
+        "cpu": [
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 5824331776,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "open",
+            "seconds": 0.079338,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 223,
+            "max_rss_bytes": 15417344,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824331776,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "prefill_21",
+            "seconds": 2.271438,
+            "token": 51871,
+            "logits_hash": "8a78afc05fcbf393",
+            "state_hash": "184314ebc416b51f",
+            "major_faults": 318,
+            "max_rss_bytes": 5231050752,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824331776,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "decode",
+            "seconds": 0.119465,
+            "token": 16,
+            "logits_hash": "1c3c51927302b551",
+            "state_hash": "e6c8b2634a77e2eb",
+            "major_faults": 319,
+            "max_rss_bytes": 5231050752,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal-fp32": [
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 67502080,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 0.071491,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 56,
+            "max_rss_bytes": 24674304,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 129,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 5275664384,
+            "residency_sets": true,
+            "phase": "prefill_21",
+            "seconds": 1.889698,
+            "token": 51871,
+            "logits_hash": "7a94315d7510a09e",
+            "state_hash": "bac83ada7ed4527f",
+            "major_faults": 59,
+            "max_rss_bytes": 5242880000,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 258,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 5275664384,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.119138,
+            "token": 16,
+            "logits_hash": "ca5bd0172ff6b12d",
+            "state_hash": "466d2e9aab0489b7",
+            "major_faults": 59,
+            "max_rss_bytes": 5242880000,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal": [
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 67502080,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 0.062495,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 4,
+            "max_rss_bytes": 24674304,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 129,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 5275664384,
+            "residency_sets": true,
+            "phase": "prefill_21",
+            "seconds": 1.841061,
+            "token": 51871,
+            "logits_hash": "7a94315d7510a09e",
+            "state_hash": "bac83ada7ed4527f",
+            "major_faults": 4,
+            "max_rss_bytes": 5242863616,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 258,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 5275664384,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.121782,
+            "token": 16,
+            "logits_hash": "ca5bd0172ff6b12d",
+            "state_hash": "466d2e9aab0489b7",
+            "major_faults": 4,
+            "max_rss_bytes": 5242863616,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ]
+      },
+      "numerical_errors": {
+        "metal-fp32": {
+          "prefill_21-logits.bin": {
+            "values": 107520,
+            "relative_l2": 8.094884028416775e-07,
+            "max_absolute_error": 1.2159347534179688e-05,
+            "rms_error": 2.1800770448197693e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "prefill_21-state.bin": {
+            "values": 2560,
+            "relative_l2": 5.745255337665186e-07,
+            "max_absolute_error": 7.62939453125e-06,
+            "rms_error": 1.352648699217402e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.19214079625851e-06,
+            "max_absolute_error": 1.811981201171875e-05,
+            "rms_error": 4.048939872193711e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-state.bin": {
+            "values": 2560,
+            "relative_l2": 1.1396761295891434e-06,
+            "max_absolute_error": 4.57763671875e-05,
+            "rms_error": 1.638126813500982e-06,
+            "relative_l2_limit": 0.0001
+          }
+        },
+        "metal": {
+          "prefill_21-logits.bin": {
+            "values": 107520,
+            "relative_l2": 8.094884028416775e-07,
+            "max_absolute_error": 1.2159347534179688e-05,
+            "rms_error": 2.1800770448197693e-06,
+            "relative_l2_limit": 0.005
+          },
+          "prefill_21-state.bin": {
+            "values": 2560,
+            "relative_l2": 5.745255337665186e-07,
+            "max_absolute_error": 7.62939453125e-06,
+            "rms_error": 1.352648699217402e-06,
+            "relative_l2_limit": 0.005
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.19214079625851e-06,
+            "max_absolute_error": 1.811981201171875e-05,
+            "rms_error": 4.048939872193711e-06,
+            "relative_l2_limit": 0.005
+          },
+          "decode-state.bin": {
+            "values": 2560,
+            "relative_l2": 1.1396761295891434e-06,
+            "max_absolute_error": 4.57763671875e-05,
+            "rms_error": 1.638126813500982e-06,
+            "relative_l2_limit": 0.005
+          }
+        }
+      },
+      "limits": "One prompt and one subsequent decode; numerical checks are not a broad translation-quality evaluation."
+    },
+    "2b-long": {
+      "timestamp_utc": "2026-11-09T10:55:28.642739+00:00",
+      "model": "plamo-3-translate-2b",
+      "memory": "auto",
+      "text": "Translation quality depends on context, terminology, and the structure of the original document. A useful system should preserve numbers, dates, and product names while producing natural sentences. This benchmark compares the same full precision model on the CPU and the GPU. It measures the delay before the first output token and the time spent generating subsequent tokens, while checking the translated text and the numerical differences between the two implementations.",
+      "direction": "en-ja",
+      "runs": {
+        "cpu": [
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 5824331776,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "open",
+            "seconds": 0.048516,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 4,
+            "max_rss_bytes": 15400960,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824331776,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "prefill_81",
+            "seconds": 2.464157,
+            "token": 56096,
+            "logits_hash": "2dadeada06f57748",
+            "state_hash": "7741c65a001f8ad1",
+            "major_faults": 73,
+            "max_rss_bytes": 5249449984,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824331776,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "decode",
+            "seconds": 0.109818,
+            "token": 52075,
+            "logits_hash": "38b68c17e220fa22",
+            "state_hash": "1072bc014b6b2e93",
+            "major_faults": 74,
+            "max_rss_bytes": 5249449984,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal-fp32": [
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 67502080,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 0.065278,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 4,
+            "max_rss_bytes": 24674304,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 129,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 5281267712,
+            "residency_sets": true,
+            "phase": "prefill_81",
+            "seconds": 2.653573,
+            "token": 56096,
+            "logits_hash": "ce54e413d0519262",
+            "state_hash": "a3dcb7413e745c24",
+            "major_faults": 4,
+            "max_rss_bytes": 5267062784,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 258,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 5281267712,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.118776,
+            "token": 52075,
+            "logits_hash": "c6f123d3c1e2ddd4",
+            "state_hash": "912af6a7ee8149a7",
+            "major_faults": 4,
+            "max_rss_bytes": 5267062784,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal": [
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 67502080,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 0.064416,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 4,
+            "max_rss_bytes": 24674304,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 129,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 5281267712,
+            "residency_sets": true,
+            "phase": "prefill_81",
+            "seconds": 2.289355,
+            "token": 56096,
+            "logits_hash": "81dd72056e736464",
+            "state_hash": "4afbbca76007dad5",
+            "major_faults": 4,
+            "max_rss_bytes": 5267062784,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 258,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5206179840,
+            "cache_budget_bytes": 5824328848,
+            "gpu_allocated_bytes": 5281267712,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.11815,
+            "token": 52075,
+            "logits_hash": "bfbb6b2d0e3ec1e5",
+            "state_hash": "a4fe196a8718f784",
+            "major_faults": 4,
+            "max_rss_bytes": 5267062784,
+            "staged_bytes": 5206179840,
+            "read_calls": 666,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ]
+      },
+      "numerical_errors": {
+        "metal-fp32": {
+          "prefill_81-logits.bin": {
+            "values": 107520,
+            "relative_l2": 2.118048880249561e-06,
+            "max_absolute_error": 3.814697265625e-05,
+            "rms_error": 5.5339126340985594e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "prefill_81-state.bin": {
+            "values": 2560,
+            "relative_l2": 1.9649504603009653e-06,
+            "max_absolute_error": 0.0001068115234375,
+            "rms_error": 3.89749055272904e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.2184330702581307e-06,
+            "max_absolute_error": 2.09808349609375e-05,
+            "rms_error": 3.374105429573223e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-state.bin": {
+            "values": 2560,
+            "relative_l2": 1.1089811787117618e-06,
+            "max_absolute_error": 6.103515625e-05,
+            "rms_error": 2.2831635604265594e-06,
+            "relative_l2_limit": 0.0001
+          }
+        },
+        "metal": {
+          "prefill_81-logits.bin": {
+            "values": 107520,
+            "relative_l2": 0.00027231644767753506,
+            "max_absolute_error": 0.0035037994384765625,
+            "rms_error": 0.0007114922815652818,
+            "relative_l2_limit": 0.005
+          },
+          "prefill_81-state.bin": {
+            "values": 2560,
+            "relative_l2": 0.00023230777331788305,
+            "max_absolute_error": 0.00484466552734375,
+            "rms_error": 0.0004607838060677055,
+            "relative_l2_limit": 0.005
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 0.00014948670415199225,
+            "max_absolute_error": 0.002964019775390625,
+            "rms_error": 0.0004139611049964254,
+            "relative_l2_limit": 0.005
+          },
+          "decode-state.bin": {
+            "values": 2560,
+            "relative_l2": 0.00016484881822306208,
+            "max_absolute_error": 0.012359619140625,
+            "rms_error": 0.0003393897227214369,
+            "relative_l2_limit": 0.005
+          }
+        }
+      },
+      "limits": "One prompt and one subsequent decode; numerical checks are not a broad translation-quality evaluation."
+    },
+    "8b-short": {
+      "timestamp_utc": "2026-11-09T10:56:06.190048+00:00",
+      "model": "plamo-3-translate-8b",
+      "memory": "auto",
+      "text": "Hello.",
+      "direction": "en-ja",
+      "runs": {
+        "cpu": [
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 14110703616,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "open",
+            "seconds": 0.086362,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 7,
+            "max_rss_bytes": 15450112,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 14042529792,
+            "cache_budget_bytes": 14110703616,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "prefill_21",
+            "seconds": 9.51886,
+            "token": 51871,
+            "logits_hash": "c9e54cc1de2684c9",
+            "state_hash": "b370bb3890a4400e",
+            "major_faults": 97,
+            "max_rss_bytes": 6430900224,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 14042529792,
+            "cache_budget_bytes": 14110703616,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "decode",
+            "seconds": 4.66673,
+            "token": 16,
+            "logits_hash": "68d5318fc63d9103",
+            "state_hash": "a44087018da49b9d",
+            "major_faults": 207,
+            "max_rss_bytes": 11359322112,
+            "staged_bytes": 18320719872,
+            "read_calls": 2184,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal-fp32": [
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 16794681344,
+            "gpu_allocated_bytes": 67502080,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 0.082905,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 276,
+            "max_rss_bytes": 24788992,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 270,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 16794681344,
+            "gpu_allocated_bytes": 16251191296,
+            "residency_sets": true,
+            "phase": "prefill_21",
+            "seconds": 10.135461,
+            "token": 51871,
+            "logits_hash": "8ccc9b8a9108190a",
+            "state_hash": "4a2d3f211d0ca42d",
+            "major_faults": 394,
+            "max_rss_bytes": 12719538176,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 540,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 16794681344,
+            "gpu_allocated_bytes": 16251191296,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.309736,
+            "token": 16,
+            "logits_hash": "d43d5c69eb8b3bec",
+            "state_hash": "57a7074c512f0831",
+            "major_faults": 519,
+            "max_rss_bytes": 12724256768,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal": [
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 16854646784,
+            "gpu_allocated_bytes": 67502080,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 0.147859,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 1507,
+            "max_rss_bytes": 24772608,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 270,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 16854646784,
+            "gpu_allocated_bytes": 16251191296,
+            "residency_sets": true,
+            "phase": "prefill_21",
+            "seconds": 10.067298,
+            "token": 51871,
+            "logits_hash": "8ccc9b8a9108190a",
+            "state_hash": "4a2d3f211d0ca42d",
+            "major_faults": 1614,
+            "max_rss_bytes": 13236109312,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 540,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 16854646784,
+            "gpu_allocated_bytes": 16251191296,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.327427,
+            "token": 16,
+            "logits_hash": "d43d5c69eb8b3bec",
+            "state_hash": "57a7074c512f0831",
+            "major_faults": 1739,
+            "max_rss_bytes": 13236109312,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ]
+      },
+      "numerical_errors": {
+        "metal-fp32": {
+          "prefill_21-logits.bin": {
+            "values": 107520,
+            "relative_l2": 8.629198252041067e-07,
+            "max_absolute_error": 2.288818359375e-05,
+            "rms_error": 4.046111286053642e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "prefill_21-state.bin": {
+            "values": 4096,
+            "relative_l2": 1.1942704203385743e-06,
+            "max_absolute_error": 1.52587890625e-05,
+            "rms_error": 1.2548252863288771e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.464696111357934e-06,
+            "max_absolute_error": 2.6702880859375e-05,
+            "rms_error": 5.163905917656208e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-state.bin": {
+            "values": 4096,
+            "relative_l2": 1.5996269232910844e-06,
+            "max_absolute_error": 5.364418029785156e-06,
+            "rms_error": 1.064846826933291e-06,
+            "relative_l2_limit": 0.0001
+          }
+        },
+        "metal": {
+          "prefill_21-logits.bin": {
+            "values": 107520,
+            "relative_l2": 8.629198252041067e-07,
+            "max_absolute_error": 2.288818359375e-05,
+            "rms_error": 4.046111286053642e-06,
+            "relative_l2_limit": 0.005
+          },
+          "prefill_21-state.bin": {
+            "values": 4096,
+            "relative_l2": 1.1942704203385743e-06,
+            "max_absolute_error": 1.52587890625e-05,
+            "rms_error": 1.2548252863288771e-06,
+            "relative_l2_limit": 0.005
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.464696111357934e-06,
+            "max_absolute_error": 2.6702880859375e-05,
+            "rms_error": 5.163905917656208e-06,
+            "relative_l2_limit": 0.005
+          },
+          "decode-state.bin": {
+            "values": 4096,
+            "relative_l2": 1.5996269232910844e-06,
+            "max_absolute_error": 5.364418029785156e-06,
+            "rms_error": 1.064846826933291e-06,
+            "relative_l2_limit": 0.005
+          }
+        }
+      },
+      "limits": "One prompt and one subsequent decode; numerical checks are not a broad translation-quality evaluation."
+    },
+    "8b-long": {
+      "timestamp_utc": "2026-11-09T10:56:50.562355+00:00",
+      "model": "plamo-3-translate-8b",
+      "memory": "auto",
+      "text": "Translation quality depends on context, terminology, and the structure of the original document. A useful system should preserve numbers, dates, and product names while producing natural sentences. This benchmark compares the same full precision model on the CPU and the GPU. It measures the delay before the first output token and the time spent generating subsequent tokens, while checking the translated text and the numerical differences between the two implementations.",
+      "direction": "en-ja",
+      "runs": {
+        "cpu": [
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 16822501376,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "open",
+            "seconds": 0.056114,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 230,
+            "max_rss_bytes": 15450112,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 16822501376,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "prefill_81",
+            "seconds": 13.505037,
+            "token": 56096,
+            "logits_hash": "b5a013aa63eb306c",
+            "state_hash": "e69d5b96a0826b58",
+            "major_faults": 387,
+            "max_rss_bytes": 8668479488,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 16822501376,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "decode",
+            "seconds": 5.511449,
+            "token": 52075,
+            "logits_hash": "367007df99485343",
+            "state_hash": "fcaeccc5a5a5aefe",
+            "major_faults": 506,
+            "max_rss_bytes": 11135631360,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal-fp32": [
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 17130649088,
+            "gpu_allocated_bytes": 67502080,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 0.134709,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 1184,
+            "max_rss_bytes": 24772608,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 270,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 17130649088,
+            "gpu_allocated_bytes": 16257089536,
+            "residency_sets": true,
+            "phase": "prefill_81",
+            "seconds": 11.9607,
+            "token": 56096,
+            "logits_hash": "cbd2007dca14e2b4",
+            "state_hash": "aff79dbdc830776f",
+            "major_faults": 1385,
+            "max_rss_bytes": 14301134848,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 540,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 17130649088,
+            "gpu_allocated_bytes": 16257089536,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.345164,
+            "token": 52075,
+            "logits_hash": "77010bd9c6101cb2",
+            "state_hash": "117b23d2b2779037",
+            "major_faults": 1506,
+            "max_rss_bytes": 14315814912,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal": [
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 17130649088,
+            "gpu_allocated_bytes": 67502080,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 0.135676,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 661,
+            "max_rss_bytes": 24788992,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 270,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 17130649088,
+            "gpu_allocated_bytes": 16257089536,
+            "residency_sets": true,
+            "phase": "prefill_81",
+            "seconds": 11.23809,
+            "token": 56096,
+            "logits_hash": "df32b76dc28894ce",
+            "state_hash": "9d8207612dc1f001",
+            "major_faults": 881,
+            "max_rss_bytes": 13378371584,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "backend": "metal",
+            "precision": "mixed",
+            "gpu_dispatches": 540,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 17130649088,
+            "gpu_allocated_bytes": 16257089536,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.361884,
+            "token": 52075,
+            "logits_hash": "8122477078e06186",
+            "state_hash": "c855eee94b94d033",
+            "major_faults": 1000,
+            "max_rss_bytes": 13388021760,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ]
+      },
+      "numerical_errors": {
+        "metal-fp32": {
+          "prefill_81-logits.bin": {
+            "values": 107520,
+            "relative_l2": 2.295097782945006e-06,
+            "max_absolute_error": 4.601478576660156e-05,
+            "rms_error": 8.201975247675694e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "prefill_81-state.bin": {
+            "values": 4096,
+            "relative_l2": 2.799828419320972e-06,
+            "max_absolute_error": 4.57763671875e-05,
+            "rms_error": 2.804651414416114e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.2281756730983807e-06,
+            "max_absolute_error": 3.814697265625e-05,
+            "rms_error": 4.505356483604595e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-state.bin": {
+            "values": 4096,
+            "relative_l2": 1.4457247309075586e-06,
+            "max_absolute_error": 2.6702880859375e-05,
+            "rms_error": 1.6184637852983852e-06,
+            "relative_l2_limit": 0.0001
+          }
+        },
+        "metal": {
+          "prefill_81-logits.bin": {
+            "values": 107520,
+            "relative_l2": 0.00022187472493852923,
+            "max_absolute_error": 0.004638195037841797,
+            "rms_error": 0.0007929121868156478,
+            "relative_l2_limit": 0.005
+          },
+          "prefill_81-state.bin": {
+            "values": 4096,
+            "relative_l2": 0.00028291013009539646,
+            "max_absolute_error": 0.006282806396484375,
+            "rms_error": 0.00028339747216264607,
+            "relative_l2_limit": 0.005
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 7.487075841945149e-05,
+            "max_absolute_error": 0.0016260147094726562,
+            "rms_error": 0.0002746508209420044,
+            "relative_l2_limit": 0.005
+          },
+          "decode-state.bin": {
+            "values": 4096,
+            "relative_l2": 9.102844722458661e-05,
+            "max_absolute_error": 0.001148223876953125,
+            "rms_error": 0.00010190476936259791,
+            "relative_l2_limit": 0.005
+          }
+        }
+      },
+      "limits": "One prompt and one subsequent decode; numerical checks are not a broad translation-quality evaluation."
+    }
+  },
+  "complete_translation_checks": {
+    "en-ja": {
+      "cpu": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 21086,
+          "load_seconds": 2.20727,
+          "threads": 4,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5757219984,
+            "estimated_reclaimable_bytes_at_start": 19024543744,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 0,
+            "max_budget_bytes": 0,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 0,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "cpu",
+            "device": "",
+            "precision": "fp32",
+            "residency_sets": false,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 0,
+            "recommended_working_set_bytes": 0,
+            "note": ""
+          }
+        },
+        "text": "The meeting starts at 10 a.m. tomorrow.",
+        "direction": "en-ja",
+        "max_tokens": 64,
+        "usage": {
+          "prompt_tokens": 28,
+          "completion_tokens": 10,
+          "total_tokens": 38
+        },
+        "token_ids": [
+          52499,
+          50104,
+          51797,
+          50100,
+          52769,
+          49,
+          48,
+          50391,
+          54411,
+          50134
+        ],
+        "translation": "会議は明日の午前10時に始まります。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "70c0ef77048fa4be",
+          "prefill_state_hash": "eed2956bf3005bdd",
+          "logits_hash": "140dd8ef86fa0554",
+          "state_hash": "4979f378a9208aca"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.544202,
+          "decode_seconds": 1.073563,
+          "first_token_seconds": 0.545098,
+          "total_seconds": 1.618586
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.00018,
+              "prefill_seconds": 0.544202,
+              "decode_seconds": 1.073563,
+              "first_token_seconds": 0.545098,
+              "total_seconds": 1.618586,
+              "decode_steps": 10
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          }
+        ]
+      },
+      "metal": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 21138,
+          "load_seconds": 2.111181,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5756682240,
+            "estimated_reclaimable_bytes_at_start": 18574639104,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 5824328848,
+            "max_budget_bytes": 5824328848,
+            "cached_weight_bytes": 5756682240,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 138,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "mixed",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 5824184320,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "text": "The meeting starts at 10 a.m. tomorrow.",
+        "direction": "en-ja",
+        "max_tokens": 64,
+        "usage": {
+          "prompt_tokens": 28,
+          "completion_tokens": 10,
+          "total_tokens": 38
+        },
+        "token_ids": [
+          52499,
+          50104,
+          51797,
+          50100,
+          52769,
+          49,
+          48,
+          50391,
+          54411,
+          50134
+        ],
+        "translation": "会議は明日の午前10時に始まります。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "aa4f12d0c8d6faf3",
+          "prefill_state_hash": "e5b6b0593a891bfe",
+          "logits_hash": "17bac50b3b48ca04",
+          "state_hash": "5086139159010f11"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.572094,
+          "decode_seconds": 1.000041,
+          "first_token_seconds": 0.572951,
+          "total_seconds": 1.572918
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000236,
+              "prefill_seconds": 0.572094,
+              "decode_seconds": 1.000041,
+              "first_token_seconds": 0.572951,
+              "total_seconds": 1.572918,
+              "decode_steps": 10
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1419,
+              "cache_hit_bytes": 57267978240,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 1548,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.549869459,
+              "allocated_bytes": 5826805760,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864
+            }
+          }
+        ]
+      },
+      "tokens_and_text_match": true
+    },
+    "ja-en": {
+      "cpu": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 21179,
+          "load_seconds": 0.75809,
+          "threads": 4,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5757219984,
+            "estimated_reclaimable_bytes_at_start": 18480250880,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 0,
+            "max_budget_bytes": 0,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 0,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "cpu",
+            "device": "",
+            "precision": "fp32",
+            "residency_sets": false,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 0,
+            "recommended_working_set_bytes": 0,
+            "note": ""
+          }
+        },
+        "text": "この文書を保存してから、アプリケーションを閉じてください。",
+        "direction": "ja-en",
+        "max_tokens": 64,
+        "usage": {
+          "prompt_tokens": 27,
+          "completion_tokens": 9,
+          "total_tokens": 36
+        },
+        "token_ids": [
+          3549,
+          3494,
+          1098,
+          2742,
+          2189,
+          2308,
+          1087,
+          2216,
+          46
+        ],
+        "translation": "Please save this document and then close the application.",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "f44b2e1cda909494",
+          "prefill_state_hash": "f1c8e3e67504f22b",
+          "logits_hash": "86359cc6261b7501",
+          "state_hash": "46035233ecd561c5"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.588514,
+          "decode_seconds": 0.964273,
+          "first_token_seconds": 0.589414,
+          "total_seconds": 1.553614
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000224,
+              "prefill_seconds": 0.588514,
+              "decode_seconds": 0.964273,
+              "first_token_seconds": 0.589414,
+              "total_seconds": 1.553614,
+              "decode_steps": 9
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "cpu",
+              "device": "",
+              "precision": "fp32",
+              "residency_sets": false,
+              "gpu_dispatches": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.0,
+              "allocated_bytes": 0,
+              "recommended_working_set_bytes": 0,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 0,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 0
+            }
+          }
+        ]
+      },
+      "metal": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 21227,
+          "load_seconds": 1.101004,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5756682240,
+            "estimated_reclaimable_bytes_at_start": 18372673536,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 5824328848,
+            "max_budget_bytes": 5824328848,
+            "cached_weight_bytes": 5756682240,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 138,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "mixed",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 5824184320,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "text": "この文書を保存してから、アプリケーションを閉じてください。",
+        "direction": "ja-en",
+        "max_tokens": 64,
+        "usage": {
+          "prompt_tokens": 27,
+          "completion_tokens": 9,
+          "total_tokens": 36
+        },
+        "token_ids": [
+          3549,
+          3494,
+          1098,
+          2742,
+          2189,
+          2308,
+          1087,
+          2216,
+          46
+        ],
+        "translation": "Please save this document and then close the application.",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "88729191428c9594",
+          "prefill_state_hash": "b540ec60742dd6b3",
+          "logits_hash": "70c4aee665f2b8af",
+          "state_hash": "7929f4b728f7e560"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.560719,
+          "decode_seconds": 0.900388,
+          "first_token_seconds": 0.561533,
+          "total_seconds": 1.461856
+        },
+        "samples": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.00022,
+              "prefill_seconds": 0.560719,
+              "decode_seconds": 0.900388,
+              "first_token_seconds": 0.561533,
+              "total_seconds": 1.461856,
+              "decode_steps": 9
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1290,
+              "cache_hit_bytes": 52061798400,
+              "cache_misses": 0
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "mixed",
+              "residency_sets": true,
+              "gpu_dispatches": 1419,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.479265795,
+              "allocated_bytes": 5826723840,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            },
+            "memory": {
+              "mode": "resident",
+              "budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864
+            }
+          }
+        ]
+      },
+      "tokens_and_text_match": true
+    }
+  },
+  "gpu_validation": {
+    "api_validation": true,
+    "shader_validation": true,
+    "passed": true,
+    "log_tail": [
+      "Metal fp32: PASS (Apple M2; 15 dispatches; strides, tails, empty shapes, row windows; max abs error 9.15527e-05)",
+      "Metal mixed: PASS (Apple M2; 15 dispatches; strides, tails, empty shapes, row windows; max abs error 9.15527e-05)",
+      "Metal cache: PASS (shared BF16 residency, aliases, reuse, pressure shrink/grow, partial read recovery, restart)"
+    ]
+  },
+  "limits": [
+    "The 8B auto configurations have different startup budgets and retained weight amounts; the speedup includes memory residency and avoided I/O, not only GPU arithmetic.",
+    "The 81-input-token performance probe stops at 12 generated tokens and is not a full translation.",
+    "Numerical and translation checks cover selected probes, not broad translation-quality equivalence.",
+    "Short small-model requests can be faster on CPU; auto prefers Metal without per-request autotuning.",
+    "31B was built and tested with synthetic loading only; real 31B GPU inference was not measured."
+  ]
+}

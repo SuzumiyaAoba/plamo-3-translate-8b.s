@@ -15,7 +15,7 @@ def main():
  rng=random.Random(4)
  for _ in range(20):cases.append(''.join(rng.choice('abc日東京 \n😀')*rng.randrange(1,7) for _ in range(10)))
  for text in cases:
-  result=subprocess.run([str(ROOT/'build/plamo'),text],cwd=ROOT,check=True,capture_output=True,text=True)
+  result=subprocess.run([str(ROOT/'build/plamo-asm'),text],cwd=ROOT,check=True,capture_output=True,text=True)
   actual=list(map(int,result.stdout.split()));expected=t.encode(text,add_special_tokens=False)
   assert actual==expected,(text,actual,expected)
  print(f'official tokenizer vs standalone assembly CLI: PASS ({len(cases)} cases)')

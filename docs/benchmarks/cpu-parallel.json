@@ -1,0 +1,1234 @@
+{
+  "timestamp_utc": "2026-11-09T09:32:42.845734+00:00",
+  "environment": {
+    "machine": "arm64",
+    "macos": "26.5.1",
+    "physical_memory_bytes": 25769803776
+  },
+  "head_revision": "f105eae89a1ca525a70f453395ff1222288b726f",
+  "reference": "Working tree at task start, including already staged adaptive BF16 cache changes; saved executables used without rebuilding.",
+  "reference_worker_sha256": {
+    "8b": "078b767b17281d8260dde041c1c6561c2f8b714a0af64f9b15bd3889047be4fc",
+    "2b": "0bd27bbbbe6dc4cce216962adc33df63d6d2c9abea14af564b93bef40eef9fe4"
+  },
+  "method": "Serial requests in one worker per configuration, after tokenizer and cancelled-prefill checks. Three requests for Hello., two for longer input. Startup and cancelled requests excluded. No simultaneous performance workloads.",
+  "lm_studio_observation": {
+    "model_file": "plamo-3-translate-8b-Q4_K_M.gguf",
+    "quantization": "Q4_K_M",
+    "thread_count_in_log": 6,
+    "gpu_use_verified": false,
+    "head_to_head_latency_measured": false
+  },
+  "comparisons": {
+    "2b-resident": {
+      "before": {
+        "model": "plamo-3-translate-2b",
+        "threads": 1,
+        "memory_at_start": {
+          "mode": "resident",
+          "weight_bytes": 5757219984,
+          "preloaded_weight_bytes": 5757219984,
+          "estimated_reclaimable_bytes_at_start": 17535451136,
+          "physical_bytes": 25769803776,
+          "reserve_bytes": 2147483648,
+          "budget_bytes": 0,
+          "max_budget_bytes": 0,
+          "cached_weight_bytes": 0,
+          "staging_bytes": 0,
+          "cache_hits": 0,
+          "cache_hit_bytes": 0,
+          "cache_misses": 0,
+          "resizes": 0,
+          "note": ""
+        },
+        "text": "Hello.",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "8a78afc05fcbf393",
+          "prefill_state_hash": "184314ebc416b51f",
+          "logits_hash": "1c3c51927302b551",
+          "state_hash": "e6c8b2634a77e2eb"
+        },
+        "seconds_median": {
+          "prefill_seconds": 1.524213,
+          "decode_seconds": 0.236401,
+          "first_token_seconds": 1.525004,
+          "total_seconds": 1.758067
+        },
+        "runs": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000125,
+              "prefill_seconds": 1.532382,
+              "decode_seconds": 0.236401,
+              "first_token_seconds": 1.533124,
+              "total_seconds": 1.769456,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 5776031744
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000183,
+              "prefill_seconds": 1.524213,
+              "decode_seconds": 0.231183,
+              "first_token_seconds": 1.525004,
+              "total_seconds": 1.756122,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 5776261120
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000127,
+              "prefill_seconds": 1.519547,
+              "decode_seconds": 0.237861,
+              "first_token_seconds": 1.520271,
+              "total_seconds": 1.758067,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 5776261120
+          }
+        ]
+      },
+      "after": {
+        "model": "plamo-3-translate-2b",
+        "threads": 4,
+        "memory_at_start": {
+          "mode": "resident",
+          "weight_bytes": 5757219984,
+          "preloaded_weight_bytes": 5757219984,
+          "estimated_reclaimable_bytes_at_start": 17380016128,
+          "physical_bytes": 25769803776,
+          "reserve_bytes": 2147483648,
+          "budget_bytes": 0,
+          "max_budget_bytes": 0,
+          "cached_weight_bytes": 0,
+          "staging_bytes": 0,
+          "cache_hits": 0,
+          "cache_hit_bytes": 0,
+          "cache_misses": 0,
+          "resizes": 0,
+          "note": ""
+        },
+        "text": "Hello.",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "8a78afc05fcbf393",
+          "prefill_state_hash": "184314ebc416b51f",
+          "logits_hash": "1c3c51927302b551",
+          "state_hash": "e6c8b2634a77e2eb"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.419468,
+          "decode_seconds": 0.105325,
+          "first_token_seconds": 0.420237,
+          "total_seconds": 0.525491
+        },
+        "runs": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000115,
+              "prefill_seconds": 0.417096,
+              "decode_seconds": 0.105321,
+              "first_token_seconds": 0.417865,
+              "total_seconds": 0.523115,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 5776097280
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000116,
+              "prefill_seconds": 0.419468,
+              "decode_seconds": 0.105325,
+              "first_token_seconds": 0.420237,
+              "total_seconds": 0.525491,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 5776326656
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000108,
+              "prefill_seconds": 0.419476,
+              "decode_seconds": 0.10662,
+              "first_token_seconds": 0.420275,
+              "total_seconds": 0.526821,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 5776326656
+          }
+        ]
+      },
+      "speedup": {
+        "prefill_seconds": 3.6336812343253837,
+        "decode_seconds": 2.244490861618799,
+        "first_token_seconds": 3.628914160342854,
+        "total_seconds": 3.3455701429710496
+      },
+      "cross_version_exact": true
+    },
+    "8b-stream": {
+      "before": {
+        "model": "plamo-3-translate-8b",
+        "threads": 1,
+        "memory_at_start": {
+          "mode": "stream",
+          "weight_bytes": 17063540224,
+          "preloaded_weight_bytes": 0,
+          "estimated_reclaimable_bytes_at_start": 17369989120,
+          "physical_bytes": 25769803776,
+          "reserve_bytes": 2147483648,
+          "budget_bytes": 0,
+          "max_budget_bytes": 0,
+          "cached_weight_bytes": 0,
+          "staging_bytes": 0,
+          "cache_hits": 0,
+          "cache_hit_bytes": 0,
+          "cache_misses": 0,
+          "resizes": 0,
+          "note": ""
+        },
+        "text": "Hello.",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "c9e54cc1de2684c9",
+          "prefill_state_hash": "b370bb3890a4400e",
+          "logits_hash": "68d5318fc63d9103",
+          "state_hash": "a44087018da49b9d"
+        },
+        "seconds_median": {
+          "prefill_seconds": 9.550746,
+          "decode_seconds": 5.457961,
+          "first_token_seconds": 9.551545,
+          "total_seconds": 15.015682
+        },
+        "runs": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000121,
+              "prefill_seconds": 9.550746,
+              "decode_seconds": 5.575637,
+              "first_token_seconds": 9.551545,
+              "total_seconds": 15.127097,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 904757248
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000133,
+              "prefill_seconds": 9.557027,
+              "decode_seconds": 5.457961,
+              "first_token_seconds": 9.557786,
+              "total_seconds": 15.015682,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 905150464
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000173,
+              "prefill_seconds": 9.485664,
+              "decode_seconds": 5.440797,
+              "first_token_seconds": 9.486507,
+              "total_seconds": 14.927235,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 905428992
+          }
+        ]
+      },
+      "after": {
+        "model": "plamo-3-translate-8b",
+        "threads": 4,
+        "memory_at_start": {
+          "mode": "stream",
+          "weight_bytes": 17063540224,
+          "preloaded_weight_bytes": 0,
+          "estimated_reclaimable_bytes_at_start": 16496197632,
+          "physical_bytes": 25769803776,
+          "reserve_bytes": 2147483648,
+          "budget_bytes": 0,
+          "max_budget_bytes": 0,
+          "cached_weight_bytes": 0,
+          "staging_bytes": 0,
+          "cache_hits": 0,
+          "cache_hit_bytes": 0,
+          "cache_misses": 0,
+          "resizes": 0,
+          "note": ""
+        },
+        "text": "Hello.",
+        "max_tokens": 2,
+        "usage": {
+          "prompt_tokens": 21,
+          "completion_tokens": 1,
+          "total_tokens": 22
+        },
+        "token_ids": [
+          51871
+        ],
+        "translation": "こんにちは。",
+        "finish_reason": "stop",
+        "verification": {
+          "prefill_logits_hash": "c9e54cc1de2684c9",
+          "prefill_state_hash": "b370bb3890a4400e",
+          "logits_hash": "68d5318fc63d9103",
+          "state_hash": "a44087018da49b9d"
+        },
+        "seconds_median": {
+          "prefill_seconds": 6.243411,
+          "decode_seconds": 5.181833,
+          "first_token_seconds": 6.244207,
+          "total_seconds": 11.412915
+        },
+        "runs": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000126,
+              "prefill_seconds": 6.245508,
+              "decode_seconds": 5.159614,
+              "first_token_seconds": 6.246271,
+              "total_seconds": 11.405818,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 904790016
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000142,
+              "prefill_seconds": 6.230364,
+              "decode_seconds": 5.181833,
+              "first_token_seconds": 6.231151,
+              "total_seconds": 11.412915,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 905461760
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.00012,
+              "prefill_seconds": 6.243411,
+              "decode_seconds": 5.195182,
+              "first_token_seconds": 6.244207,
+              "total_seconds": 11.439318,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 905461760
+          }
+        ]
+      },
+      "speedup": {
+        "prefill_seconds": 1.529732064731923,
+        "decode_seconds": 1.0532877072649776,
+        "first_token_seconds": 1.5296650159099467,
+        "total_seconds": 1.3156745669270296
+      },
+      "cross_version_exact": true
+    },
+    "2b-long": {
+      "before": {
+        "model": "plamo-3-translate-2b",
+        "threads": 1,
+        "memory_at_start": {
+          "mode": "resident",
+          "weight_bytes": 5757219984,
+          "preloaded_weight_bytes": 5757219984,
+          "estimated_reclaimable_bytes_at_start": 16978886656,
+          "physical_bytes": 25769803776,
+          "reserve_bytes": 2147483648,
+          "budget_bytes": 0,
+          "max_budget_bytes": 0,
+          "cached_weight_bytes": 0,
+          "staging_bytes": 0,
+          "cache_hits": 0,
+          "cache_hit_bytes": 0,
+          "cache_misses": 0,
+          "resizes": 0,
+          "note": ""
+        },
+        "text": "A translation model can spend more time reading its weights than computing the next token. Keeping those weights in memory and using several CPU cores can reduce the delay without changing the model precision.",
+        "max_tokens": 8,
+        "usage": {
+          "prompt_tokens": 51,
+          "completion_tokens": 8,
+          "total_tokens": 59
+        },
+        "token_ids": [
+          56096,
+          50588,
+          50116,
+          50975,
+          83116,
+          50103,
+          51915,
+          83812
+        ],
+        "translation": "翻訳モデルは、次のトークンを計算するよりも",
+        "finish_reason": "length",
+        "verification": {
+          "prefill_logits_hash": "3acd7a0387133f23",
+          "prefill_state_hash": "1f1313319a5c3fcc",
+          "logits_hash": "30eeedf957ca9d17",
+          "state_hash": "20fc00849578289e"
+        },
+        "seconds_median": {
+          "prefill_seconds": 3.5810155000000004,
+          "decode_seconds": 1.662201,
+          "first_token_seconds": 3.581964,
+          "total_seconds": 5.2440999999999995
+        },
+        "runs": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000338,
+              "prefill_seconds": 3.57019,
+              "decode_seconds": 1.644475,
+              "first_token_seconds": 3.57115,
+              "total_seconds": 5.215559,
+              "decode_steps": 7
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 5784633344
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000339,
+              "prefill_seconds": 3.591841,
+              "decode_seconds": 1.679927,
+              "first_token_seconds": 3.592778,
+              "total_seconds": 5.272641,
+              "decode_steps": 7
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 5785780224
+          }
+        ]
+      },
+      "after": {
+        "model": "plamo-3-translate-2b",
+        "threads": 4,
+        "memory_at_start": {
+          "mode": "resident",
+          "weight_bytes": 5757219984,
+          "preloaded_weight_bytes": 5757219984,
+          "estimated_reclaimable_bytes_at_start": 16563945472,
+          "physical_bytes": 25769803776,
+          "reserve_bytes": 2147483648,
+          "budget_bytes": 0,
+          "max_budget_bytes": 0,
+          "cached_weight_bytes": 0,
+          "staging_bytes": 0,
+          "cache_hits": 0,
+          "cache_hit_bytes": 0,
+          "cache_misses": 0,
+          "resizes": 0,
+          "note": ""
+        },
+        "text": "A translation model can spend more time reading its weights than computing the next token. Keeping those weights in memory and using several CPU cores can reduce the delay without changing the model precision.",
+        "max_tokens": 8,
+        "usage": {
+          "prompt_tokens": 51,
+          "completion_tokens": 8,
+          "total_tokens": 59
+        },
+        "token_ids": [
+          56096,
+          50588,
+          50116,
+          50975,
+          83116,
+          50103,
+          51915,
+          83812
+        ],
+        "translation": "翻訳モデルは、次のトークンを計算するよりも",
+        "finish_reason": "length",
+        "verification": {
+          "prefill_logits_hash": "3acd7a0387133f23",
+          "prefill_state_hash": "1f1313319a5c3fcc",
+          "logits_hash": "30eeedf957ca9d17",
+          "state_hash": "20fc00849578289e"
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.992104,
+          "decode_seconds": 0.7607809999999999,
+          "first_token_seconds": 0.9931700000000001,
+          "total_seconds": 1.7538745
+        },
+        "runs": [
+          {
+            "timings": {
+              "tokenize_seconds": 0.000357,
+              "prefill_seconds": 0.976863,
+              "decode_seconds": 0.760019,
+              "first_token_seconds": 0.97792,
+              "total_seconds": 1.737863,
+              "decode_steps": 7
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 5784731648
+          },
+          {
+            "timings": {
+              "tokenize_seconds": 0.000345,
+              "prefill_seconds": 1.007345,
+              "decode_seconds": 0.761543,
+              "first_token_seconds": 1.00842,
+              "total_seconds": 1.769886,
+              "decode_steps": 7
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 0
+            },
+            "cached_weight_bytes": 0,
+            "budget_bytes": 0,
+            "process_peak_rss_bytes": 5785878528
+          }
+        ]
+      },
+      "speedup": {
+        "prefill_seconds": 3.609516240232879,
+        "decode_seconds": 2.1848613464321534,
+        "first_token_seconds": 3.6065970579054945,
+        "total_seconds": 2.990008692184076
+      },
+      "cross_version_exact": true
+    }
+  },
+  "serial_cache_tiling": {
+    "model": "plamo-3-translate-2b",
+    "threads": 1,
+    "memory_at_start": {
+      "mode": "resident",
+      "weight_bytes": 5757219984,
+      "preloaded_weight_bytes": 5757219984,
+      "estimated_reclaimable_bytes_at_start": 17394630656,
+      "physical_bytes": 25769803776,
+      "reserve_bytes": 2147483648,
+      "budget_bytes": 0,
+      "max_budget_bytes": 0,
+      "cached_weight_bytes": 0,
+      "staging_bytes": 0,
+      "cache_hits": 0,
+      "cache_hit_bytes": 0,
+      "cache_misses": 0,
+      "resizes": 0,
+      "note": ""
+    },
+    "text": "Hello.",
+    "max_tokens": 2,
+    "usage": {
+      "prompt_tokens": 21,
+      "completion_tokens": 1,
+      "total_tokens": 22
+    },
+    "token_ids": [
+      51871
+    ],
+    "translation": "こんにちは。",
+    "finish_reason": "stop",
+    "verification": {
+      "prefill_logits_hash": "8a78afc05fcbf393",
+      "prefill_state_hash": "184314ebc416b51f",
+      "logits_hash": "1c3c51927302b551",
+      "state_hash": "e6c8b2634a77e2eb"
+    },
+    "seconds_median": {
+      "prefill_seconds": 1.278234,
+      "decode_seconds": 0.237412,
+      "first_token_seconds": 1.278961,
+      "total_seconds": 1.516307
+    },
+    "runs": [
+      {
+        "timings": {
+          "tokenize_seconds": 0.000116,
+          "prefill_seconds": 1.278234,
+          "decode_seconds": 0.237412,
+          "first_token_seconds": 1.278961,
+          "total_seconds": 1.516307,
+          "decode_steps": 1
+        },
+        "weight_io": {
+          "staged_bytes": 0,
+          "read_calls": 0,
+          "cache_hits": 0,
+          "cache_hit_bytes": 0,
+          "cache_misses": 0
+        },
+        "cached_weight_bytes": 0,
+        "budget_bytes": 0,
+        "process_peak_rss_bytes": 5776048128
+      },
+      {
+        "timings": {
+          "tokenize_seconds": 0.000124,
+          "prefill_seconds": 1.273636,
+          "decode_seconds": 0.232969,
+          "first_token_seconds": 1.274359,
+          "total_seconds": 1.507263,
+          "decode_steps": 1
+        },
+        "weight_io": {
+          "staged_bytes": 0,
+          "read_calls": 0,
+          "cache_hits": 0,
+          "cache_hit_bytes": 0,
+          "cache_misses": 0
+        },
+        "cached_weight_bytes": 0,
+        "budget_bytes": 0,
+        "process_peak_rss_bytes": 5776277504
+      },
+      {
+        "timings": {
+          "tokenize_seconds": 0.000117,
+          "prefill_seconds": 1.279678,
+          "decode_seconds": 0.240267,
+          "first_token_seconds": 1.2804,
+          "total_seconds": 1.520602,
+          "decode_steps": 1
+        },
+        "weight_io": {
+          "staged_bytes": 0,
+          "read_calls": 0,
+          "cache_hits": 0,
+          "cache_hit_bytes": 0,
+          "cache_misses": 0
+        },
+        "cached_weight_bytes": 0,
+        "budget_bytes": 0,
+        "process_peak_rss_bytes": 5776277504
+      }
+    ]
+  },
+  "additional_probes": {
+    "8b-auto-parallel": {
+      "model": "plamo-3-translate-8b",
+      "threads": 4,
+      "memory_at_start": {
+        "mode": "adaptive",
+        "weight_bytes": 17063540224,
+        "preloaded_weight_bytes": 0,
+        "estimated_reclaimable_bytes_at_start": 16427335680,
+        "physical_bytes": 25769803776,
+        "reserve_bytes": 2147483648,
+        "budget_bytes": 14279065600,
+        "max_budget_bytes": 14279065600,
+        "cached_weight_bytes": 0,
+        "staging_bytes": 67108864,
+        "cache_hits": 0,
+        "cache_hit_bytes": 0,
+        "cache_misses": 0,
+        "resizes": 1,
+        "note": ""
+      },
+      "text": "Hello.",
+      "max_tokens": 2,
+      "usage": {
+        "prompt_tokens": 21,
+        "completion_tokens": 1,
+        "total_tokens": 22
+      },
+      "token_ids": [
+        51871
+      ],
+      "translation": "こんにちは。",
+      "finish_reason": "stop",
+      "verification": {
+        "prefill_logits_hash": "c9e54cc1de2684c9",
+        "prefill_state_hash": "b370bb3890a4400e",
+        "logits_hash": "68d5318fc63d9103",
+        "state_hash": "a44087018da49b9d"
+      },
+      "seconds_median": {
+        "prefill_seconds": 2.2251,
+        "decode_seconds": 1.146409,
+        "first_token_seconds": 2.226488,
+        "total_seconds": 5.357599
+      },
+      "runs": [
+        {
+          "timings": {
+            "tokenize_seconds": 0.000926,
+            "prefill_seconds": 5.724545,
+            "decode_seconds": 1.146409,
+            "first_token_seconds": 5.726147,
+            "total_seconds": 6.872469,
+            "decode_steps": 1
+          },
+          "weight_io": {
+            "staged_bytes": 3942645760,
+            "read_calls": 470,
+            "cache_hits": 476,
+            "cache_hit_bytes": 28420603904,
+            "cache_misses": 64
+          },
+          "cached_weight_bytes": 14210301952,
+          "budget_bytes": 14279065600,
+          "process_peak_rss_bytes": 14287159296
+        },
+        {
+          "timings": {
+            "tokenize_seconds": 0.003562,
+            "prefill_seconds": 1.762875,
+            "decode_seconds": 3.590568,
+            "first_token_seconds": 1.767101,
+            "total_seconds": 5.357599,
+            "decode_steps": 1
+          },
+          "weight_io": {
+            "staged_bytes": 3942645760,
+            "read_calls": 470,
+            "cache_hits": 476,
+            "cache_hit_bytes": 28420603904,
+            "cache_misses": 64
+          },
+          "cached_weight_bytes": 14210301952,
+          "budget_bytes": 14279065600,
+          "process_peak_rss_bytes": 14295269376
+        },
+        {
+          "timings": {
+            "tokenize_seconds": 0.000644,
+            "prefill_seconds": 2.2251,
+            "decode_seconds": 0.906616,
+            "first_token_seconds": 2.226488,
+            "total_seconds": 3.132954,
+            "decode_steps": 1
+          },
+          "weight_io": {
+            "staged_bytes": 3942645760,
+            "read_calls": 470,
+            "cache_hits": 476,
+            "cache_hit_bytes": 28420603904,
+            "cache_misses": 64
+          },
+          "cached_weight_bytes": 14210301952,
+          "budget_bytes": 14279065600,
+          "process_peak_rss_bytes": 14295269376
+        }
+      ]
+    },
+    "0.8b-auto-parallel": {
+      "model": "plamo-3-translate-0.8b",
+      "threads": 4,
+      "memory_at_start": {
+        "mode": "adaptive",
+        "weight_bytes": 1780709128,
+        "preloaded_weight_bytes": 0,
+        "estimated_reclaimable_bytes_at_start": 18659803136,
+        "physical_bytes": 25769803776,
+        "reserve_bytes": 2147483648,
+        "budget_bytes": 1847820288,
+        "max_budget_bytes": 1847820288,
+        "cached_weight_bytes": 0,
+        "staging_bytes": 67108864,
+        "cache_hits": 0,
+        "cache_hit_bytes": 0,
+        "cache_misses": 0,
+        "resizes": 1,
+        "note": ""
+      },
+      "text": "Hello.",
+      "max_tokens": 2,
+      "usage": {
+        "prompt_tokens": 21,
+        "completion_tokens": 1,
+        "total_tokens": 22
+      },
+      "token_ids": [
+        51871
+      ],
+      "translation": "こんにちは。",
+      "finish_reason": "stop",
+      "verification": {
+        "prefill_logits_hash": "637005eb121af357",
+        "prefill_state_hash": "dfb2cf1930e0f984",
+        "logits_hash": "542b699332305bda",
+        "state_hash": "4bab6b2ae34c9c08"
+      },
+      "seconds_median": {
+        "prefill_seconds": 0.10781,
+        "decode_seconds": 0.043838,
+        "first_token_seconds": 0.108584,
+        "total_seconds": 0.15301
+      },
+      "runs": [
+        {
+          "timings": {
+            "tokenize_seconds": 0.00012,
+            "prefill_seconds": 0.107427,
+            "decode_seconds": 0.045245,
+            "first_token_seconds": 0.108204,
+            "total_seconds": 0.153378,
+            "decode_steps": 1
+          },
+          "weight_io": {
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "cache_hits": 138,
+            "cache_hit_bytes": 2900361216,
+            "cache_misses": 0
+          },
+          "cached_weight_bytes": 1450180608,
+          "budget_bytes": 1847820288,
+          "process_peak_rss_bytes": 1465892864
+        },
+        {
+          "timings": {
+            "tokenize_seconds": 0.000119,
+            "prefill_seconds": 0.10781,
+            "decode_seconds": 0.043071,
+            "first_token_seconds": 0.108584,
+            "total_seconds": 0.151584,
+            "decode_steps": 1
+          },
+          "weight_io": {
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "cache_hits": 138,
+            "cache_hit_bytes": 2900361216,
+            "cache_misses": 0
+          },
+          "cached_weight_bytes": 1450180608,
+          "budget_bytes": 1847820288,
+          "process_peak_rss_bytes": 1466007552
+        },
+        {
+          "timings": {
+            "tokenize_seconds": 0.000115,
+            "prefill_seconds": 0.108473,
+            "decode_seconds": 0.043838,
+            "first_token_seconds": 0.109243,
+            "total_seconds": 0.15301,
+            "decode_steps": 1
+          },
+          "weight_io": {
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "cache_hits": 138,
+            "cache_hit_bytes": 2900361216,
+            "cache_misses": 0
+          },
+          "cached_weight_bytes": 1450180608,
+          "budget_bytes": 1847820288,
+          "process_peak_rss_bytes": 1466007552
+        }
+      ]
+    }
+  },
+  "cli": {
+    "before": {
+      "timestamp_utc": "2026-11-09T09:14:47.793762+00:00",
+      "environment": {
+        "machine": "arm64",
+        "macos": "26.5.1",
+        "memory_bytes": 25769803776
+      },
+      "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+      "policy": 2,
+      "runs": [
+        [
+          {
+            "phase": "open",
+            "seconds": 0.046392,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 5,
+            "max_rss_bytes": 1490944,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "phase": "prefill_21",
+            "seconds": 9.375705,
+            "token": 51871,
+            "logits_hash": "c9e54cc1de2684c9",
+            "state_hash": "b370bb3890a4400e",
+            "major_faults": 106,
+            "max_rss_bytes": 895434752,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "phase": "decode",
+            "seconds": 5.541262,
+            "token": 16,
+            "logits_hash": "68d5318fc63d9103",
+            "state_hash": "a44087018da49b9d",
+            "major_faults": 193,
+            "max_rss_bytes": 895434752,
+            "staged_bytes": 32363249664,
+            "read_calls": 3858,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        [
+          {
+            "phase": "open",
+            "seconds": 0.045556,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 7,
+            "max_rss_bytes": 1490944,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "phase": "prefill_21",
+            "seconds": 9.411257,
+            "token": 51871,
+            "logits_hash": "c9e54cc1de2684c9",
+            "state_hash": "b370bb3890a4400e",
+            "major_faults": 106,
+            "max_rss_bytes": 895074304,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "phase": "decode",
+            "seconds": 5.500736,
+            "token": 16,
+            "logits_hash": "68d5318fc63d9103",
+            "state_hash": "a44087018da49b9d",
+            "major_faults": 193,
+            "max_rss_bytes": 895074304,
+            "staged_bytes": 32363249664,
+            "read_calls": 3858,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ]
+      ],
+      "summary": {
+        "open": {
+          "seconds_median": 0.045974,
+          "baseline_seconds": 0.053819,
+          "speedup": 1.1706399269152128
+        },
+        "prefill_21": {
+          "seconds_median": 9.393481000000001,
+          "baseline_seconds": 50.282824,
+          "speedup": 5.352948922768885
+        },
+        "decode": {
+          "seconds_median": 5.520999,
+          "baseline_seconds": 34.793012,
+          "speedup": 6.3019413696687865
+        },
+        "inference_total": {
+          "seconds_median": 14.914480000000001,
+          "baseline_seconds": 85.075836,
+          "speedup": 5.704244197585165
+        },
+        "peak_rss_bytes": 895434752
+      },
+      "baseline_file": "docs/benchmarks/optimization-baseline.json"
+    },
+    "after": {
+      "timestamp_utc": "2026-11-09T09:30:44.681352+00:00",
+      "environment": {
+        "machine": "arm64",
+        "macos": "26.5.1",
+        "memory_bytes": 25769803776
+      },
+      "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+      "policy": 2,
+      "runs": [
+        [
+          {
+            "phase": "open",
+            "seconds": 0.04322,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 7,
+            "max_rss_bytes": 1507328,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "phase": "prefill_21",
+            "seconds": 8.689226,
+            "token": 51871,
+            "logits_hash": "c9e54cc1de2684c9",
+            "state_hash": "b370bb3890a4400e",
+            "major_faults": 11,
+            "max_rss_bytes": 895533056,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "phase": "decode",
+            "seconds": 5.253072,
+            "token": 16,
+            "logits_hash": "68d5318fc63d9103",
+            "state_hash": "a44087018da49b9d",
+            "major_faults": 98,
+            "max_rss_bytes": 895533056,
+            "staged_bytes": 32363249664,
+            "read_calls": 3858,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        [
+          {
+            "phase": "open",
+            "seconds": 0.047224,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 7,
+            "max_rss_bytes": 1507328,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "phase": "prefill_21",
+            "seconds": 8.693608,
+            "token": 51871,
+            "logits_hash": "c9e54cc1de2684c9",
+            "state_hash": "b370bb3890a4400e",
+            "major_faults": 106,
+            "max_rss_bytes": 895369216,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "phase": "decode",
+            "seconds": 5.268104,
+            "token": 16,
+            "logits_hash": "68d5318fc63d9103",
+            "state_hash": "a44087018da49b9d",
+            "major_faults": 194,
+            "max_rss_bytes": 895369216,
+            "staged_bytes": 32363249664,
+            "read_calls": 3858,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ]
+      ],
+      "summary": {
+        "open": {
+          "seconds_median": 0.045222,
+          "baseline_seconds": 0.053819,
+          "speedup": 1.1901065852903454
+        },
+        "prefill_21": {
+          "seconds_median": 8.691417,
+          "baseline_seconds": 50.282824,
+          "speedup": 5.7853424821292085
+        },
+        "decode": {
+          "seconds_median": 5.260588,
+          "baseline_seconds": 34.793012,
+          "speedup": 6.613901715929853
+        },
+        "inference_total": {
+          "seconds_median": 13.952005,
+          "baseline_seconds": 85.075836,
+          "speedup": 6.09774982162062
+        },
+        "peak_rss_bytes": 895533056
+      },
+      "baseline_file": "docs/benchmarks/optimization-baseline.json"
+    }
+  },
+  "limits": [
+    "Adaptive-cache measurements have different retained-memory amounts; do not attribute their differences solely to CPU parallelism.",
+    "The longer-input probe stops at eight generated tokens and is not a complete translation.",
+    "31B builds and model-free loader tests pass; real 31B inference was not measured.",
+    "ThreadSanitizer crashed during sanitizer initialization, before main, in the local macOS runtime; it did not complete."
+  ]
+}

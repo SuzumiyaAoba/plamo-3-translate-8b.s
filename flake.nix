@@ -1,5 +1,5 @@
 {
-  description = "Handwritten AArch64 PLaMo 3 Translate inference for Apple Silicon";
+  description = "Native FP32 PLaMo 3 Translate inference with Metal and AArch64 for Apple Silicon";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
 

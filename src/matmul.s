@@ -6,23 +6,159 @@
 .p2align 4
 .globl _plamo_bf16_matmul
 _plamo_bf16_matmul:
+    adrp x9, _plamo_weight_chunk_bytes@PAGE
+    ldr x9, [x9, _plamo_weight_chunk_bytes@PAGEOFF]
+    cbz x9, Lmm_dispatch
+    ldp x10, x11, [x0, #24]
+    cbz x11, Lmm_dispatch
+    mul x12, x10, x11
+    lsl x12, x12, #1
+    cmp x12, x9
+    b.ls Lmm_dispatch
+    mov x1, x9
+    adrp x2, _plamo_bf16_matmul@PAGE
+    add x2, x2, _plamo_bf16_matmul@PAGEOFF
+    mov x3, #8 // Match matvec's I/O windows for prefill/decode cache reuse.
+    b Lmm_tiled
+Lmm_dispatch:
+    adrp x1, Lmm_compute@PAGE
+    add x1, x1, Lmm_compute@PAGEOFF
+    b _plamo_bf16_matmul_acquire
+Lmm_compute:
+    adrp x9, _plamo_matmul_kernel@PAGE
+    ldr x9, [x9, _plamo_matmul_kernel@PAGEOFF]
+    cbz x9, _plamo_bf16_matmul_core
+    adrp x1, _plamo_compute_context@PAGE
+    ldr x1, [x1, _plamo_compute_context@PAGEOFF]
+    br x9
+
+// Compute-only entry: no weight provider, I/O, scheduler, or shared mutation.
+// A row panel is consumed by all token panels before moving to the next rows.
+.globl _plamo_bf16_matmul_core
+_plamo_bf16_matmul_core:
     ldr x9, [x0, #40]
     cmp x9, #8
-    b.lo _plamo_bf16_matmul4
+    b.ls Lmm_core_dispatch
+    adrp x1, _plamo_matmul_tile_bytes@PAGE
+    ldr x1, [x1, _plamo_matmul_tile_bytes@PAGEOFF]
+    cbz x1, Lmm_core_dispatch
     ldp x10, x11, [x0, #24]
-    cbz x10, _plamo_bf16_matmul4
-    cbz x11, _plamo_bf16_matmul4
+    cbz x11, Lmm_core_dispatch
+    mul x12, x10, x11
+    lsl x12, x12, #1
+    cmp x12, x1
+    b.ls Lmm_core_dispatch
+    adrp x2, _plamo_bf16_matmul_core@PAGE
+    add x2, x2, _plamo_bf16_matmul_core@PAGEOFF
+    mov x3, #24
+    b Lmm_tiled
+Lmm_core_dispatch:
+    ldr x9, [x0, #40]
+    cmp x9, #8
+    b.lo _plamo_bf16_matmul4_core
+    ldp x10, x11, [x0, #24]
+    cbz x10, _plamo_bf16_matmul4_core
+    cbz x11, _plamo_bf16_matmul4_core
     tst x11, #3
-    b.ne _plamo_bf16_matmul4
+    b.ne _plamo_bf16_matmul4_core
     cmp x10, #3
     b.lo Lmm_smallrows
-    b _plamo_bf16_matmul8x3
+    b _plamo_bf16_matmul8x3_core
 Lmm_smallrows:
     cmp x10, #2
-    b.ne _plamo_bf16_matmul4
-    b _plamo_bf16_matmul8
+    b.ne _plamo_bf16_matmul4_core
+    b _plamo_bf16_matmul8_core
+// Split only output rows. Each token retains its original input/output stride
+// and each dot product retains its original accumulation order.
+Lmm_tiled:
+    lsl x12, x11, #1
+    udiv x9, x1, x12
+    cbz x9, Lmm_core_dispatch
+    // Compute panels use 24 (3/4/8-row kernels); I/O windows use the same
+    // 8-row boundaries as matvec, so cached prefill tiles also serve decode.
+    cmp x9, x3
+    b.lo Lmm_tile_small
+    mov x12, x3
+    udiv x9, x9, x12
+    mul x9, x9, x12
+    b Lmm_tile_rows
+Lmm_tile_small:
+    cmp x9, #8
+    b.lo Lmm_tile_rows
+    and x9, x9, #0xfffffffffffffff8
+Lmm_tile_rows:
+    stp x19, x30, [sp, #-112]!
+    stp x20, x21, [sp, #16]
+    str x22, [sp, #96]
+    mov x22, x2
+    // A complete local descriptor, reused for every tile.
+    ldp x10, x11, [x0]
+    stp x10, x11, [sp, #32]
+    ldp x10, x19, [x0, #16]
+    stp x10, x19, [sp, #48]
+    ldp x10, x11, [x0, #32]
+    stp x10, x11, [sp, #64]
+    ldp x10, x11, [x0, #48]
+    stp x10, x11, [sp, #80]
+    mov x20, x9
+Lmm_tile_loop:
+    cmp x19, x20
+    csel x21, x19, x20, lo
+    str x21, [sp, #56]
+    add x0, sp, #32
+    blr x22
+    ldr x9, [sp, #64]
+    mul x9, x9, x21
+    ldr x10, [sp, #32]
+    add x10, x10, x9, lsl #1
+    str x10, [sp, #32]
+    ldr x10, [sp, #48]
+    add x10, x10, x21, lsl #2
+    str x10, [sp, #48]
+    subs x19, x19, x21
+    b.ne Lmm_tile_loop
+    ldp x20, x21, [sp, #16]
+    ldr x22, [sp, #96]
+    ldp x19, x30, [sp], #112
+    ret
+
+// x0=descriptor, x1=compute entry. Acquire once on the calling thread, then
+// lend a private descriptor to compute. Nested/tail kernels never reacquire.
+.globl _plamo_bf16_matmul_acquire
+_plamo_bf16_matmul_acquire:
+    ldr x9, [x0, #24]
+    cbz x9, Lmm_empty
+    ldr x10, [x0, #40]
+    cbz x10, Lmm_empty
+    stp x29, x30, [sp, #-96]!
+    str x1, [sp, #80]
+    ldp x9, x10, [x0]
+    stp x9, x10, [sp, #16]
+    ldp x9, x10, [x0, #16]
+    stp x9, x10, [sp, #32]
+    ldp x9, x10, [x0, #32]
+    stp x9, x10, [sp, #48]
+    ldp x9, x10, [x0, #48]
+    stp x9, x10, [sp, #64]
+    ldr x0, [sp, #16]
+    ldp x9, x10, [sp, #40]
+    mul x1, x9, x10
+    lsl x1, x1, #1
+    bl _plamo_weight_acquire
+    str x0, [sp, #16]
+    add x0, sp, #16
+    ldr x9, [sp, #80]
+    blr x9
+    ldp x29, x30, [sp], #96
+Lmm_empty:
+    ret
 .globl _plamo_bf16_matmul4
 _plamo_bf16_matmul4:
+    adrp x1, _plamo_bf16_matmul4_core@PAGE
+    add x1, x1, _plamo_bf16_matmul4_core@PAGEOFF
+    b _plamo_bf16_matmul_acquire
+.globl _plamo_bf16_matmul4_core
+_plamo_bf16_matmul4_core:
     stp x29, x30, [sp, #-96]!
     stp x19, x20, [sp, #16]
     stp x21, x22, [sp, #32]
@@ -38,11 +174,6 @@ _plamo_bf16_matmul4:
     lsl x27, x23, #1
     cbz x22, Lmmdone
     cbz x24, Lmmdone
-    mov x0, x19
-    mul x1, x22, x23
-    lsl x1, x1, #1
-    bl _plamo_weight_acquire
-    mov x19, x0
     cbz x23, Lmmfallback
     orr x9, x22, x23
     tst x9, #3
@@ -166,7 +297,7 @@ Lmmfallback:
     mov x2, x21
     mov x3, x22
     mov x4, x23
-    bl _plamo_bf16_matvec_core
+    bl _plamo_bf16_matvec_serial
     add x20, x20, x25
     add x21, x21, x26
     sub x24, x24, #1
@@ -191,5 +322,18 @@ _plamo_bf16_linear:
     stp x6, x7, [sp, #64]
     add x0, sp, #16
     bl _plamo_bf16_matmul
+    ldp x29, x30, [sp], #80
+    ret
+
+// Same register ABI for compute-only tail panels.
+.globl _plamo_bf16_linear_core
+_plamo_bf16_linear_core:
+    stp x29, x30, [sp, #-80]!
+    stp x0, x1, [sp, #16]
+    stp x2, x3, [sp, #32]
+    stp x4, x5, [sp, #48]
+    stp x6, x7, [sp, #64]
+    add x0, sp, #16
+    bl _plamo_bf16_matmul_core
     ldp x29, x30, [sp], #80
     ret

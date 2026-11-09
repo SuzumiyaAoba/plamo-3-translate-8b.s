@@ -1,0 +1,5422 @@
+{
+  "timestamp_utc": "2026-11-09T12:00:42.905727+00:00",
+  "repository": "https://github.com/SuzumiyaAoba/plamo-3-translate.c",
+  "head_revision": "f105eae89a1ca525a70f453395ff1222288b726f",
+  "working_tree_has_uncommitted_changes": true,
+  "environment": {
+    "machine": "arm64",
+    "macos": "26.5.1",
+    "soc": "Apple M2",
+    "physical_bytes": 25769803776
+  },
+  "source_sha256": {
+    "runtime/cli.c": "63ca13d5cbb655a96ba93a938e1e64964d9ad9af6ec149694aba735ded6ce7ea",
+    "runtime/engine.c": "5cde7a07cc79bd55069ca0c027e49b566d98408d9242d826e94eed95f608f972",
+    "runtime/engine.h": "4f7a4d4d1e66adda041626960971d405fd36c1f16ca4b54d7446199574ab5bfe",
+    "runtime/kernels.metal": "58563402b08cf71a5eeef0518da84856fff48f4370bb0f4a8b14fa167fedebe2",
+    "runtime/metal.h": "d93813ec44a8fbe5cb7889a2237432576733c4558088dd58af1e45a0e1c7df20",
+    "runtime/metal.m": "13b11698cc2afbbda415ef41a330d35cf2dcd434addf4f2eb9f8c9d65a591df8",
+    "runtime/model.h": "09025289ba9d04d282e477193f433606d8bedfd09aae8574c2512230a8fc92d9",
+    "runtime/parallel.c": "5854106ebbba86a2838d1b93ffae40c2822141a0be2e45838854ee86e438c471",
+    "runtime/parallel.h": "9c7abcf153fef56116a8f12fe53560fa5b33705402579dbb353a32c5419e014c",
+    "runtime/resident.c": "8eb0f0d7c53f6b484c76145d99c9c336d89636349caf4fca92666ca480dea9b7",
+    "runtime/resident.h": "c5e262693d7119f056d327337947a63a620f0bfb276fcfccc24ed8a69e275db3",
+    "runtime/weight_cache.c": "9425a8de355e32040d686b7122ae023a685ac229326e0944ed1da59606b56dcd",
+    "runtime/weight_cache.h": "3c1c24fe1e0850c0c02d2c01952ef03f2eaa6337a264d26df5fa64938906281a",
+    "runtime/worker.c": "97ee8defb23662eb90212fa9575c9f849414e63c61681b756be3a9787dee5469",
+    "src/activation.s": "4720f98e70448ce06144fd62fda810af3a526ccd390427b348448937d59368a1",
+    "src/arena.s": "ddb13e711ec6a914d08e8de74404cfcad9a7b869c5db541f54c5817d3508a8e2",
+    "src/attention.s": "96bf9be15f64c4bb16e26054b676ecd9e70afeed9c48785b44bd7b8d4b0ad500",
+    "src/batch.s": "f91b0560340e7f17c893ee572d78c020eeb19d9e6cc461400f99ae3d4d7ead0e",
+    "src/bind.s": "2767271f0e037bef547fa6ef4cdce37223539d4ade0d17e351826171e90d8c4f",
+    "src/boundary.s": "46311ad41fecdac2b3a8090e8a5d6c90828774946ac305d8099de10a75d9470a",
+    "src/cache.s": "a140d7dc1e841810dbfe43a09a3a2f922f9649def8f182289697038076b71955",
+    "src/cache_rope.s": "aa2ce3b77086e7dfd9a24ce988559745ed940d0783391961a9e7b4fb0be8cea6",
+    "src/decode.s": "65ff18e7c37c761fa995faafb167df838ccfa77d12881d3ae02769ae41c0ec42",
+    "src/encode.s": "70957e8e437532f8d4b92ad0b0cc76088a93adef4adbf31cdfd8dc47a5544740",
+    "src/find.s": "38fc57c714617479c589ea305b2edd4d4fc02af2348dcff3229fa93eb7702a89",
+    "src/forward.s": "5e81315e29da7711dd25aba59e391a4030e67050477aadef0aa50d2bdd747b1e",
+    "src/io.s": "c7079de7e191a0d6b1d90cc70c76c01bb6d651eab23925a65d15106463304ff9",
+    "src/json.s": "7fb14a46f46d895ee20a12f45bccd3b7a1d206b6c39a5caca24e1ba47ec0c0f7",
+    "src/layer.s": "2d5e17346e3e8b03dddb6740568d32202f40837e1c51118760da34e4898d9029",
+    "src/load.s": "f0afba2e66586009ddac8e6b80cc1cc4d1e68818eee25479d9c52c82ae94b558",
+    "src/main.s": "2eb219c1b8d7e27a8163d15c5f19067ab23043a6c98e5ebe3b2d8c2accfc07ef",
+    "src/marked.s": "9f449ab58a63deeb42a15ee264607a73d1fee333cc2f6e3134a42ab3c2e3dd5e",
+    "src/math.s": "32cb46ac9d83454eb768ae6632ec5051a7fe4a0e16185090a84fb66904fb8188",
+    "src/matmul.s": "388c0711cd6c85986525a62642af7a5db48e9fefb805129476382e7a36905dc2",
+    "src/matmul8.s": "ad36e6dcf22068008c636604f39ec51b47cc09266e46ac9fe7f487fd940d5b8a",
+    "src/matmul8x3.s": "67219a4c39efb71b1a9ded706a2808f29ce2313fdcf672344f9a835e7cf6f0f9",
+    "src/mixer.s": "ff13ef688584575802f77fccde9f644557e8c13554d14bf762958c52a63acbd5",
+    "src/model.s": "f7f4636afd946583a8e952b216b26e2742b8405ed6a1752aca84612e43c42325",
+    "src/model_init.s": "7e2d2acb44e2567ad5b4d00a2101aa02747425a312f09a8440de626c4771bdf0",
+    "src/model_layout.s": "312ebf59bd93323ad9af62dc660b42a898c408dc3ee64c2bf40fcbfe900f9451",
+    "src/model_open.s": "359c5cc4626ceca19d9e511116227ecfb2b134cfa1762766ec6e5f5e6a359802",
+    "src/model_profile.s": "34acfcb4b0ee60749c3388508ee3b679626e602e86d77043b8bac357400cb114",
+    "src/prefetch.s": "85704e6d23c1105b0773d9cca6a9d61dd192488906e3d17ae9aa9ea5dd851cf0",
+    "src/prefill.s": "fd2fe4da7435e971c95b80ab604d494c87987334a871d08b473475d2144cb2e6",
+    "src/preprocess.s": "710c151f0cb275a176088c62df8bc4836b0cce16c292f476e1992cefcf65b613",
+    "src/prompt.s": "af369de34d7e75f3d544c6d25dc44dd6e5cd74e896bdd0b16d6640692c17172f",
+    "src/qkv.s": "7638ff9d97f6559bbdaf322f8ddb526b8f7c7a33c6103ee72bb88f690c7fe02f",
+    "src/resolve.s": "7d2508b8ab2b8b6311ba57373213b39323dd1d01e0bbd2944629d671af5511f3",
+    "src/rope.s": "c14be62bc1785f3d349d4601fc5bd2749078c8eaf13c73bd0b9d34be875a7777",
+    "src/rope_constants.s": "3ce305720b7f4987c5e6ff2def4750766f20db69db820ca73a6f16a772e583cf",
+    "src/rope_table.s": "eb2409f3c35f36ee6b93c26fbde17f18315b82cc4d6176dbcbbf81b70031a4d3",
+    "src/score.s": "096439a738635a205aa51de79129447cf10c7997ef8642a74f53833b8c053a70",
+    "src/string.s": "f838203bcdd7e1cf2b49c5e93adc2c3cc64174ac465a3d91d8e7397a8f3b77cc",
+    "src/tensor.s": "ed97e875282668472b0519e14db8a719c2c67cc55387bf480c982c9b4e6ceb1d",
+    "src/token.s": "4c34c423a9ff423b409474918b943ec0a5afdc1be89d4d6d3140cdc3e72d5e18",
+    "src/trie.s": "1accc1b945cad178a82dabea464ce4386585cc8f7f27645386a3d7794841eee0",
+    "src/trig.s": "844d0b4e64f03e9258f343213c8cf7cb14b9093279e2724dc594146288b53d27",
+    "src/unigram.s": "423222ce259a50bab3f942521920fbfb52eff1fbaf35cd9721ac4bd5a2185f7d",
+    "src/utf8.s": "a6610704d4018edbd563056625fd71f2f482b563485b47c7e45c2b94d145284e",
+    "src/vocab.s": "4733ac8a4e43368519fe1dba9662e5e147d09d159c80b2a37248dcceb7380a87",
+    "src/vocab_load.s": "3b9b34c43d3e017df525c64a17857f16b6fda05c3a2c243480903188d966fca6",
+    "src/weight_schema.s": "f0c034ad61d9a4bf001af9bcbd558a05998a2bae4cd0915da55fe29b97d8229a",
+    "tools/__init__.py": "db9a164725866c932b89101d9330a3f105832fcb9c867afd31a4828af13dc344",
+    "tools/benchmark.py": "6fe9c5bbd6696c6f6e7e489f09f6d7461e58df62f326fb9b063649d920d87569",
+    "tools/compare_backends.py": "af194b8025c81cedbe073baefa67b4e76596653c7aaf20790bfa59790e94b8dc",
+    "tools/compare_engine.py": "43c8da6f7ab567bb3d24188d358318c7e6c70662d454e1f0a85fe88998a4731b",
+    "tools/compare_translations.py": "3365652ed40880f05ac920b76de6eba8014e3ab6d74daae3565592ec423acdf4",
+    "tools/download.py": "f8449bea2528bdef2e06af2a4a2b5d79b122666607b9aa0e5a2840f4fb7e0509",
+    "tools/embed_metal.py": "95e137e5b82df7c5b51c68ff4b7c3a9452258b5bf36dfbdac38ea09b6a13d0a0",
+    "tools/generate_launchers.py": "6690d4921b4da83ce805d7eaa2dbf8b1ae1d6114e09ee240437ec0f5c3990d17",
+    "tools/generate_model.py": "b293e09c03544f1d79c1f543a7e24ee008b4693fc89bc920e0bfb5b415541576",
+    "tools/model_catalog.py": "4ed17132e84826a37e949936e23a82ff120ef8617d47af8b05b7b8ad90c1ce92",
+    "tools/model_layout.py": "bee858f70f55ce87b8eca9c50ab2c39b65591a0e56aee5aad98973f717e6b322",
+    "tools/reference_first.py": "347943c9ca9b30ad2aba8123cf9bb2a027fa65d89dceb5ff5117a4586713c751",
+    "tools/rope_constants.py": "3221300ed88126c89a929600d8846b14c74d65a6167624f29395a0750be689e3",
+    "tools/safetensors_headers.py": "317d685ce4a90d2e11d8c99dfb0613dbca35d54c1fce25d112bd88ff669c3fe4",
+    "tools/server.py": "393b939df4d6e5f2ba1858f4a295ab7a0886d8f16084a696313e197fe959c28a",
+    "tools/verify_api.py": "271af20eb41ad2288175cdf59ffdaac8896f223dd61fc350bf26c51c1c3105ed",
+    "tools/verify_boundaries.py": "d1a7b8260b94a842d261e5ef0ccc8d676db79e798d74e4aac0f5b8f16bc8267c",
+    "tools/verify_official_tokenizer.py": "0dc1392c73ba275030557e77d13d5cd64d07e38431c8e2ae95d2385400901730",
+    "tools/verify_segments.py": "036ec49649985aa45e8c6a00bd1e3bc58f58d87dd20b44862665ca0934a535f6",
+    "tools/verify_weights.py": "8efe29dc77d4a418909fcb1e12966d301f5f3967f64a5c07b8f43b1fdc239656",
+    "tools/weight_schema.py": "5d97caf8d9cbf40e2dd50d1738b2b778d16872052de7bbe23a7d62a81244f53f",
+    "nix/package.nix": "ef4efcc12370353229e84af7f098fd12fc3ab34baae38738c0dc02b25f968577",
+    "nix/plamo-download.sh.in": "735ca5500ea8de20ddfb2d623b25a3a5d2f76bdd7556302e9f905a9f9742e7b0",
+    "nix/plamo-server.sh.in": "6cc1472789c6442168e8dd565529a9f5f1745cd36e5d6d59021cce65cd8fe1d1",
+    "nix/plamo.sh.in": "7549ef207d8ac02a5821cfd5bf6eed337d1218c34250685f3177210d9d7a61e9",
+    "Makefile": "412640123306d522b14279f3d63783176e39ec14b16a725d8ffa7d91dc45df1c",
+    "flake.nix": "1ca602aaaee6e0cdd6c69c5ac84eb7b06ba375af31d406fee21cf9a530fee7b1",
+    "flake.lock": "008b5e6846703de4d58c15706b442f372bb1605050c55aaa108ae5d983df6b2d"
+  },
+  "saved_baseline_executable_sha256": {
+    "plamo-worker": "c3d383836f7c7f13b81ebf967a6dd6e3e14988c54231b262fa607c41dc42f61a",
+    "plamo-worker-2b": "bef761800f9d6703e03a6df2a0d6fcb0773b66a3e61299a8932fd13704da54dc",
+    "plamo-worker-0.8b": "dd23637daef1174c4add275668229e40a9d8cb75d050ecd257f2b5d5b1712260"
+  },
+  "method": {
+    "baseline": "Executable saved from the working tree before this task; prior Metal implementation forced to metal-fp32. This was not a clean HEAD build.",
+    "measurement": "Before then after, sequentially. No other build/test/benchmark ran during recorded final timing samples. Initial load, tokenizer cross-checks and a cancelled warm-up prefill excluded. Short: Hello., 21 input tokens, one output token plus one decode to stop. Long: 81 input tokens, first 12 output tokens. Medians of 5 short resident/auto samples or 3 long/stream samples.",
+    "precision": "Both before and after use original BF16 weights with FP32 operands and accumulation. No additional quantization or FP16 rounding.",
+    "cache_caveat": "8b-auto-short had different startup memory budgets and retained weight amounts; its speedup includes reduced disk I/O and is not an isolated kernel comparison."
+  },
+  "performance": {
+    "0.8b-resident-short": {
+      "before": {
+        "model": "plamo-3-translate-0.8b",
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "requests": [
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000238,
+              "prefill_seconds": 0.146365,
+              "decode_seconds": 0.034417,
+              "first_token_seconds": 0.147181,
+              "total_seconds": 0.181536,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 1812283392,
+            "verification": {
+              "prefill_logits_hash": "7e394029ad0dc5af",
+              "prefill_state_hash": "d1f5c296a5985e9b",
+              "logits_hash": "228b3e2bacd47338",
+              "state_hash": "bdfb930bb554ad7a"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 1780709128,
+              "preloaded_weight_bytes": 1780482048,
+              "estimated_reclaimable_bytes_at_start": 17232314368,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 1847817992,
+              "max_budget_bytes": 1847817992,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864,
+              "cache_hits": 207,
+              "cache_hit_bytes": 4350541824,
+              "cache_misses": 74,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 207,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.246113665,
+              "allocated_bytes": 1849540608,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 8e-05,
+              "prefill_seconds": 0.128322,
+              "decode_seconds": 0.035996,
+              "first_token_seconds": 0.128973,
+              "total_seconds": 0.164906,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 1812398080,
+            "verification": {
+              "prefill_logits_hash": "7e394029ad0dc5af",
+              "prefill_state_hash": "d1f5c296a5985e9b",
+              "logits_hash": "228b3e2bacd47338",
+              "state_hash": "bdfb930bb554ad7a"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 1780709128,
+              "preloaded_weight_bytes": 1780482048,
+              "estimated_reclaimable_bytes_at_start": 17232314368,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 1847817992,
+              "max_budget_bytes": 1847817992,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864,
+              "cache_hits": 345,
+              "cache_hit_bytes": 7250903040,
+              "cache_misses": 74,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 345,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.363198584,
+              "allocated_bytes": 1849540608,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000109,
+              "prefill_seconds": 0.128234,
+              "decode_seconds": 0.035961,
+              "first_token_seconds": 0.128927,
+              "total_seconds": 0.164824,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 1812398080,
+            "verification": {
+              "prefill_logits_hash": "7e394029ad0dc5af",
+              "prefill_state_hash": "d1f5c296a5985e9b",
+              "logits_hash": "228b3e2bacd47338",
+              "state_hash": "bdfb930bb554ad7a"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 1780709128,
+              "preloaded_weight_bytes": 1780482048,
+              "estimated_reclaimable_bytes_at_start": 17232314368,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 1847817992,
+              "max_budget_bytes": 1847817992,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864,
+              "cache_hits": 483,
+              "cache_hit_bytes": 10151264256,
+              "cache_misses": 74,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 483,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.480254167,
+              "allocated_bytes": 1849540608,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000101,
+              "prefill_seconds": 0.12736,
+              "decode_seconds": 0.035778,
+              "first_token_seconds": 0.128075,
+              "total_seconds": 0.16378,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 1812398080,
+            "verification": {
+              "prefill_logits_hash": "7e394029ad0dc5af",
+              "prefill_state_hash": "d1f5c296a5985e9b",
+              "logits_hash": "228b3e2bacd47338",
+              "state_hash": "bdfb930bb554ad7a"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 1780709128,
+              "preloaded_weight_bytes": 1780482048,
+              "estimated_reclaimable_bytes_at_start": 17232314368,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 1847817992,
+              "max_budget_bytes": 1847817992,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864,
+              "cache_hits": 621,
+              "cache_hit_bytes": 13051625472,
+              "cache_misses": 74,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 621,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.597705209,
+              "allocated_bytes": 1849540608,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000142,
+              "prefill_seconds": 0.127583,
+              "decode_seconds": 0.034239,
+              "first_token_seconds": 0.128326,
+              "total_seconds": 0.162495,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 1812398080,
+            "verification": {
+              "prefill_logits_hash": "7e394029ad0dc5af",
+              "prefill_state_hash": "d1f5c296a5985e9b",
+              "logits_hash": "228b3e2bacd47338",
+              "state_hash": "bdfb930bb554ad7a"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 1780709128,
+              "preloaded_weight_bytes": 1780482048,
+              "estimated_reclaimable_bytes_at_start": 17232314368,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 1847817992,
+              "max_budget_bytes": 1847817992,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864,
+              "cache_hits": 759,
+              "cache_hit_bytes": 15951986688,
+              "cache_misses": 74,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 759,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.715118792,
+              "allocated_bytes": 1849540608,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          }
+        ],
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-0.8b",
+          "repository": "pfnet/plamo-3-translate-0.8b",
+          "revision": "573eb1be9fd8c44402650810c680104e5aec81e8",
+          "worker_pid": 43133,
+          "load_seconds": 0.734569,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 1780709128,
+            "preloaded_weight_bytes": 1780482048,
+            "estimated_reclaimable_bytes_at_start": 17232314368,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 1847817992,
+            "max_budget_bytes": 1847817992,
+            "cached_weight_bytes": 1780482048,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 74,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 1847984128,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.128234,
+          "decode_seconds": 0.035778,
+          "first_token_seconds": 0.128927,
+          "total_seconds": 0.164824
+        }
+      },
+      "after": {
+        "model": "plamo-3-translate-0.8b",
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "requests": [
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000105,
+              "prefill_seconds": 0.084819,
+              "decode_seconds": 0.035344,
+              "first_token_seconds": 0.085551,
+              "total_seconds": 0.120822,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 1810579456,
+            "verification": {
+              "prefill_logits_hash": "e89ef8e4b592aa64",
+              "prefill_state_hash": "f722bcfac24e67ca",
+              "logits_hash": "f9c29e0a15643cb1",
+              "state_hash": "bf8a61bc40e729b8"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 1780709128,
+              "preloaded_weight_bytes": 1780482048,
+              "estimated_reclaimable_bytes_at_start": 17303371776,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 15138226176,
+              "max_budget_bytes": 15138226176,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864,
+              "cache_hits": 207,
+              "cache_hit_bytes": 4350541824,
+              "cache_misses": 74,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 351,
+              "command_buffers": 147,
+              "fused_mlps": 48,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.161669041,
+              "allocated_bytes": 1850048512,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 8.1e-05,
+              "prefill_seconds": 0.084827,
+              "decode_seconds": 0.036315,
+              "first_token_seconds": 0.085481,
+              "total_seconds": 0.121733,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 1810661376,
+            "verification": {
+              "prefill_logits_hash": "e89ef8e4b592aa64",
+              "prefill_state_hash": "f722bcfac24e67ca",
+              "logits_hash": "f9c29e0a15643cb1",
+              "state_hash": "bf8a61bc40e729b8"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 1780709128,
+              "preloaded_weight_bytes": 1780482048,
+              "estimated_reclaimable_bytes_at_start": 17303371776,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 15138226176,
+              "max_budget_bytes": 15138226176,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864,
+              "cache_hits": 345,
+              "cache_hit_bytes": 7250903040,
+              "cache_misses": 74,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 585,
+              "command_buffers": 245,
+              "fused_mlps": 80,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.251485958,
+              "allocated_bytes": 1850048512,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 7.1e-05,
+              "prefill_seconds": 0.084055,
+              "decode_seconds": 0.034718,
+              "first_token_seconds": 0.084744,
+              "total_seconds": 0.119396,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 1810661376,
+            "verification": {
+              "prefill_logits_hash": "e89ef8e4b592aa64",
+              "prefill_state_hash": "f722bcfac24e67ca",
+              "logits_hash": "f9c29e0a15643cb1",
+              "state_hash": "bf8a61bc40e729b8"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 1780709128,
+              "preloaded_weight_bytes": 1780482048,
+              "estimated_reclaimable_bytes_at_start": 17303371776,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 15138226176,
+              "max_budget_bytes": 15138226176,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864,
+              "cache_hits": 483,
+              "cache_hit_bytes": 10151264256,
+              "cache_misses": 74,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 819,
+              "command_buffers": 343,
+              "fused_mlps": 112,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.3416325,
+              "allocated_bytes": 1850048512,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.00011,
+              "prefill_seconds": 0.085301,
+              "decode_seconds": 0.034199,
+              "first_token_seconds": 0.085981,
+              "total_seconds": 0.120117,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 1810661376,
+            "verification": {
+              "prefill_logits_hash": "e89ef8e4b592aa64",
+              "prefill_state_hash": "f722bcfac24e67ca",
+              "logits_hash": "f9c29e0a15643cb1",
+              "state_hash": "bf8a61bc40e729b8"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 1780709128,
+              "preloaded_weight_bytes": 1780482048,
+              "estimated_reclaimable_bytes_at_start": 17303371776,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 15138226176,
+              "max_budget_bytes": 15138226176,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864,
+              "cache_hits": 621,
+              "cache_hit_bytes": 13051625472,
+              "cache_misses": 74,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1053,
+              "command_buffers": 441,
+              "fused_mlps": 144,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.431596835,
+              "allocated_bytes": 1850048512,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 7.9e-05,
+              "prefill_seconds": 0.082253,
+              "decode_seconds": 0.034809,
+              "first_token_seconds": 0.0829,
+              "total_seconds": 0.117647,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 138,
+              "cache_hit_bytes": 2900361216,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 1810661376,
+            "verification": {
+              "prefill_logits_hash": "e89ef8e4b592aa64",
+              "prefill_state_hash": "f722bcfac24e67ca",
+              "logits_hash": "f9c29e0a15643cb1",
+              "state_hash": "bf8a61bc40e729b8"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 1780709128,
+              "preloaded_weight_bytes": 1780482048,
+              "estimated_reclaimable_bytes_at_start": 17303371776,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 15138226176,
+              "max_budget_bytes": 15138226176,
+              "cached_weight_bytes": 1780482048,
+              "staging_bytes": 67108864,
+              "cache_hits": 759,
+              "cache_hit_bytes": 15951986688,
+              "cache_misses": 74,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1287,
+              "command_buffers": 539,
+              "fused_mlps": 176,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.518947544,
+              "allocated_bytes": 1850048512,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          }
+        ],
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-0.8b",
+          "repository": "pfnet/plamo-3-translate-0.8b",
+          "revision": "573eb1be9fd8c44402650810c680104e5aec81e8",
+          "worker_pid": 43212,
+          "load_seconds": 0.452774,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 1780709128,
+            "preloaded_weight_bytes": 1780482048,
+            "estimated_reclaimable_bytes_at_start": 17303371776,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 15138226176,
+            "max_budget_bytes": 15138226176,
+            "cached_weight_bytes": 1780482048,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 74,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 1847984128,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.084819,
+          "decode_seconds": 0.034809,
+          "first_token_seconds": 0.085481,
+          "total_seconds": 0.120117
+        }
+      },
+      "same_retained_weights_and_io": true,
+      "speedup": 1.372195442776626,
+      "time_reduction_percent": 27.12408387128088
+    },
+    "2b-resident-short": {
+      "before": {
+        "model": "plamo-3-translate-2b",
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "requests": [
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000106,
+              "prefill_seconds": 0.438182,
+              "decode_seconds": 0.099389,
+              "first_token_seconds": 0.438867,
+              "total_seconds": 0.538193,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5793595392,
+            "verification": {
+              "prefill_logits_hash": "7a94315d7510a09e",
+              "prefill_state_hash": "bac83ada7ed4527f",
+              "logits_hash": "ca5bd0172ff6b12d",
+              "state_hash": "466d2e9aab0489b7"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 17259020288,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 5824328848,
+              "max_budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 387,
+              "cache_hit_bytes": 15618539520,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 387,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.849417412,
+              "allocated_bytes": 5826166784,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000137,
+              "prefill_seconds": 0.44696,
+              "decode_seconds": 0.098673,
+              "first_token_seconds": 0.447683,
+              "total_seconds": 0.546294,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5793841152,
+            "verification": {
+              "prefill_logits_hash": "7a94315d7510a09e",
+              "prefill_state_hash": "bac83ada7ed4527f",
+              "logits_hash": "ca5bd0172ff6b12d",
+              "state_hash": "466d2e9aab0489b7"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 17259020288,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 5824328848,
+              "max_budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 645,
+              "cache_hit_bytes": 26030899200,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 645,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.298558329,
+              "allocated_bytes": 5826166784,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000108,
+              "prefill_seconds": 0.437559,
+              "decode_seconds": 0.100097,
+              "first_token_seconds": 0.438345,
+              "total_seconds": 0.538364,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5793841152,
+            "verification": {
+              "prefill_logits_hash": "7a94315d7510a09e",
+              "prefill_state_hash": "bac83ada7ed4527f",
+              "logits_hash": "ca5bd0172ff6b12d",
+              "state_hash": "466d2e9aab0489b7"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 17259020288,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 5824328848,
+              "max_budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 903,
+              "cache_hit_bytes": 36443258880,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 903,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.743447665,
+              "allocated_bytes": 5826166784,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.00011,
+              "prefill_seconds": 0.444751,
+              "decode_seconds": 0.100217,
+              "first_token_seconds": 0.44544,
+              "total_seconds": 0.545594,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5793841152,
+            "verification": {
+              "prefill_logits_hash": "7a94315d7510a09e",
+              "prefill_state_hash": "bac83ada7ed4527f",
+              "logits_hash": "ca5bd0172ff6b12d",
+              "state_hash": "466d2e9aab0489b7"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 17259020288,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 5824328848,
+              "max_budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 1161,
+              "cache_hit_bytes": 46855618560,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1161,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 2.189921789,
+              "allocated_bytes": 5826166784,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.00011,
+              "prefill_seconds": 0.441624,
+              "decode_seconds": 0.101442,
+              "first_token_seconds": 0.442368,
+              "total_seconds": 0.543747,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5793841152,
+            "verification": {
+              "prefill_logits_hash": "7a94315d7510a09e",
+              "prefill_state_hash": "bac83ada7ed4527f",
+              "logits_hash": "ca5bd0172ff6b12d",
+              "state_hash": "466d2e9aab0489b7"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 17259020288,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 5824328848,
+              "max_budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 1419,
+              "cache_hit_bytes": 57267978240,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1419,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 2.63858154,
+              "allocated_bytes": 5826166784,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          }
+        ],
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 43318,
+          "load_seconds": 2.070951,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5756682240,
+            "estimated_reclaimable_bytes_at_start": 17259020288,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 5824328848,
+            "max_budget_bytes": 5824328848,
+            "cached_weight_bytes": 5756682240,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 138,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 5824184320,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.441624,
+          "decode_seconds": 0.100097,
+          "first_token_seconds": 0.442368,
+          "total_seconds": 0.543747
+        }
+      },
+      "after": {
+        "model": "plamo-3-translate-2b",
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "requests": [
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000115,
+              "prefill_seconds": 0.264118,
+              "decode_seconds": 0.093691,
+              "first_token_seconds": 0.264826,
+              "total_seconds": 0.358454,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5790941184,
+            "verification": {
+              "prefill_logits_hash": "728dd6e9379c0c8d",
+              "prefill_state_hash": "07dea72425fcf42a",
+              "logits_hash": "4de87b323f303d86",
+              "state_hash": "4ae2fa7e739b8964"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 17196056576,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 15044247552,
+              "max_budget_bytes": 15044247552,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 387,
+              "cache_hit_bytes": 15618539520,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 603,
+              "command_buffers": 219,
+              "fused_mlps": 72,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.558990666,
+              "allocated_bytes": 5827313664,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000126,
+              "prefill_seconds": 0.264958,
+              "decode_seconds": 0.096116,
+              "first_token_seconds": 0.265661,
+              "total_seconds": 0.361714,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5791121408,
+            "verification": {
+              "prefill_logits_hash": "728dd6e9379c0c8d",
+              "prefill_state_hash": "07dea72425fcf42a",
+              "logits_hash": "4de87b323f303d86",
+              "state_hash": "4ae2fa7e739b8964"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 17196056576,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 15044247552,
+              "max_budget_bytes": 15044247552,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 645,
+              "cache_hit_bytes": 26030899200,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1005,
+              "command_buffers": 365,
+              "fused_mlps": 120,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 0.867123458,
+              "allocated_bytes": 5827313664,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000104,
+              "prefill_seconds": 0.266355,
+              "decode_seconds": 0.106405,
+              "first_token_seconds": 0.267126,
+              "total_seconds": 0.373442,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5791121408,
+            "verification": {
+              "prefill_logits_hash": "728dd6e9379c0c8d",
+              "prefill_state_hash": "07dea72425fcf42a",
+              "logits_hash": "4de87b323f303d86",
+              "state_hash": "4ae2fa7e739b8964"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 17196056576,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 15044247552,
+              "max_budget_bytes": 15044247552,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 903,
+              "cache_hit_bytes": 36443258880,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1407,
+              "command_buffers": 511,
+              "fused_mlps": 168,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.189890959,
+              "allocated_bytes": 5827313664,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000134,
+              "prefill_seconds": 0.264179,
+              "decode_seconds": 0.094163,
+              "first_token_seconds": 0.264967,
+              "total_seconds": 0.35906,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5791121408,
+            "verification": {
+              "prefill_logits_hash": "728dd6e9379c0c8d",
+              "prefill_state_hash": "07dea72425fcf42a",
+              "logits_hash": "4de87b323f303d86",
+              "state_hash": "4ae2fa7e739b8964"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 17196056576,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 15044247552,
+              "max_budget_bytes": 15044247552,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 1161,
+              "cache_hit_bytes": 46855618560,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1809,
+              "command_buffers": 657,
+              "fused_mlps": 216,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.497705665,
+              "allocated_bytes": 5827313664,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000108,
+              "prefill_seconds": 0.267047,
+              "decode_seconds": 0.095164,
+              "first_token_seconds": 0.267734,
+              "total_seconds": 0.362835,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 258,
+              "cache_hit_bytes": 10412359680,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5791121408,
+            "verification": {
+              "prefill_logits_hash": "728dd6e9379c0c8d",
+              "prefill_state_hash": "07dea72425fcf42a",
+              "logits_hash": "4de87b323f303d86",
+              "state_hash": "4ae2fa7e739b8964"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 17196056576,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 15044247552,
+              "max_budget_bytes": 15044247552,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 1419,
+              "cache_hit_bytes": 57267978240,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 2211,
+              "command_buffers": 803,
+              "fused_mlps": 264,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.807297457,
+              "allocated_bytes": 5827313664,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          }
+        ],
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 43397,
+          "load_seconds": 1.10465,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5756682240,
+            "estimated_reclaimable_bytes_at_start": 17196056576,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 15044247552,
+            "max_budget_bytes": 15044247552,
+            "cached_weight_bytes": 5756682240,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 138,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 5824184320,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.264958,
+          "decode_seconds": 0.095164,
+          "first_token_seconds": 0.265661,
+          "total_seconds": 0.361714
+        }
+      },
+      "same_retained_weights_and_io": true,
+      "speedup": 1.5032511874022019,
+      "time_reduction_percent": 33.47751803688113
+    },
+    "2b-resident-long": {
+      "before": {
+        "model": "plamo-3-translate-2b",
+        "text": "Translation quality depends on context, terminology, and the structure of the original document. A useful system should preserve numbers, dates, and product names while producing natural sentences. This benchmark compares the same full precision model on the CPU and the GPU. It measures the delay before the first output token and the time spent generating subsequent tokens, while checking the translated text and the numerical differences between the two implementations.",
+        "direction": "en-ja",
+        "max_tokens": 12,
+        "requests": [
+          {
+            "translation": "翻訳品質は、文脈、用語、および原文の構造に依存する。",
+            "token_ids": [
+              56096,
+              52075,
+              50116,
+              86018,
+              50101,
+              57562,
+              56429,
+              77793,
+              50100,
+              51625,
+              66322,
+              50546
+            ],
+            "event": "done",
+            "finish_reason": "length",
+            "usage": {
+              "prompt_tokens": 81,
+              "completion_tokens": 12,
+              "total_tokens": 93
+            },
+            "timings": {
+              "tokenize_seconds": 0.000704,
+              "prefill_seconds": 0.990051,
+              "decode_seconds": 1.126616,
+              "first_token_seconds": 0.991339,
+              "total_seconds": 2.117893,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1548,
+              "cache_hit_bytes": 62474158080,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5817696256,
+            "verification": {
+              "prefill_logits_hash": "ce54e413d0519262",
+              "prefill_state_hash": "a3dcb7413e745c24",
+              "logits_hash": "9d0f0341dd1415a3",
+              "state_hash": "ded0c5e2eb97a66a"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 16863903744,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 5824328848,
+              "max_budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 1677,
+              "cache_hit_bytes": 67680337920,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1677,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.915720616,
+              "allocated_bytes": 5831770112,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "翻訳品質は、文脈、用語、および原文の構造に依存する。",
+            "token_ids": [
+              56096,
+              52075,
+              50116,
+              86018,
+              50101,
+              57562,
+              56429,
+              77793,
+              50100,
+              51625,
+              66322,
+              50546
+            ],
+            "event": "done",
+            "finish_reason": "length",
+            "usage": {
+              "prompt_tokens": 81,
+              "completion_tokens": 12,
+              "total_tokens": 93
+            },
+            "timings": {
+              "tokenize_seconds": 0.000457,
+              "prefill_seconds": 0.971167,
+              "decode_seconds": 1.119351,
+              "first_token_seconds": 0.972221,
+              "total_seconds": 2.091508,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1548,
+              "cache_hit_bytes": 62474158080,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5819662336,
+            "verification": {
+              "prefill_logits_hash": "ce54e413d0519262",
+              "prefill_state_hash": "a3dcb7413e745c24",
+              "logits_hash": "9d0f0341dd1415a3",
+              "state_hash": "ded0c5e2eb97a66a"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 16863903744,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 5824328848,
+              "max_budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 3225,
+              "cache_hit_bytes": 130154496000,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 3225,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 3.423579406,
+              "allocated_bytes": 5831770112,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "翻訳品質は、文脈、用語、および原文の構造に依存する。",
+            "token_ids": [
+              56096,
+              52075,
+              50116,
+              86018,
+              50101,
+              57562,
+              56429,
+              77793,
+              50100,
+              51625,
+              66322,
+              50546
+            ],
+            "event": "done",
+            "finish_reason": "length",
+            "usage": {
+              "prompt_tokens": 81,
+              "completion_tokens": 12,
+              "total_tokens": 93
+            },
+            "timings": {
+              "tokenize_seconds": 0.000464,
+              "prefill_seconds": 0.966438,
+              "decode_seconds": 1.126233,
+              "first_token_seconds": 0.967517,
+              "total_seconds": 2.093684,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1548,
+              "cache_hit_bytes": 62474158080,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5819662336,
+            "verification": {
+              "prefill_logits_hash": "ce54e413d0519262",
+              "prefill_state_hash": "a3dcb7413e745c24",
+              "logits_hash": "9d0f0341dd1415a3",
+              "state_hash": "ded0c5e2eb97a66a"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 16863903744,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 5824328848,
+              "max_budget_bytes": 5824328848,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 4773,
+              "cache_hit_bytes": 192628654080,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 4773,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 4.922415278,
+              "allocated_bytes": 5831770112,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          }
+        ],
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 43604,
+          "load_seconds": 1.096815,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5756682240,
+            "estimated_reclaimable_bytes_at_start": 16863903744,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 5824328848,
+            "max_budget_bytes": 5824328848,
+            "cached_weight_bytes": 5756682240,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 138,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 5824184320,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.971167,
+          "decode_seconds": 1.126233,
+          "first_token_seconds": 0.972221,
+          "total_seconds": 2.093684
+        }
+      },
+      "after": {
+        "model": "plamo-3-translate-2b",
+        "text": "Translation quality depends on context, terminology, and the structure of the original document. A useful system should preserve numbers, dates, and product names while producing natural sentences. This benchmark compares the same full precision model on the CPU and the GPU. It measures the delay before the first output token and the time spent generating subsequent tokens, while checking the translated text and the numerical differences between the two implementations.",
+        "direction": "en-ja",
+        "max_tokens": 12,
+        "requests": [
+          {
+            "translation": "翻訳品質は、文脈、用語、および原文の構造に依存する。",
+            "token_ids": [
+              56096,
+              52075,
+              50116,
+              86018,
+              50101,
+              57562,
+              56429,
+              77793,
+              50100,
+              51625,
+              66322,
+              50546
+            ],
+            "event": "done",
+            "finish_reason": "length",
+            "usage": {
+              "prompt_tokens": 81,
+              "completion_tokens": 12,
+              "total_tokens": 93
+            },
+            "timings": {
+              "tokenize_seconds": 0.00047,
+              "prefill_seconds": 0.74967,
+              "decode_seconds": 1.05633,
+              "first_token_seconds": 0.750724,
+              "total_seconds": 1.806991,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1548,
+              "cache_hit_bytes": 62474158080,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5806702592,
+            "verification": {
+              "prefill_logits_hash": "ecbf811346a28107",
+              "prefill_state_hash": "f110cda7f418366c",
+              "logits_hash": "2b2176b7e70f19aa",
+              "state_hash": "89c3495df605198e"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 16835100672,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 14684160000,
+              "max_budget_bytes": 14684160000,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 1677,
+              "cache_hit_bytes": 67680337920,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 2613,
+              "command_buffers": 949,
+              "fused_mlps": 312,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 1.692756458,
+              "allocated_bytes": 5835669504,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "翻訳品質は、文脈、用語、および原文の構造に依存する。",
+            "token_ids": [
+              56096,
+              52075,
+              50116,
+              86018,
+              50101,
+              57562,
+              56429,
+              77793,
+              50100,
+              51625,
+              66322,
+              50546
+            ],
+            "event": "done",
+            "finish_reason": "length",
+            "usage": {
+              "prompt_tokens": 81,
+              "completion_tokens": 12,
+              "total_tokens": 93
+            },
+            "timings": {
+              "tokenize_seconds": 0.000471,
+              "prefill_seconds": 0.751484,
+              "decode_seconds": 1.060854,
+              "first_token_seconds": 0.752538,
+              "total_seconds": 1.813329,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1548,
+              "cache_hit_bytes": 62474158080,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5808603136,
+            "verification": {
+              "prefill_logits_hash": "ecbf811346a28107",
+              "prefill_state_hash": "f110cda7f418366c",
+              "logits_hash": "2b2176b7e70f19aa",
+              "state_hash": "89c3495df605198e"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 16835100672,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 14684160000,
+              "max_budget_bytes": 14684160000,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 3225,
+              "cache_hit_bytes": 130154496000,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 5025,
+              "command_buffers": 1825,
+              "fused_mlps": 600,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 3.142651167,
+              "allocated_bytes": 5835669504,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "翻訳品質は、文脈、用語、および原文の構造に依存する。",
+            "token_ids": [
+              56096,
+              52075,
+              50116,
+              86018,
+              50101,
+              57562,
+              56429,
+              77793,
+              50100,
+              51625,
+              66322,
+              50546
+            ],
+            "event": "done",
+            "finish_reason": "length",
+            "usage": {
+              "prompt_tokens": 81,
+              "completion_tokens": 12,
+              "total_tokens": 93
+            },
+            "timings": {
+              "tokenize_seconds": 0.000535,
+              "prefill_seconds": 0.753772,
+              "decode_seconds": 1.054064,
+              "first_token_seconds": 0.754922,
+              "total_seconds": 1.80892,
+              "decode_steps": 11
+            },
+            "weight_io": {
+              "staged_bytes": 0,
+              "read_calls": 0,
+              "cache_hits": 1548,
+              "cache_hit_bytes": 62474158080,
+              "cache_misses": 0
+            },
+            "process_peak_rss_bytes": 5808603136,
+            "verification": {
+              "prefill_logits_hash": "ecbf811346a28107",
+              "prefill_state_hash": "f110cda7f418366c",
+              "logits_hash": "2b2176b7e70f19aa",
+              "state_hash": "89c3495df605198e"
+            },
+            "memory": {
+              "mode": "resident",
+              "weight_bytes": 5757219984,
+              "preloaded_weight_bytes": 5756682240,
+              "estimated_reclaimable_bytes_at_start": 16835100672,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 14684160000,
+              "max_budget_bytes": 14684160000,
+              "cached_weight_bytes": 5756682240,
+              "staging_bytes": 67108864,
+              "cache_hits": 4773,
+              "cache_hit_bytes": 192628654080,
+              "cache_misses": 138,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 7437,
+              "command_buffers": 2701,
+              "fused_mlps": 888,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 4.58874263,
+              "allocated_bytes": 5835669504,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          }
+        ],
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 43692,
+          "load_seconds": 1.098751,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5756682240,
+            "estimated_reclaimable_bytes_at_start": 16835100672,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 14684160000,
+            "max_budget_bytes": 14684160000,
+            "cached_weight_bytes": 5756682240,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 138,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 5824184320,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "seconds_median": {
+          "prefill_seconds": 0.751484,
+          "decode_seconds": 1.05633,
+          "first_token_seconds": 0.752538,
+          "total_seconds": 1.80892
+        }
+      },
+      "same_retained_weights_and_io": true,
+      "speedup": 1.157422108219269,
+      "time_reduction_percent": 13.601097395786566
+    },
+    "8b-stream-short": {
+      "before": {
+        "model": "plamo-3-translate-8b",
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "requests": [
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000111,
+              "prefill_seconds": 6.054992,
+              "decode_seconds": 3.585827,
+              "first_token_seconds": 6.05572,
+              "total_seconds": 9.641481,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 540
+            },
+            "process_peak_rss_bytes": 107839488,
+            "verification": {
+              "prefill_logits_hash": "8ccc9b8a9108190a",
+              "prefill_state_hash": "4a2d3f211d0ca42d",
+              "logits_hash": "d43d5c69eb8b3bec",
+              "state_hash": "57a7074c512f0831"
+            },
+            "memory": {
+              "mode": "stream",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 17581768704,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 67108864,
+              "max_budget_bytes": 15429386240,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 67108864,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 810,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 810,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 5.785223711,
+              "allocated_bytes": 69566464,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000128,
+              "prefill_seconds": 6.099236,
+              "decode_seconds": 3.628255,
+              "first_token_seconds": 6.099952,
+              "total_seconds": 9.728144,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 540
+            },
+            "process_peak_rss_bytes": 108199936,
+            "verification": {
+              "prefill_logits_hash": "8ccc9b8a9108190a",
+              "prefill_state_hash": "4a2d3f211d0ca42d",
+              "logits_hash": "d43d5c69eb8b3bec",
+              "state_hash": "57a7074c512f0831"
+            },
+            "memory": {
+              "mode": "stream",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 17581768704,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 67108864,
+              "max_budget_bytes": 15429386240,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 67108864,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 1350,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1350,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 8.834930918,
+              "allocated_bytes": 69566464,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000108,
+              "prefill_seconds": 6.103203,
+              "decode_seconds": 3.616954,
+              "first_token_seconds": 6.103915,
+              "total_seconds": 9.720806,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 540
+            },
+            "process_peak_rss_bytes": 108199936,
+            "verification": {
+              "prefill_logits_hash": "8ccc9b8a9108190a",
+              "prefill_state_hash": "4a2d3f211d0ca42d",
+              "logits_hash": "d43d5c69eb8b3bec",
+              "state_hash": "57a7074c512f0831"
+            },
+            "memory": {
+              "mode": "stream",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 17581768704,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 67108864,
+              "max_budget_bytes": 15429386240,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 67108864,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 1890,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1890,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 11.860631292,
+              "allocated_bytes": 69566464,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          }
+        ],
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-8b",
+          "repository": "pfnet/plamo-3-translate-8b",
+          "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+          "worker_pid": 42819,
+          "load_seconds": 0.072205,
+          "threads": 1,
+          "memory": {
+            "mode": "stream",
+            "weight_bytes": 17063540224,
+            "preloaded_weight_bytes": 0,
+            "estimated_reclaimable_bytes_at_start": 17581768704,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 67108864,
+            "max_budget_bytes": 15429386240,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 67502080,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "seconds_median": {
+          "prefill_seconds": 6.099236,
+          "decode_seconds": 3.616954,
+          "first_token_seconds": 6.099952,
+          "total_seconds": 9.720806
+        }
+      },
+      "after": {
+        "model": "plamo-3-translate-8b",
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "requests": [
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000104,
+              "prefill_seconds": 5.069587,
+              "decode_seconds": 3.596269,
+              "first_token_seconds": 5.070279,
+              "total_seconds": 8.666485,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 540
+            },
+            "process_peak_rss_bytes": 108068864,
+            "verification": {
+              "prefill_logits_hash": "2bd69de8992fce85",
+              "prefill_state_hash": "1104c55fe0542e23",
+              "logits_hash": "bdbd2e91a703bb1e",
+              "state_hash": "d212022c3af6bc73"
+            },
+            "memory": {
+              "mode": "stream",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 17356062720,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 67108864,
+              "max_budget_bytes": 15201435648,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 67108864,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 810,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 810,
+              "command_buffers": 810,
+              "fused_mlps": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 3.879147912,
+              "allocated_bytes": 69566464,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000106,
+              "prefill_seconds": 5.088759,
+              "decode_seconds": 3.636333,
+              "first_token_seconds": 5.089478,
+              "total_seconds": 8.725748,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 540
+            },
+            "process_peak_rss_bytes": 108429312,
+            "verification": {
+              "prefill_logits_hash": "2bd69de8992fce85",
+              "prefill_state_hash": "1104c55fe0542e23",
+              "logits_hash": "bdbd2e91a703bb1e",
+              "state_hash": "d212022c3af6bc73"
+            },
+            "memory": {
+              "mode": "stream",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 17356062720,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 67108864,
+              "max_budget_bytes": 15201435648,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 67108864,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 1350,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1350,
+              "command_buffers": 1350,
+              "fused_mlps": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 5.93976908,
+              "allocated_bytes": 69566464,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000108,
+              "prefill_seconds": 5.136117,
+              "decode_seconds": 3.622322,
+              "first_token_seconds": 5.136811,
+              "total_seconds": 8.75907,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 32363249664,
+              "read_calls": 3858,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 540
+            },
+            "process_peak_rss_bytes": 108429312,
+            "verification": {
+              "prefill_logits_hash": "2bd69de8992fce85",
+              "prefill_state_hash": "1104c55fe0542e23",
+              "logits_hash": "bdbd2e91a703bb1e",
+              "state_hash": "d212022c3af6bc73"
+            },
+            "memory": {
+              "mode": "stream",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 17356062720,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 67108864,
+              "max_budget_bytes": 15201435648,
+              "cached_weight_bytes": 0,
+              "staging_bytes": 67108864,
+              "cache_hits": 0,
+              "cache_hit_bytes": 0,
+              "cache_misses": 1890,
+              "resizes": 0,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1890,
+              "command_buffers": 1890,
+              "fused_mlps": 0,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 8.062302287,
+              "allocated_bytes": 69566464,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          }
+        ],
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-8b",
+          "repository": "pfnet/plamo-3-translate-8b",
+          "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+          "worker_pid": 42987,
+          "load_seconds": 0.082793,
+          "threads": 1,
+          "memory": {
+            "mode": "stream",
+            "weight_bytes": 17063540224,
+            "preloaded_weight_bytes": 0,
+            "estimated_reclaimable_bytes_at_start": 17356062720,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 67108864,
+            "max_budget_bytes": 15201435648,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 67502080,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "seconds_median": {
+          "prefill_seconds": 5.088759,
+          "decode_seconds": 3.622322,
+          "first_token_seconds": 5.089478,
+          "total_seconds": 8.725748
+        }
+      },
+      "same_retained_weights_and_io": true,
+      "speedup": 1.114036985711712,
+      "time_reduction_percent": 10.236373403604604
+    },
+    "8b-auto-short": {
+      "before": {
+        "model": "plamo-3-translate-8b",
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "requests": [
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.001834,
+              "prefill_seconds": 2.293419,
+              "decode_seconds": 0.93731,
+              "first_token_seconds": 2.295877,
+              "total_seconds": 3.233118,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 6442450944,
+              "read_calls": 768,
+              "cache_hits": 436,
+              "cache_hit_bytes": 25920798720,
+              "cache_misses": 104
+            },
+            "process_peak_rss_bytes": 11131092992,
+            "verification": {
+              "prefill_logits_hash": "8ccc9b8a9108190a",
+              "prefill_state_hash": "4a2d3f211d0ca42d",
+              "logits_hash": "d43d5c69eb8b3bec",
+              "state_hash": "57a7074c512f0831"
+            },
+            "memory": {
+              "mode": "adaptive",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 15199682560,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 13047513088,
+              "max_budget_bytes": 13047513088,
+              "cached_weight_bytes": 12960399360,
+              "staging_bytes": 67108864,
+              "cache_hits": 436,
+              "cache_hit_bytes": 25920798720,
+              "cache_misses": 374,
+              "resizes": 14,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 810,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 4.619597207,
+              "allocated_bytes": 13029965824,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.00011,
+              "prefill_seconds": 2.248277,
+              "decode_seconds": 0.962758,
+              "first_token_seconds": 2.248996,
+              "total_seconds": 3.211691,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 6442450944,
+              "read_calls": 768,
+              "cache_hits": 436,
+              "cache_hit_bytes": 25920798720,
+              "cache_misses": 104
+            },
+            "process_peak_rss_bytes": 11131387904,
+            "verification": {
+              "prefill_logits_hash": "8ccc9b8a9108190a",
+              "prefill_state_hash": "4a2d3f211d0ca42d",
+              "logits_hash": "d43d5c69eb8b3bec",
+              "state_hash": "57a7074c512f0831"
+            },
+            "memory": {
+              "mode": "adaptive",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 15199682560,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 13047513088,
+              "max_budget_bytes": 13047513088,
+              "cached_weight_bytes": 12960399360,
+              "staging_bytes": 67108864,
+              "cache_hits": 872,
+              "cache_hit_bytes": 51841597440,
+              "cache_misses": 478,
+              "resizes": 14,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1350,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 6.301876622,
+              "allocated_bytes": 13029965824,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000114,
+              "prefill_seconds": 2.205066,
+              "decode_seconds": 0.926264,
+              "first_token_seconds": 2.205789,
+              "total_seconds": 3.131979,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 6442450944,
+              "read_calls": 768,
+              "cache_hits": 436,
+              "cache_hit_bytes": 25920798720,
+              "cache_misses": 104
+            },
+            "process_peak_rss_bytes": 11131387904,
+            "verification": {
+              "prefill_logits_hash": "8ccc9b8a9108190a",
+              "prefill_state_hash": "4a2d3f211d0ca42d",
+              "logits_hash": "d43d5c69eb8b3bec",
+              "state_hash": "57a7074c512f0831"
+            },
+            "memory": {
+              "mode": "adaptive",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 15199682560,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 13047513088,
+              "max_budget_bytes": 13047513088,
+              "cached_weight_bytes": 12960399360,
+              "staging_bytes": 67108864,
+              "cache_hits": 1308,
+              "cache_hit_bytes": 77762396160,
+              "cache_misses": 582,
+              "resizes": 14,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1890,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 7.960362285,
+              "allocated_bytes": 13029965824,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000109,
+              "prefill_seconds": 2.254762,
+              "decode_seconds": 0.979147,
+              "first_token_seconds": 2.255465,
+              "total_seconds": 3.234549,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 6442450944,
+              "read_calls": 768,
+              "cache_hits": 436,
+              "cache_hit_bytes": 25920798720,
+              "cache_misses": 104
+            },
+            "process_peak_rss_bytes": 11131387904,
+            "verification": {
+              "prefill_logits_hash": "8ccc9b8a9108190a",
+              "prefill_state_hash": "4a2d3f211d0ca42d",
+              "logits_hash": "d43d5c69eb8b3bec",
+              "state_hash": "57a7074c512f0831"
+            },
+            "memory": {
+              "mode": "adaptive",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 15199682560,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 13047513088,
+              "max_budget_bytes": 13047513088,
+              "cached_weight_bytes": 12960399360,
+              "staging_bytes": 67108864,
+              "cache_hits": 1744,
+              "cache_hit_bytes": 103683194880,
+              "cache_misses": 686,
+              "resizes": 14,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 2430,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 9.655452035,
+              "allocated_bytes": 13029965824,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000104,
+              "prefill_seconds": 2.252167,
+              "decode_seconds": 0.965728,
+              "first_token_seconds": 2.252866,
+              "total_seconds": 3.218531,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 6442450944,
+              "read_calls": 768,
+              "cache_hits": 436,
+              "cache_hit_bytes": 25920798720,
+              "cache_misses": 104
+            },
+            "process_peak_rss_bytes": 11131387904,
+            "verification": {
+              "prefill_logits_hash": "8ccc9b8a9108190a",
+              "prefill_state_hash": "4a2d3f211d0ca42d",
+              "logits_hash": "d43d5c69eb8b3bec",
+              "state_hash": "57a7074c512f0831"
+            },
+            "memory": {
+              "mode": "adaptive",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 15199682560,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 13047513088,
+              "max_budget_bytes": 13047513088,
+              "cached_weight_bytes": 12960399360,
+              "staging_bytes": 67108864,
+              "cache_hits": 2180,
+              "cache_hit_bytes": 129603993600,
+              "cache_misses": 790,
+              "resizes": 14,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 2970,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 11.33020441,
+              "allocated_bytes": 13029965824,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          }
+        ],
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-8b",
+          "repository": "pfnet/plamo-3-translate-8b",
+          "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+          "worker_pid": 39314,
+          "load_seconds": 0.107214,
+          "threads": 1,
+          "memory": {
+            "mode": "adaptive",
+            "weight_bytes": 17063540224,
+            "preloaded_weight_bytes": 0,
+            "estimated_reclaimable_bytes_at_start": 15199682560,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 13047513088,
+            "max_budget_bytes": 13047513088,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 67502080,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "seconds_median": {
+          "prefill_seconds": 2.252167,
+          "decode_seconds": 0.962758,
+          "first_token_seconds": 2.252866,
+          "total_seconds": 3.218531
+        }
+      },
+      "after": {
+        "model": "plamo-3-translate-8b",
+        "text": "Hello.",
+        "direction": "en-ja",
+        "max_tokens": 2,
+        "requests": [
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000627,
+              "prefill_seconds": 1.400322,
+              "decode_seconds": 0.673337,
+              "first_token_seconds": 1.401552,
+              "total_seconds": 2.074822,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 4009754624,
+              "read_calls": 478,
+              "cache_hits": 476,
+              "cache_hit_bytes": 28353495040,
+              "cache_misses": 64
+            },
+            "process_peak_rss_bytes": 11172347904,
+            "verification": {
+              "prefill_logits_hash": "a9372f7b22a64fab",
+              "prefill_state_hash": "f843479b6ae7bf66",
+              "logits_hash": "d11f97647221163b",
+              "state_hash": "d87d2ee95be0750d"
+            },
+            "memory": {
+              "mode": "adaptive",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 16416145408,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 14247624704,
+              "max_budget_bytes": 14247624704,
+              "cached_weight_bytes": 14176747520,
+              "staging_bytes": 67108864,
+              "cache_hits": 476,
+              "cache_hit_bytes": 28353495040,
+              "cache_misses": 334,
+              "resizes": 13,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 984,
+              "command_buffers": 520,
+              "fused_mlps": 58,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 3.102180543,
+              "allocated_bytes": 14250115072,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000106,
+              "prefill_seconds": 1.375751,
+              "decode_seconds": 0.696225,
+              "first_token_seconds": 1.376448,
+              "total_seconds": 2.07261,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 4009754624,
+              "read_calls": 478,
+              "cache_hits": 476,
+              "cache_hit_bytes": 28353495040,
+              "cache_misses": 64
+            },
+            "process_peak_rss_bytes": 11172708352,
+            "verification": {
+              "prefill_logits_hash": "a9372f7b22a64fab",
+              "prefill_state_hash": "f843479b6ae7bf66",
+              "logits_hash": "d11f97647221163b",
+              "state_hash": "d87d2ee95be0750d"
+            },
+            "memory": {
+              "mode": "adaptive",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 16416145408,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 14247624704,
+              "max_budget_bytes": 14247624704,
+              "cached_weight_bytes": 14176747520,
+              "staging_bytes": 67108864,
+              "cache_hits": 952,
+              "cache_hit_bytes": 56706990080,
+              "cache_misses": 398,
+              "resizes": 13,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 1698,
+              "command_buffers": 770,
+              "fused_mlps": 116,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 4.241089585,
+              "allocated_bytes": 14250115072,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000111,
+              "prefill_seconds": 1.377103,
+              "decode_seconds": 0.698251,
+              "first_token_seconds": 1.377807,
+              "total_seconds": 2.075995,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 4009754624,
+              "read_calls": 478,
+              "cache_hits": 476,
+              "cache_hit_bytes": 28353495040,
+              "cache_misses": 64
+            },
+            "process_peak_rss_bytes": 11172708352,
+            "verification": {
+              "prefill_logits_hash": "a9372f7b22a64fab",
+              "prefill_state_hash": "f843479b6ae7bf66",
+              "logits_hash": "d11f97647221163b",
+              "state_hash": "d87d2ee95be0750d"
+            },
+            "memory": {
+              "mode": "adaptive",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 16416145408,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 14247624704,
+              "max_budget_bytes": 14247624704,
+              "cached_weight_bytes": 14176747520,
+              "staging_bytes": 67108864,
+              "cache_hits": 1428,
+              "cache_hit_bytes": 85060485120,
+              "cache_misses": 462,
+              "resizes": 13,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 2412,
+              "command_buffers": 1020,
+              "fused_mlps": 174,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 5.368753294,
+              "allocated_bytes": 14250115072,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000116,
+              "prefill_seconds": 1.346802,
+              "decode_seconds": 0.69142,
+              "first_token_seconds": 1.347547,
+              "total_seconds": 2.038904,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 4009754624,
+              "read_calls": 478,
+              "cache_hits": 476,
+              "cache_hit_bytes": 28353495040,
+              "cache_misses": 64
+            },
+            "process_peak_rss_bytes": 11172708352,
+            "verification": {
+              "prefill_logits_hash": "a9372f7b22a64fab",
+              "prefill_state_hash": "f843479b6ae7bf66",
+              "logits_hash": "d11f97647221163b",
+              "state_hash": "d87d2ee95be0750d"
+            },
+            "memory": {
+              "mode": "adaptive",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 16416145408,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 14247624704,
+              "max_budget_bytes": 14247624704,
+              "cached_weight_bytes": 14176747520,
+              "staging_bytes": 67108864,
+              "cache_hits": 1904,
+              "cache_hit_bytes": 113413980160,
+              "cache_misses": 526,
+              "resizes": 13,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 3126,
+              "command_buffers": 1270,
+              "fused_mlps": 232,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 6.480662086,
+              "allocated_bytes": 14250115072,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          },
+          {
+            "translation": "こんにちは。",
+            "token_ids": [
+              51871
+            ],
+            "event": "done",
+            "finish_reason": "stop",
+            "usage": {
+              "prompt_tokens": 21,
+              "completion_tokens": 1,
+              "total_tokens": 22
+            },
+            "timings": {
+              "tokenize_seconds": 0.000109,
+              "prefill_seconds": 1.365535,
+              "decode_seconds": 0.701071,
+              "first_token_seconds": 1.366276,
+              "total_seconds": 2.067284,
+              "decode_steps": 1
+            },
+            "weight_io": {
+              "staged_bytes": 4009754624,
+              "read_calls": 478,
+              "cache_hits": 476,
+              "cache_hit_bytes": 28353495040,
+              "cache_misses": 64
+            },
+            "process_peak_rss_bytes": 11172708352,
+            "verification": {
+              "prefill_logits_hash": "a9372f7b22a64fab",
+              "prefill_state_hash": "f843479b6ae7bf66",
+              "logits_hash": "d11f97647221163b",
+              "state_hash": "d87d2ee95be0750d"
+            },
+            "memory": {
+              "mode": "adaptive",
+              "weight_bytes": 17063540224,
+              "preloaded_weight_bytes": 0,
+              "estimated_reclaimable_bytes_at_start": 16416145408,
+              "physical_bytes": 25769803776,
+              "reserve_bytes": 2147483648,
+              "budget_bytes": 14247624704,
+              "max_budget_bytes": 14247624704,
+              "cached_weight_bytes": 14176747520,
+              "staging_bytes": 67108864,
+              "cache_hits": 2380,
+              "cache_hit_bytes": 141767475200,
+              "cache_misses": 590,
+              "resizes": 13,
+              "note": ""
+            },
+            "compute": {
+              "backend": "metal",
+              "device": "Apple M2",
+              "precision": "fp32",
+              "residency_sets": true,
+              "gpu_dispatches": 3840,
+              "command_buffers": 1520,
+              "fused_mlps": 290,
+              "cpu_fallbacks": 0,
+              "errors": 0,
+              "gpu_seconds": 7.597580712,
+              "allocated_bytes": 14250115072,
+              "recommended_working_set_bytes": 19069665280,
+              "note": ""
+            }
+          }
+        ],
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-8b",
+          "repository": "pfnet/plamo-3-translate-8b",
+          "revision": "19ecab3fb31424ee937b7503730318b50e55771c",
+          "worker_pid": 41200,
+          "load_seconds": 0.301837,
+          "threads": 1,
+          "memory": {
+            "mode": "adaptive",
+            "weight_bytes": 17063540224,
+            "preloaded_weight_bytes": 0,
+            "estimated_reclaimable_bytes_at_start": 16416145408,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 14247624704,
+            "max_budget_bytes": 14247624704,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 67502080,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "seconds_median": {
+          "prefill_seconds": 1.375751,
+          "decode_seconds": 0.696225,
+          "first_token_seconds": 1.376448,
+          "total_seconds": 2.07261
+        }
+      },
+      "same_retained_weights_and_io": false,
+      "speedup": 1.5528879046226738,
+      "time_reduction_percent": 35.603851570794255
+    }
+  },
+  "numerical_comparisons": {
+    "equivalence-2b": {
+      "timestamp_utc": "2026-11-09T11:50:51.151566+00:00",
+      "model": "plamo-3-translate-2b",
+      "memory": "resident",
+      "text": "Hello.",
+      "direction": "en-ja",
+      "runs": {
+        "cpu": [
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 0,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "open",
+            "seconds": 0.769481,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 4,
+            "max_rss_bytes": 5772541952,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 0,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "prefill_21",
+            "seconds": 0.426731,
+            "token": 51871,
+            "logits_hash": "8a78afc05fcbf393",
+            "state_hash": "184314ebc416b51f",
+            "major_faults": 4,
+            "max_rss_bytes": 5780455424,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 0,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "decode",
+            "seconds": 0.105511,
+            "token": 16,
+            "logits_hash": "1c3c51927302b551",
+            "state_hash": "e6c8b2634a77e2eb",
+            "major_faults": 4,
+            "max_rss_bytes": 5780455424,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal-fp32": [
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14468349952,
+            "gpu_allocated_bytes": 5824184320,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 1.094734,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 4,
+            "max_rss_bytes": 5781733376,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 73,
+            "fused_mlps": 24,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 201,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14468349952,
+            "gpu_allocated_bytes": 5827313664,
+            "residency_sets": true,
+            "phase": "prefill_21",
+            "seconds": 0.307515,
+            "token": 51871,
+            "logits_hash": "728dd6e9379c0c8d",
+            "state_hash": "07dea72425fcf42a",
+            "major_faults": 4,
+            "max_rss_bytes": 5790826496,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 146,
+            "fused_mlps": 48,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 402,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14468349952,
+            "gpu_allocated_bytes": 5827313664,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.095302,
+            "token": 16,
+            "logits_hash": "4de87b323f303d86",
+            "state_hash": "4ae2fa7e739b8964",
+            "major_faults": 4,
+            "max_rss_bytes": 5790826496,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal": [
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14457274368,
+            "gpu_allocated_bytes": 5824184320,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 1.099038,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 4,
+            "max_rss_bytes": 5781749760,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 73,
+            "fused_mlps": 24,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 201,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14457274368,
+            "gpu_allocated_bytes": 5827313664,
+            "residency_sets": true,
+            "phase": "prefill_21",
+            "seconds": 0.278529,
+            "token": 51871,
+            "logits_hash": "728dd6e9379c0c8d",
+            "state_hash": "07dea72425fcf42a",
+            "major_faults": 4,
+            "max_rss_bytes": 5790859264,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 146,
+            "fused_mlps": 48,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 402,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14457274368,
+            "gpu_allocated_bytes": 5827313664,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.097589,
+            "token": 16,
+            "logits_hash": "4de87b323f303d86",
+            "state_hash": "4ae2fa7e739b8964",
+            "major_faults": 4,
+            "max_rss_bytes": 5790859264,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ]
+      },
+      "numerical_errors": {
+        "metal-fp32": {
+          "prefill_21-logits.bin": {
+            "values": 107520,
+            "relative_l2": 2.008772258830461e-06,
+            "max_absolute_error": 2.86102294921875e-05,
+            "rms_error": 5.409933328721892e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "prefill_21-state.bin": {
+            "values": 2560,
+            "relative_l2": 1.8489947361272105e-06,
+            "max_absolute_error": 0.0001220703125,
+            "rms_error": 4.353227450633539e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.2589017712522952e-06,
+            "max_absolute_error": 3.0517578125e-05,
+            "rms_error": 4.275684208439249e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-state.bin": {
+            "values": 2560,
+            "relative_l2": 1.4538000830331952e-06,
+            "max_absolute_error": 6.103515625e-05,
+            "rms_error": 2.0896365516975177e-06,
+            "relative_l2_limit": 0.0001
+          }
+        },
+        "metal": {
+          "prefill_21-logits.bin": {
+            "values": 107520,
+            "relative_l2": 2.008772258830461e-06,
+            "max_absolute_error": 2.86102294921875e-05,
+            "rms_error": 5.409933328721892e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "prefill_21-state.bin": {
+            "values": 2560,
+            "relative_l2": 1.8489947361272105e-06,
+            "max_absolute_error": 0.0001220703125,
+            "rms_error": 4.353227450633539e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.2589017712522952e-06,
+            "max_absolute_error": 3.0517578125e-05,
+            "rms_error": 4.275684208439249e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-state.bin": {
+            "values": 2560,
+            "relative_l2": 1.4538000830331952e-06,
+            "max_absolute_error": 6.103515625e-05,
+            "rms_error": 2.0896365516975177e-06,
+            "relative_l2_limit": 0.0001
+          }
+        }
+      },
+      "limits": "One prompt and one subsequent decode; numerical checks are not a broad translation-quality evaluation."
+    },
+    "equivalence-2b-long": {
+      "timestamp_utc": "2026-11-09T11:55:48.662959+00:00",
+      "model": "plamo-3-translate-2b",
+      "memory": "resident",
+      "text": "Translation quality depends on context, terminology, and the structure of the original document. A useful system should preserve numbers, dates, and product names while producing natural sentences. This benchmark compares the same full precision model on the CPU and the GPU. It measures the delay before the first output token and the time spent generating subsequent tokens, while checking the translated text and the numerical differences between the two implementations.",
+      "direction": "en-ja",
+      "runs": {
+        "cpu": [
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 0,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "open",
+            "seconds": 0.737451,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 13,
+            "max_rss_bytes": 5772541952,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 0,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "prefill_81",
+            "seconds": 1.513392,
+            "token": 56096,
+            "logits_hash": "2dadeada06f57748",
+            "state_hash": "7741c65a001f8ad1",
+            "major_faults": 13,
+            "max_rss_bytes": 5797756928,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 0,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "decode",
+            "seconds": 0.109016,
+            "token": 52075,
+            "logits_hash": "38b68c17e220fa22",
+            "state_hash": "1072bc014b6b2e93",
+            "major_faults": 13,
+            "max_rss_bytes": 5797756928,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal-fp32": [
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14661681152,
+            "gpu_allocated_bytes": 5824184320,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 1.107277,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 4,
+            "max_rss_bytes": 5781733376,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 73,
+            "fused_mlps": 24,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 201,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14661681152,
+            "gpu_allocated_bytes": 5835669504,
+            "residency_sets": true,
+            "phase": "prefill_81",
+            "seconds": 0.769496,
+            "token": 56096,
+            "logits_hash": "ecbf811346a28107",
+            "state_hash": "f110cda7f418366c",
+            "major_faults": 4,
+            "max_rss_bytes": 5806735360,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 146,
+            "fused_mlps": 48,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 402,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14661681152,
+            "gpu_allocated_bytes": 5835669504,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.09731,
+            "token": 52075,
+            "logits_hash": "3f23af4b7d9890f4",
+            "state_hash": "daf048cf573d9e36",
+            "major_faults": 4,
+            "max_rss_bytes": 5806735360,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal": [
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14669217792,
+            "gpu_allocated_bytes": 5824184320,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 1.098334,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9213f0ec13614325",
+            "major_faults": 4,
+            "max_rss_bytes": 5781733376,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 73,
+            "fused_mlps": 24,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 201,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14669217792,
+            "gpu_allocated_bytes": 5835669504,
+            "residency_sets": true,
+            "phase": "prefill_81",
+            "seconds": 0.762497,
+            "token": 56096,
+            "logits_hash": "ecbf811346a28107",
+            "state_hash": "f110cda7f418366c",
+            "major_faults": 4,
+            "max_rss_bytes": 5806735360,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 146,
+            "fused_mlps": 48,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 402,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 5756682240,
+            "cache_budget_bytes": 14669217792,
+            "gpu_allocated_bytes": 5835669504,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.097104,
+            "token": 52075,
+            "logits_hash": "3f23af4b7d9890f4",
+            "state_hash": "daf048cf573d9e36",
+            "major_faults": 4,
+            "max_rss_bytes": 5806735360,
+            "staged_bytes": 5756682240,
+            "read_calls": 732,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ]
+      },
+      "numerical_errors": {
+        "metal-fp32": {
+          "prefill_81-logits.bin": {
+            "values": 107520,
+            "relative_l2": 2.5244446876809848e-06,
+            "max_absolute_error": 6.103515625e-05,
+            "rms_error": 6.5957195235242905e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "prefill_81-state.bin": {
+            "values": 2560,
+            "relative_l2": 2.142486743586601e-06,
+            "max_absolute_error": 0.0001373291015625,
+            "rms_error": 4.249634792928567e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.2905442921064484e-06,
+            "max_absolute_error": 1.9073486328125e-05,
+            "rms_error": 3.5737970426053783e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-state.bin": {
+            "values": 2560,
+            "relative_l2": 1.1164133554305505e-06,
+            "max_absolute_error": 4.57763671875e-05,
+            "rms_error": 2.2984648796777126e-06,
+            "relative_l2_limit": 0.0001
+          }
+        },
+        "metal": {
+          "prefill_81-logits.bin": {
+            "values": 107520,
+            "relative_l2": 2.5244446876809848e-06,
+            "max_absolute_error": 6.103515625e-05,
+            "rms_error": 6.5957195235242905e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "prefill_81-state.bin": {
+            "values": 2560,
+            "relative_l2": 2.142486743586601e-06,
+            "max_absolute_error": 0.0001373291015625,
+            "rms_error": 4.249634792928567e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.2905442921064484e-06,
+            "max_absolute_error": 1.9073486328125e-05,
+            "rms_error": 3.5737970426053783e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-state.bin": {
+            "values": 2560,
+            "relative_l2": 1.1164133554305505e-06,
+            "max_absolute_error": 4.57763671875e-05,
+            "rms_error": 2.2984648796777126e-06,
+            "relative_l2_limit": 0.0001
+          }
+        }
+      },
+      "limits": "One prompt and one subsequent decode; numerical checks are not a broad translation-quality evaluation."
+    },
+    "equivalence-8b": {
+      "timestamp_utc": "2026-11-09T11:51:24.970294+00:00",
+      "model": "plamo-3-translate-8b",
+      "memory": "auto",
+      "text": "Hello.",
+      "direction": "en-ja",
+      "runs": {
+        "cpu": [
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 14448345088,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "open",
+            "seconds": 0.074469,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 222,
+            "max_rss_bytes": 15450112,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 14378074112,
+            "cache_budget_bytes": 14448345088,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "prefill_21",
+            "seconds": 9.436608,
+            "token": 51871,
+            "logits_hash": "c9e54cc1de2684c9",
+            "state_hash": "b370bb3890a4400e",
+            "major_faults": 315,
+            "max_rss_bytes": 7399407616,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "cpu",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 14378074112,
+            "cache_budget_bytes": 14448345088,
+            "gpu_allocated_bytes": 0,
+            "residency_sets": false,
+            "phase": "decode",
+            "seconds": 4.525681,
+            "token": 16,
+            "logits_hash": "68d5318fc63d9103",
+            "state_hash": "a44087018da49b9d",
+            "major_faults": 432,
+            "max_rss_bytes": 12125847552,
+            "staged_bytes": 17985175552,
+            "read_calls": 2144,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal-fp32": [
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 16631316480,
+            "gpu_allocated_bytes": 67502080,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 0.098323,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 708,
+            "max_rss_bytes": 24887296,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 270,
+            "fused_mlps": 0,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 270,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 16631316480,
+            "gpu_allocated_bytes": 16251191296,
+            "residency_sets": true,
+            "phase": "prefill_21",
+            "seconds": 8.870786,
+            "token": 51871,
+            "logits_hash": "2bd69de8992fce85",
+            "state_hash": "1104c55fe0542e23",
+            "major_faults": 823,
+            "max_rss_bytes": 13484376064,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 367,
+            "fused_mlps": 32,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 636,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 16631316480,
+            "gpu_allocated_bytes": 16251387904,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.290398,
+            "token": 16,
+            "logits_hash": "1dc47e3759670874",
+            "state_hash": "bf578328ec0a0c6d",
+            "major_faults": 948,
+            "max_rss_bytes": 13491011584,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ],
+        "metal": [
+          {
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 0,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 0,
+            "cache_budget_bytes": 17096572928,
+            "gpu_allocated_bytes": 67502080,
+            "residency_sets": true,
+            "phase": "open",
+            "seconds": 0.164336,
+            "token": 0,
+            "logits_hash": "58c0316c287d6325",
+            "state_hash": "9c1bda7f8c872325",
+            "major_faults": 1739,
+            "max_rss_bytes": 24887296,
+            "staged_bytes": 0,
+            "read_calls": 0,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 270,
+            "fused_mlps": 0,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 270,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 17096572928,
+            "gpu_allocated_bytes": 16251191296,
+            "residency_sets": true,
+            "phase": "prefill_21",
+            "seconds": 8.803575,
+            "token": 51871,
+            "logits_hash": "2bd69de8992fce85",
+            "state_hash": "1104c55fe0542e23",
+            "major_faults": 1857,
+            "max_rss_bytes": 13961150464,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          },
+          {
+            "command_buffers": 367,
+            "fused_mlps": 32,
+            "backend": "metal",
+            "precision": "fp32",
+            "gpu_dispatches": 636,
+            "gpu_errors": 0,
+            "cached_weight_bytes": 16181624832,
+            "cache_budget_bytes": 17070276608,
+            "gpu_allocated_bytes": 16251387904,
+            "residency_sets": true,
+            "phase": "decode",
+            "seconds": 0.278843,
+            "token": 16,
+            "logits_hash": "1dc47e3759670874",
+            "state_hash": "bf578328ec0a0c6d",
+            "major_faults": 1981,
+            "max_rss_bytes": 13967900672,
+            "staged_bytes": 16181624832,
+            "read_calls": 1929,
+            "advice_calls": 0,
+            "read_failures": 0
+          }
+        ]
+      },
+      "numerical_errors": {
+        "metal-fp32": {
+          "prefill_21-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.7287674511141958e-06,
+            "max_absolute_error": 4.1961669921875e-05,
+            "rms_error": 8.105950623235313e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "prefill_21-state.bin": {
+            "values": 4096,
+            "relative_l2": 3.2204529386868498e-06,
+            "max_absolute_error": 0.00011444091796875,
+            "rms_error": 3.3837443447278476e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.810438896781539e-06,
+            "max_absolute_error": 4.76837158203125e-05,
+            "rms_error": 6.38285038114676e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-state.bin": {
+            "values": 4096,
+            "relative_l2": 2.7789784210637167e-06,
+            "max_absolute_error": 7.62939453125e-05,
+            "rms_error": 1.8499228230652264e-06,
+            "relative_l2_limit": 0.0001
+          }
+        },
+        "metal": {
+          "prefill_21-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.7287674511141958e-06,
+            "max_absolute_error": 4.1961669921875e-05,
+            "rms_error": 8.105950623235313e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "prefill_21-state.bin": {
+            "values": 4096,
+            "relative_l2": 3.2204529386868498e-06,
+            "max_absolute_error": 0.00011444091796875,
+            "rms_error": 3.3837443447278476e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-logits.bin": {
+            "values": 107520,
+            "relative_l2": 1.810438896781539e-06,
+            "max_absolute_error": 4.76837158203125e-05,
+            "rms_error": 6.38285038114676e-06,
+            "relative_l2_limit": 0.0001
+          },
+          "decode-state.bin": {
+            "values": 4096,
+            "relative_l2": 2.7789784210637167e-06,
+            "max_absolute_error": 7.62939453125e-05,
+            "rms_error": 1.8499228230652264e-06,
+            "relative_l2_limit": 0.0001
+          }
+        }
+      },
+      "limits": "One prompt and one subsequent decode; numerical checks are not a broad translation-quality evaluation."
+    }
+  },
+  "complete_translation_checks": {
+    "timestamp_utc": "2026-11-09T11:50:45.113640+00:00",
+    "model": "plamo-3-translate-2b",
+    "memory": "resident",
+    "runs": {
+      "cpu": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 42039,
+          "load_seconds": 2.077946,
+          "threads": 4,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5757219984,
+            "estimated_reclaimable_bytes_at_start": 16760176640,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 0,
+            "max_budget_bytes": 0,
+            "cached_weight_bytes": 0,
+            "staging_bytes": 0,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 0,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "cpu",
+            "device": "",
+            "precision": "fp32",
+            "residency_sets": false,
+            "gpu_dispatches": 0,
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 0,
+            "recommended_working_set_bytes": 0,
+            "note": ""
+          }
+        },
+        "translations": [
+          {
+            "direction": "en-ja",
+            "input": "Hello.",
+            "token_ids": [
+              51871
+            ],
+            "text": "こんにちは。",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 21,
+                "completion_tokens": 1,
+                "total_tokens": 22
+              },
+              "timings": {
+                "tokenize_seconds": 0.000182,
+                "prefill_seconds": 0.425607,
+                "decode_seconds": 0.10541,
+                "first_token_seconds": 0.426443,
+                "total_seconds": 0.531779,
+                "decode_steps": 1
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5780471808,
+              "verification": {
+                "prefill_logits_hash": "8a78afc05fcbf393",
+                "prefill_state_hash": "184314ebc416b51f",
+                "logits_hash": "1c3c51927302b551",
+                "state_hash": "e6c8b2634a77e2eb"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5757219984,
+                "estimated_reclaimable_bytes_at_start": 16760176640,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 0,
+                "max_budget_bytes": 0,
+                "cached_weight_bytes": 0,
+                "staging_bytes": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "cpu",
+                "device": "",
+                "precision": "fp32",
+                "residency_sets": false,
+                "gpu_dispatches": 0,
+                "command_buffers": 0,
+                "fused_mlps": 0,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 0.0,
+                "allocated_bytes": 0,
+                "recommended_working_set_bytes": 0,
+                "note": ""
+              }
+            }
+          },
+          {
+            "direction": "en-ja",
+            "input": "The meeting starts at ten tomorrow morning.",
+            "token_ids": [
+              52499,
+              50104,
+              51797,
+              50100,
+              50552,
+              49,
+              48,
+              50391,
+              54411,
+              50134
+            ],
+            "text": "会議は明日の朝10時に始まります。",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 27,
+                "completion_tokens": 10,
+                "total_tokens": 37
+              },
+              "timings": {
+                "tokenize_seconds": 0.000197,
+                "prefill_seconds": 0.565205,
+                "decode_seconds": 1.07972,
+                "first_token_seconds": 0.566091,
+                "total_seconds": 1.645738,
+                "decode_steps": 10
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5782290432,
+              "verification": {
+                "prefill_logits_hash": "7d33087fb140f0d0",
+                "prefill_state_hash": "7ca2a7807e832ea3",
+                "logits_hash": "743e03e4cafc9c63",
+                "state_hash": "3c15ad0551fd4638"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5757219984,
+                "estimated_reclaimable_bytes_at_start": 16760176640,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 0,
+                "max_budget_bytes": 0,
+                "cached_weight_bytes": 0,
+                "staging_bytes": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "cpu",
+                "device": "",
+                "precision": "fp32",
+                "residency_sets": false,
+                "gpu_dispatches": 0,
+                "command_buffers": 0,
+                "fused_mlps": 0,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 0.0,
+                "allocated_bytes": 0,
+                "recommended_working_set_bytes": 0,
+                "note": ""
+              }
+            }
+          },
+          {
+            "direction": "en-ja",
+            "input": "Please save this document before closing the window.",
+            "token_ids": [
+              59924,
+              50103,
+              60244,
+              53874,
+              50137,
+              63681,
+              50103,
+              51332,
+              50628
+            ],
+            "text": "ウィンドウを閉じる前に、このドキュメントを保存してください。",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 28,
+                "completion_tokens": 9,
+                "total_tokens": 37
+              },
+              "timings": {
+                "tokenize_seconds": 0.000216,
+                "prefill_seconds": 0.530754,
+                "decode_seconds": 0.960627,
+                "first_token_seconds": 0.531645,
+                "total_seconds": 1.492198,
+                "decode_steps": 9
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5783928832,
+              "verification": {
+                "prefill_logits_hash": "a31700f003c7a904",
+                "prefill_state_hash": "ac29151d63c3278a",
+                "logits_hash": "d0c305e1ee0b3d46",
+                "state_hash": "a0b9378fc800defb"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5757219984,
+                "estimated_reclaimable_bytes_at_start": 16760176640,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 0,
+                "max_budget_bytes": 0,
+                "cached_weight_bytes": 0,
+                "staging_bytes": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "cpu",
+                "device": "",
+                "precision": "fp32",
+                "residency_sets": false,
+                "gpu_dispatches": 0,
+                "command_buffers": 0,
+                "fused_mlps": 0,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 0.0,
+                "allocated_bytes": 0,
+                "recommended_working_set_bytes": 0,
+                "note": ""
+              }
+            }
+          },
+          {
+            "direction": "ja-en",
+            "input": "こんにちは。",
+            "token_ids": [
+              7272,
+              46
+            ],
+            "text": "Hello.",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 20,
+                "completion_tokens": 2,
+                "total_tokens": 22
+              },
+              "timings": {
+                "tokenize_seconds": 0.000155,
+                "prefill_seconds": 0.391736,
+                "decode_seconds": 0.213723,
+                "first_token_seconds": 0.392567,
+                "total_seconds": 0.60622,
+                "decode_steps": 2
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5783928832,
+              "verification": {
+                "prefill_logits_hash": "d07a8da729cf2a93",
+                "prefill_state_hash": "cac28d03b9e69ade",
+                "logits_hash": "368a6169d0c23653",
+                "state_hash": "4f4801094f68b4a7"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5757219984,
+                "estimated_reclaimable_bytes_at_start": 16760176640,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 0,
+                "max_budget_bytes": 0,
+                "cached_weight_bytes": 0,
+                "staging_bytes": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "cpu",
+                "device": "",
+                "precision": "fp32",
+                "residency_sets": false,
+                "gpu_dispatches": 0,
+                "command_buffers": 0,
+                "fused_mlps": 0,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 0.0,
+                "allocated_bytes": 0,
+                "recommended_working_set_bytes": 0,
+                "note": ""
+              }
+            }
+          },
+          {
+            "direction": "ja-en",
+            "input": "会議は明日の午前10時に始まります。",
+            "token_ids": [
+              1100,
+              3560,
+              27170,
+              1099,
+              305,
+              48,
+              10328,
+              8125,
+              46
+            ],
+            "text": "The meeting will begin at 10 a.m. tomorrow.",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 29,
+                "completion_tokens": 9,
+                "total_tokens": 38
+              },
+              "timings": {
+                "tokenize_seconds": 0.000193,
+                "prefill_seconds": 0.577281,
+                "decode_seconds": 0.966123,
+                "first_token_seconds": 0.578154,
+                "total_seconds": 1.544203,
+                "decode_steps": 9
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5784076288,
+              "verification": {
+                "prefill_logits_hash": "f8be7840b5ae01da",
+                "prefill_state_hash": "225f544249e86dc2",
+                "logits_hash": "5699f51419a56c6e",
+                "state_hash": "e76f94720ea3ca2d"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5757219984,
+                "estimated_reclaimable_bytes_at_start": 16760176640,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 0,
+                "max_budget_bytes": 0,
+                "cached_weight_bytes": 0,
+                "staging_bytes": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "cpu",
+                "device": "",
+                "precision": "fp32",
+                "residency_sets": false,
+                "gpu_dispatches": 0,
+                "command_buffers": 0,
+                "fused_mlps": 0,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 0.0,
+                "allocated_bytes": 0,
+                "recommended_working_set_bytes": 0,
+                "note": ""
+              }
+            }
+          },
+          {
+            "direction": "ja-en",
+            "input": "この文書を保存してから、ウィンドウを閉じてください。",
+            "token_ids": [
+              3549,
+              3494,
+              1098,
+              2742,
+              2189,
+              2308,
+              1087,
+              3196,
+              46
+            ],
+            "text": "Please save this document and then close the window.",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 27,
+                "completion_tokens": 9,
+                "total_tokens": 36
+              },
+              "timings": {
+                "tokenize_seconds": 0.00024,
+                "prefill_seconds": 0.577628,
+                "decode_seconds": 0.962188,
+                "first_token_seconds": 0.578544,
+                "total_seconds": 1.540661,
+                "decode_steps": 9
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5784076288,
+              "verification": {
+                "prefill_logits_hash": "9b621569e7353626",
+                "prefill_state_hash": "3896af242a7c7c18",
+                "logits_hash": "09d1289224ccf9ef",
+                "state_hash": "88f983a4585c5ec5"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5757219984,
+                "estimated_reclaimable_bytes_at_start": 16760176640,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 0,
+                "max_budget_bytes": 0,
+                "cached_weight_bytes": 0,
+                "staging_bytes": 0,
+                "cache_hits": 0,
+                "cache_hit_bytes": 0,
+                "cache_misses": 0,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "cpu",
+                "device": "",
+                "precision": "fp32",
+                "residency_sets": false,
+                "gpu_dispatches": 0,
+                "command_buffers": 0,
+                "fused_mlps": 0,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 0.0,
+                "allocated_bytes": 0,
+                "recommended_working_set_bytes": 0,
+                "note": ""
+              }
+            }
+          }
+        ]
+      },
+      "metal": {
+        "ready": {
+          "event": "ready",
+          "protocol": 1,
+          "model": "plamo-3-translate-2b",
+          "repository": "pfnet/plamo-3-translate-2b",
+          "revision": "78355e2f59605d1c2c7c46e915333ffded24c8ff",
+          "worker_pid": 42062,
+          "load_seconds": 2.258685,
+          "threads": 1,
+          "memory": {
+            "mode": "resident",
+            "weight_bytes": 5757219984,
+            "preloaded_weight_bytes": 5756682240,
+            "estimated_reclaimable_bytes_at_start": 16729964544,
+            "physical_bytes": 25769803776,
+            "reserve_bytes": 2147483648,
+            "budget_bytes": 14562213888,
+            "max_budget_bytes": 14562213888,
+            "cached_weight_bytes": 5756682240,
+            "staging_bytes": 67108864,
+            "cache_hits": 0,
+            "cache_hit_bytes": 0,
+            "cache_misses": 138,
+            "resizes": 0,
+            "note": ""
+          },
+          "compute": {
+            "backend": "metal",
+            "device": "Apple M2",
+            "precision": "fp32",
+            "residency_sets": true,
+            "gpu_dispatches": 0,
+            "command_buffers": 0,
+            "fused_mlps": 0,
+            "cpu_fallbacks": 0,
+            "errors": 0,
+            "gpu_seconds": 0.0,
+            "allocated_bytes": 5824184320,
+            "recommended_working_set_bytes": 19069665280,
+            "note": ""
+          }
+        },
+        "translations": [
+          {
+            "direction": "en-ja",
+            "input": "Hello.",
+            "token_ids": [
+              51871
+            ],
+            "text": "こんにちは。",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 21,
+                "completion_tokens": 1,
+                "total_tokens": 22
+              },
+              "timings": {
+                "tokenize_seconds": 0.000169,
+                "prefill_seconds": 0.323948,
+                "decode_seconds": 0.094651,
+                "first_token_seconds": 0.324906,
+                "total_seconds": 0.419467,
+                "decode_steps": 1
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 258,
+                "cache_hit_bytes": 10412359680,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5791072256,
+              "verification": {
+                "prefill_logits_hash": "728dd6e9379c0c8d",
+                "prefill_state_hash": "07dea72425fcf42a",
+                "logits_hash": "4de87b323f303d86",
+                "state_hash": "4ae2fa7e739b8964"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5756682240,
+                "estimated_reclaimable_bytes_at_start": 16729964544,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 14562213888,
+                "max_budget_bytes": 14562213888,
+                "cached_weight_bytes": 5756682240,
+                "staging_bytes": 67108864,
+                "cache_hits": 258,
+                "cache_hit_bytes": 10412359680,
+                "cache_misses": 138,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "metal",
+                "device": "Apple M2",
+                "precision": "fp32",
+                "residency_sets": true,
+                "gpu_dispatches": 402,
+                "command_buffers": 146,
+                "fused_mlps": 48,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 0.328012627,
+                "allocated_bytes": 5827313664,
+                "recommended_working_set_bytes": 19069665280,
+                "note": ""
+              }
+            }
+          },
+          {
+            "direction": "en-ja",
+            "input": "The meeting starts at ten tomorrow morning.",
+            "token_ids": [
+              52499,
+              50104,
+              51797,
+              50100,
+              50552,
+              49,
+              48,
+              50391,
+              54411,
+              50134
+            ],
+            "text": "会議は明日の朝10時に始まります。",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 27,
+                "completion_tokens": 10,
+                "total_tokens": 37
+              },
+              "timings": {
+                "tokenize_seconds": 0.000198,
+                "prefill_seconds": 0.297711,
+                "decode_seconds": 0.944077,
+                "first_token_seconds": 0.298488,
+                "total_seconds": 1.242502,
+                "decode_steps": 10
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 1419,
+                "cache_hit_bytes": 57267978240,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5792661504,
+              "verification": {
+                "prefill_logits_hash": "592bed555ee105b4",
+                "prefill_state_hash": "84478e3b2601c644",
+                "logits_hash": "57a9b937eab9541d",
+                "state_hash": "c9d954decd434e27"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5756682240,
+                "estimated_reclaimable_bytes_at_start": 16729964544,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 14562213888,
+                "max_budget_bytes": 14562213888,
+                "cached_weight_bytes": 5756682240,
+                "staging_bytes": 67108864,
+                "cache_hits": 1677,
+                "cache_hit_bytes": 67680337920,
+                "cache_misses": 138,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "metal",
+                "device": "Apple M2",
+                "precision": "fp32",
+                "residency_sets": true,
+                "gpu_dispatches": 2613,
+                "command_buffers": 949,
+                "fused_mlps": 312,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 1.349191828,
+                "allocated_bytes": 5828034560,
+                "recommended_working_set_bytes": 19069665280,
+                "note": ""
+              }
+            }
+          },
+          {
+            "direction": "en-ja",
+            "input": "Please save this document before closing the window.",
+            "token_ids": [
+              59924,
+              50103,
+              60244,
+              53874,
+              50137,
+              63681,
+              50103,
+              51332,
+              50628
+            ],
+            "text": "ウィンドウを閉じる前に、このドキュメントを保存してください。",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 28,
+                "completion_tokens": 9,
+                "total_tokens": 37
+              },
+              "timings": {
+                "tokenize_seconds": 0.0002,
+                "prefill_seconds": 0.294892,
+                "decode_seconds": 0.859913,
+                "first_token_seconds": 0.295672,
+                "total_seconds": 1.15552,
+                "decode_steps": 9
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 1290,
+                "cache_hit_bytes": 52061798400,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5794529280,
+              "verification": {
+                "prefill_logits_hash": "773f874dec1fb037",
+                "prefill_state_hash": "5877eaaea3586d12",
+                "logits_hash": "e77dddc16e38e51c",
+                "state_hash": "a870c49f2173da1e"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5756682240,
+                "estimated_reclaimable_bytes_at_start": 16729964544,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 14562213888,
+                "max_budget_bytes": 14562213888,
+                "cached_weight_bytes": 5756682240,
+                "staging_bytes": 67108864,
+                "cache_hits": 2967,
+                "cache_hit_bytes": 119742136320,
+                "cache_misses": 138,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "metal",
+                "device": "Apple M2",
+                "precision": "fp32",
+                "residency_sets": true,
+                "gpu_dispatches": 4623,
+                "command_buffers": 1679,
+                "fused_mlps": 552,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 2.292761911,
+                "allocated_bytes": 5828182016,
+                "recommended_working_set_bytes": 19069665280,
+                "note": ""
+              }
+            }
+          },
+          {
+            "direction": "ja-en",
+            "input": "こんにちは。",
+            "token_ids": [
+              7272,
+              46
+            ],
+            "text": "Hello.",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 20,
+                "completion_tokens": 2,
+                "total_tokens": 22
+              },
+              "timings": {
+                "tokenize_seconds": 0.000164,
+                "prefill_seconds": 0.262801,
+                "decode_seconds": 0.189818,
+                "first_token_seconds": 0.263547,
+                "total_seconds": 0.453299,
+                "decode_steps": 2
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 387,
+                "cache_hit_bytes": 15618539520,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5794529280,
+              "verification": {
+                "prefill_logits_hash": "3bd785141c9898ce",
+                "prefill_state_hash": "15ddc8d8d262d6ec",
+                "logits_hash": "c22e588d5d6d4837",
+                "state_hash": "1f5a3abe825e40a8"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5756682240,
+                "estimated_reclaimable_bytes_at_start": 16729964544,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 14562213888,
+                "max_budget_bytes": 14562213888,
+                "cached_weight_bytes": 5756682240,
+                "staging_bytes": 67108864,
+                "cache_hits": 3354,
+                "cache_hit_bytes": 135360675840,
+                "cache_misses": 138,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "metal",
+                "device": "Apple M2",
+                "precision": "fp32",
+                "residency_sets": true,
+                "gpu_dispatches": 5226,
+                "command_buffers": 1898,
+                "fused_mlps": 624,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 2.67544587,
+                "allocated_bytes": 5828182016,
+                "recommended_working_set_bytes": 19069665280,
+                "note": ""
+              }
+            }
+          },
+          {
+            "direction": "ja-en",
+            "input": "会議は明日の午前10時に始まります。",
+            "token_ids": [
+              1100,
+              3560,
+              27170,
+              1099,
+              305,
+              48,
+              10328,
+              8125,
+              46
+            ],
+            "text": "The meeting will begin at 10 a.m. tomorrow.",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 29,
+                "completion_tokens": 9,
+                "total_tokens": 38
+              },
+              "timings": {
+                "tokenize_seconds": 0.000191,
+                "prefill_seconds": 0.300592,
+                "decode_seconds": 0.856417,
+                "first_token_seconds": 0.301363,
+                "total_seconds": 1.157717,
+                "decode_steps": 9
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 1290,
+                "cache_hit_bytes": 52061798400,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5794873344,
+              "verification": {
+                "prefill_logits_hash": "417f506cd58000fd",
+                "prefill_state_hash": "47b6451fab37827f",
+                "logits_hash": "f7158717ed60e0e8",
+                "state_hash": "8f3e8f0fdaf4bd51"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5756682240,
+                "estimated_reclaimable_bytes_at_start": 16729964544,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 14562213888,
+                "max_budget_bytes": 14562213888,
+                "cached_weight_bytes": 5756682240,
+                "staging_bytes": 67108864,
+                "cache_hits": 4644,
+                "cache_hit_bytes": 187422474240,
+                "cache_misses": 138,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "metal",
+                "device": "Apple M2",
+                "precision": "fp32",
+                "residency_sets": true,
+                "gpu_dispatches": 7236,
+                "command_buffers": 2628,
+                "fused_mlps": 864,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 3.61734962,
+                "allocated_bytes": 5828345856,
+                "recommended_working_set_bytes": 19069665280,
+                "note": ""
+              }
+            }
+          },
+          {
+            "direction": "ja-en",
+            "input": "この文書を保存してから、ウィンドウを閉じてください。",
+            "token_ids": [
+              3549,
+              3494,
+              1098,
+              2742,
+              2189,
+              2308,
+              1087,
+              3196,
+              46
+            ],
+            "text": "Please save this document and then close the window.",
+            "result": {
+              "event": "done",
+              "finish_reason": "stop",
+              "usage": {
+                "prompt_tokens": 27,
+                "completion_tokens": 9,
+                "total_tokens": 36
+              },
+              "timings": {
+                "tokenize_seconds": 0.000223,
+                "prefill_seconds": 0.286663,
+                "decode_seconds": 0.854973,
+                "first_token_seconds": 0.287462,
+                "total_seconds": 1.142372,
+                "decode_steps": 9
+              },
+              "weight_io": {
+                "staged_bytes": 0,
+                "read_calls": 0,
+                "cache_hits": 1290,
+                "cache_hit_bytes": 52061798400,
+                "cache_misses": 0
+              },
+              "process_peak_rss_bytes": 5795053568,
+              "verification": {
+                "prefill_logits_hash": "d75257eb2901289c",
+                "prefill_state_hash": "3f03fe69176ff109",
+                "logits_hash": "259557011ad99c99",
+                "state_hash": "f4962ebdd61b4d0b"
+              },
+              "memory": {
+                "mode": "resident",
+                "weight_bytes": 5757219984,
+                "preloaded_weight_bytes": 5756682240,
+                "estimated_reclaimable_bytes_at_start": 16729964544,
+                "physical_bytes": 25769803776,
+                "reserve_bytes": 2147483648,
+                "budget_bytes": 14562213888,
+                "max_budget_bytes": 14562213888,
+                "cached_weight_bytes": 5756682240,
+                "staging_bytes": 67108864,
+                "cache_hits": 5934,
+                "cache_hit_bytes": 239484272640,
+                "cache_misses": 138,
+                "resizes": 0,
+                "note": ""
+              },
+              "compute": {
+                "backend": "metal",
+                "device": "Apple M2",
+                "precision": "fp32",
+                "residency_sets": true,
+                "gpu_dispatches": 9246,
+                "command_buffers": 3358,
+                "fused_mlps": 1104,
+                "cpu_fallbacks": 0,
+                "errors": 0,
+                "gpu_seconds": 4.548958992,
+                "allocated_bytes": 5828345856,
+                "recommended_working_set_bytes": 19069665280,
+                "note": ""
+              }
+            }
+          }
+        ]
+      }
+    },
+    "exact_token_match": true,
+    "limits": "Six fixed completed translations; not a broad translation-quality evaluation."
+  },
+  "gpu_validation": {
+    "command": "MTL_DEBUG_LAYER=1 MTL_SHADER_VALIDATION=1 ./build/test-metal --require-gpu",
+    "result": "PASS",
+    "coverage": "FP32 projections; odd shapes, strides, tails, large resident projections in one command, cache shrink/grow, failed reads, restarts, fused MLP 0..65 tokens against CPU, cache miss/eviction leaves states unchanged."
+  },
+  "model_free_tests": {
+    "native": "make test PASS; unavailable sandbox GPU explicitly skipped, then tested separately on GPU",
+    "python": "make test-tools PASS (47 tests)"
+  },
+  "limits": [
+    "Six completed 2B translations and numeric probes are regression tests, not a broad translation-quality evaluation. GPU FP32 accumulation order differs from CPU; bitwise equivalence is not promised.",
+    "8B BF16 streaming is dominated by weight I/O. 31B translation was not measured; model-free profile and build coverage only.",
+    "Fanless M2, system memory pressure and OS scheduling affect timings; no thermal or power-state control."
+  ]
+}

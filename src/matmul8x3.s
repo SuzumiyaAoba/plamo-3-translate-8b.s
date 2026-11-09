@@ -5,6 +5,11 @@
 .p2align 4
 .globl _plamo_bf16_matmul8x3
 _plamo_bf16_matmul8x3:
+    adrp x1, _plamo_bf16_matmul8x3_core@PAGE
+    add x1, x1, _plamo_bf16_matmul8x3_core@PAGEOFF
+    b _plamo_bf16_matmul_acquire
+.globl _plamo_bf16_matmul8x3_core
+_plamo_bf16_matmul8x3_core:
     ldr x9, [x0, #40]
     cmp x9, #8
     b.lo Lmm83fallback
@@ -31,11 +36,6 @@ _plamo_bf16_matmul8x3:
     lsl x25, x25, #2
     lsl x26, x26, #2
     lsl x27, x23, #1
-    mov x0, x19
-    mul x1, x22, x23
-    lsl x1, x1, #1
-    bl _plamo_weight_acquire
-    mov x19, x0
 Lmm83tokens:
     cmp x24, #8
     b.lo Lmm83tail
@@ -206,7 +206,7 @@ Lmm83k:
     mov x5, #8
     lsr x6, x25, #2
     lsr x7, x26, #2
-    bl _plamo_bf16_linear
+    bl _plamo_bf16_linear_core
 Lmm83panel_done:
     add x20, x20, x25, lsl #3
     add x21, x21, x26, lsl #3
@@ -222,7 +222,7 @@ Lmm83tail:
     mov x5, x24
     lsr x6, x25, #2
     lsr x7, x26, #2
-    bl _plamo_bf16_linear
+    bl _plamo_bf16_linear_core
 Lmm83done:
     ldp q14, q15, [sp, #192]
     ldp q12, q13, [sp, #160]
@@ -237,4 +237,4 @@ Lmm83done:
     ret
 
 Lmm83fallback:
-    b _plamo_bf16_matmul4
+    b _plamo_bf16_matmul4_core

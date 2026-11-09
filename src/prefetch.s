@@ -27,6 +27,27 @@ Lprefetchret:
 .p2align 3
 .globl _plamo_io_policy
 _plamo_io_policy: .quad 2
+.globl _plamo_weight_provider
+_plamo_weight_provider: .quad 0
+.globl _plamo_weight_context
+_plamo_weight_context: .quad 0
+// Zero preserves the original whole-matrix kernel dispatch.
+.globl _plamo_weight_chunk_bytes
+_plamo_weight_chunk_bytes: .quad 0
+// Optional API worker scheduler. The standalone binary leaves these zero.
+.globl _plamo_matvec_kernel
+_plamo_matvec_kernel: .quad 0
+.globl _plamo_matmul_kernel
+_plamo_matmul_kernel: .quad 0
+.globl _plamo_mlp_kernel
+_plamo_mlp_kernel: .quad 0
+.globl _plamo_forward_kernel
+_plamo_forward_kernel: .quad 0
+.globl _plamo_compute_context
+_plamo_compute_context: .quad 0
+// Reuse each row panel across all prompt tokens while it fits in CPU cache.
+.globl _plamo_matmul_tile_bytes
+_plamo_matmul_tile_bytes: .quad 0x100000
 
 .globl _plamo_weight_mappings
 _plamo_weight_mappings: .space 1024 // capacity 64 {base,size} records
@@ -50,6 +71,13 @@ _plamo_io_stats: .space 32
 // Non-model buffers and any failed advisory/read fall back to original data.
 .globl _plamo_weight_acquire
 _plamo_weight_acquire:
+    adrp x9, _plamo_weight_provider@PAGE
+    ldr x9, [x9, _plamo_weight_provider@PAGEOFF]
+    cbz x9, Lweight_builtin
+    adrp x2, _plamo_weight_context@PAGE
+    ldr x2, [x2, _plamo_weight_context@PAGEOFF]
+    br x9
+Lweight_builtin:
     cmp x1, #0x100000
     b.lo Lweight_ret
     stp x19, x30, [sp, #-80]!

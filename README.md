@@ -1,8 +1,8 @@
-# plamo-3-translate.s
+# plamo-3-translate.c
 
-Apple Silicon / macOS 向けの手書き AArch64 アセンブリによる PLaMo 3 Translate の推論実装です。0.8B・2B・8B・31Bの公式BF16重みを変換せず直接読み込みます。
+Apple Silicon / macOS 向けの C・Objective-C・Metal・手書き AArch64 アセンブリによる PLaMo 3 Translate の推論実装です。0.8B・2B・8B・31Bの公式BF16重みを変換せず直接読み込みます。CLI と API は同じ推論エンジンを使い、既定で Metal GPU を利用します。
 
-[gpt2.s](https://github.com/ArneshBanerjee/gpt2.s) と同様に、単発CLIの推論本体は C / libc / Python / Metal / Accelerate 呼び出しを使いません。Darwin syscall で公式 safetensors と tokenizer.jsonl を変換せず読みます。ヘッダーは mmap、大きな BF16 行列は最大1 GiBの再利用領域へのまとめ読みを使います。libSystem は macOS ローダーのためにリンクしますが、`nm -u build/plamo` は空です。
+[gpt2.s](https://github.com/ArneshBanerjee/gpt2.s) に着想を得た CPU カーネルに、Apple Silicon の共有メモリを使う GPU 実装を加えています。活性値と演算は FP32、重みは元の BF16 で、FP16 への丸めや追加の量子化を行いません。従来のアセンブリだけの CLI は `build/plamo-asm` に残しています。この実行ファイルは Darwin syscall を使い、`nm -u build/plamo-asm` は空です。
 
 ## モデルを選ぶ
 
@@ -15,7 +15,7 @@ Apple Silicon / macOS 向けの手書き AArch64 アセンブリによる PLaMo 
 | 8B | 4 | 17.06 GB | 17.89 GiB | `models/plamo` |
 | 31B | 14 | 63.51 GB | 61.15 GiB | `models/31b` |
 
-この下限とは別に、KV・入力処理・OS用のメモリも必要です。31Bは24 GiBの検証機では常駐できません。`stream`でも全重みをディスクに置く必要があり、CPU計算・I/O量は増えます。31Bの1 GiBを超える行列はmmapから直接読みます。
+この下限はCLI・APIの`resident`用です。KV・入力処理・OS用のメモリも必要です。31Bは24 GiBの検証機では完全常駐できませんが、`auto`は空きに応じて一部の重みを保持できます。全モードで重みをディスクに置く必要があります。大きな行列は行ブロックに分割して扱います。
 
 モデルと公式リビジョンは [tools/profiles](tools/profiles) に固定しています。0.8B・2BはAttentionの幅が隠れ層の幅と異なり、31Bは出力ヘッドと入力Embeddingを共有します。設定に従って扱い、学習済み重みや精度は変更しません。
 
@@ -29,11 +29,11 @@ Apple SiliconのmacOSと、[Nix](https://nix.dev/install-nix)（`nix-command`・
 
 ```sh
 # 初回のみ。2Bの公式BF16重み約5.76 GBと語彙・ライセンスを取得
-nix run github:SuzumiyaAoba/plamo-3-translate.s#download-model -- --model 2b --weights
+nix run github:SuzumiyaAoba/plamo-3-translate.c#download-model -- --model 2b --weights
 
-nix run github:SuzumiyaAoba/plamo-3-translate.s -- --model 2b -j 'Hello.'
-nix run github:SuzumiyaAoba/plamo-3-translate.s -- --model 2b -e 'こんにちは。'
-nix run github:SuzumiyaAoba/plamo-3-translate.s -- --help
+nix run github:SuzumiyaAoba/plamo-3-translate.c -- --model 2b -j 'Hello.'
+nix run github:SuzumiyaAoba/plamo-3-translate.c -- --model 2b -e 'こんにちは。'
+nix run github:SuzumiyaAoba/plamo-3-translate.c -- --help
 ```
 
 既定のデータルートは `${XDG_DATA_HOME:-$HOME/.local/share}/plamo-3-translate-SIZE` です。2Bの保存先はその下の `models/2b`、8Bは従来どおり `models/plamo` です。上表の重みサイズに加え、付属ファイル用の空き容量が必要です。重み・語彙はGitリポジトリ、Nixパッケージ、Nix storeに含めません。Nixのビルドではモデルの取得も推論も実行しません。
@@ -42,8 +42,8 @@ nix run github:SuzumiyaAoba/plamo-3-translate.s -- --help
 
 ```sh
 export PLAMO_DATA_DIR="$HOME/plamo-data"
-nix run github:SuzumiyaAoba/plamo-3-translate.s#download-model -- --weights
-nix run github:SuzumiyaAoba/plamo-3-translate.s -- -j 'Hello.'
+nix run github:SuzumiyaAoba/plamo-3-translate.c#download-model -- --weights
+nix run github:SuzumiyaAoba/plamo-3-translate.c -- -j 'Hello.'
 ```
 
 新規ダウンロードは固定リビジョンのサイズ・SHA-256を検証してから確定します。中断時は再実行すると完了済みファイルを再利用します。取得済み重みもハッシュ検証するには `#download-model -- --weights --verify` を使います。モデルの利用条件は[公式ライセンス](https://huggingface.co/pfnet/plamo-3-translate-8b/blob/19ecab3fb31424ee937b7503730318b50e55771c/LICENSE/ja)を確認してください。
@@ -51,8 +51,8 @@ nix run github:SuzumiyaAoba/plamo-3-translate.s -- -j 'Hello.'
 ローカルで開発する場合:
 
 ```sh
-git clone https://github.com/SuzumiyaAoba/plamo-3-translate.s.git
-cd plamo-3-translate.s
+git clone https://github.com/SuzumiyaAoba/plamo-3-translate.c.git
+cd plamo-3-translate.c
 nix flake check                  # モデルなしでビルド・テスト
 nix build                       # result/bin/plamo、result/bin/plamo-download
 nix develop                     # 固定された開発環境に入る
@@ -67,14 +67,14 @@ python3 tools/download.py --weights  # 開発時は ./models/plamo に取得
 PLAMO_DATA_DIR="$PWD" nix run . -- -j 'Hello.'
 ```
 
-`flake.lock` がNixpkgsを固定します。`nix flake check` は合成データによる演算テスト、ダウンローダー・起動コマンドのオフラインテスト、生成ソースの再現性、推論バイナリの未解決シンボルがないことを検証します。Nixがflakesを無効としてエラーにする場合は、`~/.config/nix/nix.conf` に `experimental-features = nix-command flakes` を設定してください。
+`flake.lock` がNixpkgsを固定します。`nix flake check` は合成データによる演算テスト、ダウンローダー・起動コマンドのオフラインテスト、生成ソースの再現性、従来のアセンブリバイナリの未解決シンボルがないことを検証します。Nixがflakesを無効としてエラーにする場合は、`~/.config/nix/nix.conf` に `experimental-features = nix-command flakes` を設定してください。
 
-単発CLIのNix起動コマンドは保存先を選んでアセンブリ本体を実行するシェルです。このCLIではPythonを推論中に呼び出しません。モデル別のアセンブリ本体を `result/libexec/plamo-SIZE` にインストールし、`result/libexec/plamo` は8Bです。
+単発CLIのNix起動コマンドは保存先を選んでネイティブ本体を実行するシェルです。このCLIではPythonを推論中に呼び出しません。モデル別の本体を `result/libexec/plamo-SIZE`、従来のアセンブリ CLI を `result/libexec/plamo-asm-SIZE` にインストールします。`result/libexec/plamo` は8Bです。
 
 ## 常駐API
 
 ```sh
-nix run github:SuzumiyaAoba/plamo-3-translate.s#serve -- --model 2b --memory auto --port 8000
+nix run github:SuzumiyaAoba/plamo-3-translate.c#serve -- --model 2b --memory auto --port 8000
 ```
 
 別ターミナルから:
@@ -86,13 +86,19 @@ curl -N http://127.0.0.1:8000/translate \
   -d '{"text":"Hello.","source_lang":"en","target_lang":"ja","stream":true}'
 ```
 
-1つのワーカーがモデルと語彙を保持し、リクエスト間ではKV・RoPEの状態をリセットします。`auto`は十分な余裕があれば選んだモデルの元BF16重みを読み取り専用の匿名メモリへ先に読み込み、不足する場合は従来の省メモリI/Oへ戻ります。完全常駐を要求する場合は`--memory resident`を指定してください。起動時には重みと2 GiBの余裕分が必要です。2Bでは約7.90 GB、8Bでは約19.21 GBが判定の目安です。
+1つのワーカーがモデルと語彙を保持し、リクエスト間ではKV・RoPEの状態をリセットします。`auto`は起動時の空きメモリの推定値から2 GiBの余裕を引いた量を上限に、実際に使う元BF16の行列を保持可能な範囲まで起動時に先読みします。先読みが終わるまでは`/health`が`loading`を返し、完了してから`ready`になります。残りは最大64 MiBの固定領域へ都度読み込みます。大きな行列も行単位で分割し、空きが減れば保持する重みを解放し、回復すれば起動時の上限内で保持量を増やします。全重みが収まらなくても起動でき、保持できない範囲の先読みI/Oは行いません。通常のCLIの`auto`は初回利用時に読み込みます。
 
-空き不足では常駐APIだけで生成が速くなるわけではありません。実際のモードと理由は`/health`に表示します。APIの制約、ストリーミング、計測結果は[常駐APIの説明](docs/API.md)を参照してください。APIの制御層はCとPython標準ライブラリ、推論カーネルは既存のアセンブリです。
+完全常駐を要求する場合は`--memory resident`を指定してください。CPUでは重みと2 GiBの余裕分が必要です（2Bは約7.90 GB、8Bは約19.21 GB）。GPUは収まりきらない場合に元BF16の全ビットを保持する圧縮キャッシュを選び、実際の保持領域と余裕分が収まるかを確認します。8Bの計算用行列では約16.18 GBを約12.30 GBに保持できました。
+
+CLI・API は既定で利用可能なMetal GPUを使い、初期化できない場合はCPUへ戻ります。`--backend metal`でGPUを必須にでき、`--backend metal-fp32`も同じFP32経路を使います。`--backend cpu`はCPUアセンブリを使います。必要な行列が保持済みなら、生成1トークン分の全層・Attention・KV更新・RoPE・MLP・出力ヘッドを一つのGPUコマンドにまとめます。重みは元BF16、活性値・累積演算はFP32です。APIでは小さな正規化重み、RoPE表、GPU作業領域も起動時に準備します。[精度・共有メモリ・検証結果](docs/METAL.md)を参照してください。
+
+実際のバックエンド・GPU名と、メモリモード（`auto`は`adaptive`）・領域の上限・保持中の重み・読み込み領域のバイト数は`/health`に表示します。`load_seconds`は先読みを含む起動時間、`preload_seconds`は追加の準備時間です。`memory.preloaded_weight_bytes`は起動時の先読み量、`cached_weight_bytes`は元BF16換算の保持量、`cached_storage_bytes`は実際のキャッシュ領域です。I/Oを減らせる量は保持できる重みに依存します。APIの制約、ストリーミング、計測結果は[常駐APIの説明](docs/API.md)を参照してください。APIの制御層はC・Objective-CとPython標準ライブラリ、CPUカーネルはアセンブリ、GPUカーネルはMetalです。
+
+CPUバックエンドの大きな行列演算は、既定で性能コア数に合わせて並列実行します。`--threads 4`でスレッド数を指定でき、`--threads 1`で逐次実行になります。実際の数は`/health`の`threads`に表示します。2Bの完全常駐では、従来の1スレッドに対し入力21トークンの処理が1.52秒→0.42秒、生成1ステップが0.24秒→0.11秒でした（3回の中央値）。CPU最適化前後ではBF16重みと演算結果のハッシュが一致しています。[LM Studioとの速度差・比較条件](docs/OPTIMIZATION.md#lm-studioとの速度差とcpu並列化)を参照してください。
 
 ## Nixを使わずに実行
 
-macOS、Apple Silicon、Xcode Command Line Tools が必要です。既定の8Bは4分割で約17 GBあります。検証機は24 GiB RAMです。FP32 の中間値と BF16 の元重みを使う、CPU 1スレッドの実装です。入力処理は複数トークンの射影をまとめる prefill を使います。重みの読み込みが性能に影響します。
+macOS、Apple Silicon、Xcode Command Line Tools が必要です。既定の8Bは4分割で約17 GBあります。検証機は24 GiB RAMです。CLI も Metal GPU・適応型重みキャッシュを使い、CPU を選ぶ場合は性能コアで並列計算します。入力処理は複数トークンの射影をまとめる prefill を使います。重みの読み込みが性能に影響します。
 
 ```sh
 python3 tools/download.py --weights
@@ -101,9 +107,11 @@ make all
 ./build/plamo -g 'raw prompt'      # テンプレートなしの生成
 ./build/plamo -j 'Hello.'          # 英語から日本語
 ./build/plamo -e 'こんにちは。'    # 日本語から英語
+./build/plamo --backend metal --memory auto -j 'Hello.'
+./build/plamo --backend cpu --threads 4 -j 'Hello.'
 ```
 
-生成は greedy、UTF-8 テキスト出力、最大256トークンです。終了 ID は公式 generation_config と同じ1・16です。翻訳は基本の PFML3 プロンプトを使います。入力はプロンプト込み4096 Unicode 符号位置までです。用語集・文体・例示などの追加テンプレート機能は CLI にありません。翻訳入力への予約特殊トークン混入は現在拒否しません。
+生成は greedy、UTF-8 テキスト出力、既定256トークンです。`--max-tokens 1..4096`で上限を指定できます。終了 ID は公式 generation_config と同じ1・16です。翻訳は基本の PFML3 プロンプトを使います。入力はプロンプト込み4096 Unicode 符号位置までです。用語集・文体・例示などの追加テンプレート機能は CLI にありません。翻訳入力への予約特殊トークン混入は現在拒否しません。
 
 別サイズの例:
 
@@ -140,10 +148,10 @@ make build/test-model-open
 python3 tools/verify_weights.py
 python3 tools/verify_segments.py
 python3 tools/verify_boundaries.py
-nm -u build/plamo
+nm -u build/plamo-asm
 ```
 
-C は演算テストのハーネスと、API用のモデル常駐・状態管理に使います。単発CLIの推論はアセンブリだけです。8Bの公式語彙107,520行・323テンソルの読み込みを検証済みです。4モデルすべてで、合成BF16ファイルを使った実ローダーの形状照合・初期化失敗後の再試行・再初期化をテストします。31Bの全14ファイル・642テンソルは公式ヘッダーとも照合済みですが、31Bの実翻訳はメモリ制約により未検証です。区間 Unigram は独立参照210ケース、境界検出は公式正規表現と各2035ケースで比較しています。
+C はCLI・APIのモデル常駐・状態管理と演算テストに使います。8Bの公式語彙107,520行・323テンソルの読み込みを検証済みです。4モデルすべてで、合成BF16ファイルを使った実ローダーの形状照合・初期化失敗後の再試行・再初期化をテストします。31Bの全14ファイル・642テンソルは公式ヘッダーとも照合済みですが、31Bの実翻訳はメモリ制約により未検証です。区間 Unigram は独立参照210ケース、境界検出は公式正規表現と各2035ケースで比較しています。
 
 公式コードとの直接比較には別途 PyTorch、Transformers 4.57.1、Numba、safetensors が必要です。
 

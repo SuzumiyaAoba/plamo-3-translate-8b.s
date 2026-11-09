@@ -5,6 +5,7 @@
   bash,
   cacert,
   shellcheck,
+  apple-sdk_15,
 }:
 
 stdenv.mkDerivation {
@@ -24,8 +25,13 @@ stdenv.mkDerivation {
       ../nix
       ../docs/config.json
       ../docs/API.md
+      ../docs/METAL.md
       ../docs/MODELS.md
       ../docs/benchmarks/multi-model.json
+      ../docs/benchmarks/metal.json
+      ../docs/benchmarks/fp32-fused.json
+      ../docs/benchmarks/startup.json
+      ../docs/benchmarks/decode.json
       ../README.md
       ../LICENSE
       ../LICENSES
@@ -37,6 +43,8 @@ stdenv.mkDerivation {
     python3
     shellcheck
   ];
+  # Metal residency sets require SDK 15 or newer at build time.
+  buildInputs = [ apple-sdk_15 ];
   dontConfigure = true;
   makeFlags = [ "CC=${stdenv.cc.targetPrefix}cc" ];
   doCheck = true;
@@ -55,7 +63,7 @@ stdenv.mkDerivation {
     python3 tools/rope_constants.py
     sha256sum -c build/generated.sha256
     for variant in build build/0.8b build/2b build/31b; do
-      test -z "$(nm -u "$variant/plamo")"
+      test -z "$(nm -u "$variant/plamo-asm")"
     done
     runHook postCheck
   '';
@@ -65,9 +73,11 @@ stdenv.mkDerivation {
     install -Dm755 build/plamo "$out/libexec/plamo"
     install -Dm755 build/plamo-worker "$out/libexec/plamo-worker"
     install -Dm755 build/plamo "$out/libexec/plamo-8b"
+    install -Dm755 build/plamo-asm "$out/libexec/plamo-asm-8b"
     install -Dm755 build/plamo-worker "$out/libexec/plamo-worker-8b"
     for model in 0.8b 2b 31b; do
       install -Dm755 "build/$model/plamo" "$out/libexec/plamo-$model"
+      install -Dm755 "build/$model/plamo-asm" "$out/libexec/plamo-asm-$model"
       install -Dm755 "build/$model/plamo-worker" "$out/libexec/plamo-worker-$model"
     done
     install -Dm644 tools/download.py "$out/share/plamo/download.py"
@@ -95,16 +105,21 @@ stdenv.mkDerivation {
     install -Dm644 LICENSE "$out/share/doc/plamo/LICENSE"
     install -Dm644 THIRD_PARTY_NOTICES.md "$out/share/doc/plamo/THIRD_PARTY_NOTICES.md"
     install -Dm644 docs/API.md "$out/share/doc/plamo/API.md"
+    install -Dm644 docs/METAL.md "$out/share/doc/plamo/METAL.md"
     install -Dm644 docs/MODELS.md "$out/share/doc/plamo/MODELS.md"
     install -Dm644 docs/benchmarks/multi-model.json "$out/share/doc/plamo/benchmarks/multi-model.json"
+    install -Dm644 docs/benchmarks/metal.json "$out/share/doc/plamo/benchmarks/metal.json"
+    install -Dm644 docs/benchmarks/fp32-fused.json "$out/share/doc/plamo/benchmarks/fp32-fused.json"
+    install -Dm644 docs/benchmarks/startup.json "$out/share/doc/plamo/benchmarks/startup.json"
+    install -Dm644 docs/benchmarks/decode.json "$out/share/doc/plamo/benchmarks/decode.json"
     install -Dm644 LICENSES/PLaMo-Community.en.txt "$out/share/doc/plamo/LICENSES/PLaMo-Community.en.txt"
     install -Dm644 LICENSES/PLaMo-Community.ja.txt "$out/share/doc/plamo/LICENSES/PLaMo-Community.ja.txt"
     runHook postInstall
   '';
 
   meta = {
-    description = "PLaMo 3 Translate 0.8B/2B/8B/31B in handwritten AArch64 assembly, without bundled weights";
-    homepage = "https://github.com/SuzumiyaAoba/plamo-3-translate.s";
+    description = "PLaMo 3 Translate with AArch64 CPU and Metal GPU backends, without bundled weights";
+    homepage = "https://github.com/SuzumiyaAoba/plamo-3-translate.c";
     license = lib.licenses.mit;
     platforms = [ "aarch64-darwin" ];
     mainProgram = "plamo";

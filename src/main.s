@@ -229,7 +229,7 @@ Ldigit:
     ret
 .section __TEXT,__const
 newline: .ascii "\n"
-usage: .ascii "usage: build/plamo [-g|-j|-e] 'text' (-g raw, -j en-to-ja, -e ja-to-en)\n"
+usage: .ascii "usage: build/plamo-asm [-g|-j|-e] 'text' (-g raw, -j en-to-ja, -e ja-to-en)\n"
 usage_end:
 failure: .ascii "plamo: tokenizer failed (check vocabulary, UTF-8, or input capacity)\n"
 failure_end:
