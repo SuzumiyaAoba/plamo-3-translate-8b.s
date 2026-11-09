@@ -1,5 +1,16 @@
 .text
 .p2align 2
+// x0=source language,x1=output,x2=capacity. Exact input prefix of the same
+// translation template, ending at its special message boundary.
+.globl _plamo_translation_prefix
+_plamo_translation_prefix:
+    mov x4, x2
+    mov x3, x1
+    mov x1, x0
+    mov x0, #0
+    mov x2, #0
+    b _plamo_translation_prompt
+
 // x0=source text,x1=source language,x2=target language (NUL strings),
 // x3=output,x4=byte capacity including NUL. Return bytes or UINT64_MAX.
 // Basic single-request PFML3 prompt, exactly matching official chat_template.
@@ -24,6 +35,7 @@ _plamo_translation_prompt:
     mov x6, #0
 Lpromptpart:
     ldr x7, [sp, x5, lsl #3]
+    cbz x7, Lpromptfinished
 Lpromptcopy:
     ldrb w8, [x7], #1
     cbz w8, Lpromptnext
@@ -37,6 +49,7 @@ Lpromptnext:
     add x5, x5, #1
     cmp x5, #7
     b.lo Lpromptpart
+Lpromptfinished:
     cmp x6, x4
     b.hs Lpromptbad
     strb wzr, [x3, x6]

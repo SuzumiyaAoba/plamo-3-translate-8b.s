@@ -33,8 +33,9 @@ struct plamo_metal {
     struct plamo_metal_info info;
     id<MTLDevice> device;
     id<MTLCommandQueue> queue;
-    id<MTLComputePipelineState> matvec[2], vector[2], matmul[2], norm, swiglu, residual, touch, analyze, pack;
+    id<MTLComputePipelineState> matvec[2], vector[2], matmul[2][4], norm, swiglu, residual, touch, analyze, pack;
     id<MTLComputePipelineState> decode_keys, decode_qkv, decode_attention, decode_residual;
+    id<MTLComputePipelineState> prefill_qkv, prefill_attention, prefill_store;
     id<MTLBuffer> staging, input, output;
     id<MTLBuffer> state, normalized, gate, branch, norms;
     id<MTLBuffer> pack_headers;
@@ -58,6 +59,7 @@ extern void (*plamo_matvec_kernel)(const uint16_t *, const float *, float *, uin
 extern void (*plamo_matmul_kernel)(const struct plamo_matmul *, void *);
 extern int (*plamo_mlp_kernel)(const struct mlp *, float *, uint64_t, void *);
 extern int (*plamo_forward_kernel)(struct model *, uint64_t, void *);
+extern int (*plamo_prefill_kernel)(struct model *, const uint32_t *, uint64_t, float *, void *);
 extern void plamo_rope_table(const float *, uint64_t, uint64_t, float *, float *, float);
 extern void *plamo_compute_context;
 
@@ -262,15 +264,20 @@ static void encode_linear(struct plamo_metal *m, id<MTLComputeCommandEncoder> en
                           id<MTLBuffer> y, NSUInteger output_offset, uint64_t ys,
                           uint64_t rows, uint64_t columns, uint64_t tokens) {
     struct { uint32_t rows, columns, tokens, xs, ys, aligned_weights, weight_offset; } params = {
-        (uint32_t)rows, (uint32_t)columns, (uint32_t)tokens, (uint32_t)xs, (uint32_t)ys, !(offset % 8), packed ? (uint32_t)(offset / 2) : 0
+        (uint32_t)rows, (uint32_t)columns, (uint32_t)tokens, (uint32_t)xs, (uint32_t)ys,
+        !(offset % 8), packed ? (uint32_t)(offset / 2) : 0
     };
     int batched = tokens >= 8, vector = tokens >= 4 && !batched;
-    [encoder setComputePipelineState:batched ? m->matmul[packed] : vector ? m->vector[packed] : m->matvec[packed]];
+    // Keep the minimum number of weight scans, then choose the narrowest
+    // compiled tile: e.g. 69 tokens use 3 x 24 rather than 3 x 32.
+    uint64_t panels = (tokens + 31) / 32;
+    uint64_t tile_tokens = ((tokens + panels - 1) / panels + 7) / 8 * 8;
+    [encoder setComputePipelineState:batched ? m->matmul[packed][tile_tokens / 8 - 1] : vector ? m->vector[packed] : m->matvec[packed]];
     [encoder setBuffer:w offset:packed ? 0 : offset atIndex:0];
     [encoder setBuffer:x offset:0 atIndex:1];
     [encoder setBuffer:y offset:output_offset atIndex:2];
     [encoder setBytes:&params length:sizeof params atIndex:3];
-    MTLSize groups = batched ? MTLSizeMake((rows + 31) / 32, (tokens + 31) / 32, 1) :
+    MTLSize groups = batched ? MTLSizeMake((rows + 31) / 32, (tokens + tile_tokens - 1) / tile_tokens, 1) :
                               MTLSizeMake((rows + 3) / 4, vector ? (tokens + 7) / 8 : tokens, 1);
     [encoder dispatchThreadgroups:groups threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
     ++m->info.dispatches;
@@ -617,26 +624,27 @@ int plamo_metal_prepare_model(struct plamo_metal *m, struct model *model) {
     }
 }
 
-static void encode_norm(struct plamo_metal *m, id<MTLComputeCommandEncoder> e, NSUInteger offset, uint64_t hidden) {
-    uint32_t p[] = {(uint32_t)hidden, 0, 1};
+static void encode_norm(struct plamo_metal *m, id<MTLComputeCommandEncoder> e, NSUInteger offset,
+                         uint64_t hidden, uint64_t tokens, NSUInteger state_offset) {
+    uint32_t p[] = {(uint32_t)hidden, 0, (uint32_t)tokens};
     [e setComputePipelineState:m->norm];
-    [e setBuffer:m->state offset:0 atIndex:0];
+    [e setBuffer:m->state offset:state_offset atIndex:0];
     [e setBuffer:m->decode_norms offset:offset atIndex:1];
     [e setBuffer:m->normalized offset:0 atIndex:2];
     [e setBytes:p length:sizeof p atIndex:3];
-    [e dispatchThreadgroups:MTLSizeMake(1, 1, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+    [e dispatchThreadgroups:MTLSizeMake(tokens, 1, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
     ++m->info.dispatches;
 }
 
 static void encode_residual(struct plamo_metal *m, id<MTLComputeCommandEncoder> e, NSUInteger offset,
-                             uint64_t hidden, int mlp) {
-    uint32_t p[] = {(uint32_t)hidden, 0, 1};
+                             uint64_t hidden, uint64_t tokens, int mlp) {
+    uint32_t p[] = {(uint32_t)hidden, 0, (uint32_t)tokens};
     [e setComputePipelineState:mlp ? m->residual : m->decode_residual];
     [e setBuffer:m->state offset:0 atIndex:0];
     [e setBuffer:m->decode_norms offset:offset atIndex:1];
     [e setBuffer:m->branch offset:0 atIndex:2];
     [e setBytes:p length:sizeof p atIndex:3];
-    [e dispatchThreadgroups:MTLSizeMake(1, 1, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+    [e dispatchThreadgroups:MTLSizeMake(tokens, 1, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
     ++m->info.dispatches;
 }
 
@@ -686,7 +694,7 @@ int plamo_metal_forward(struct plamo_metal *m, struct model *model, uint64_t tok
             uint32_t p[] = {(uint32_t)q->qh, (uint32_t)q->kh, (uint32_t)q->dim,
                             (uint32_t)(c->count < c->capacity ? c->count + 1 : c->capacity)};
             uint32_t shift = c->count == c->capacity;
-            encode_norm(m, e, d->pre, h);
+            encode_norm(m, e, d->pre, h, 1, 0);
             encode_projection(m, e, &d->qkv, m->normalized, h, m->qkv, (q->qh + 2 * q->kh) * q->dim, h, 1);
             if (shift || r->processed_count != c->count || r->scale_bits != m->ropes[d->rope].scale) {
                 [e setComputePipelineState:m->decode_keys];
@@ -718,8 +726,8 @@ int plamo_metal_forward(struct plamo_metal *m, struct model *model, uint64_t tok
             [e setBytes:p length:sizeof p atIndex:5];
             [e dispatchThreadgroups:MTLSizeMake(q->qh, 1, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
             encode_projection(m, e, &d->attention, m->attention, q->qh * q->dim, m->branch, h, q->qh * q->dim, 1);
-            encode_residual(m, e, d->post, h, 0);
-            encode_norm(m, e, d->mlp_pre, h);
+            encode_residual(m, e, d->post, h, 1, 0);
+            encode_norm(m, e, d->mlp_pre, h, 1, 0);
             encode_projection(m, e, &d->gate, m->normalized, h, m->gate, 2 * mlp->intermediate, h, 1);
             uint32_t mp[] = {(uint32_t)h, (uint32_t)mlp->intermediate, 1};
             [e setComputePipelineState:m->swiglu];
@@ -727,10 +735,10 @@ int plamo_metal_forward(struct plamo_metal *m, struct model *model, uint64_t tok
             [e setBytes:mp length:sizeof mp atIndex:1];
             [e dispatchThreadgroups:MTLSizeMake((mlp->intermediate + 127) / 128, 1, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
             encode_projection(m, e, &d->down, m->gate, 2 * mlp->intermediate, m->branch, h, mlp->intermediate, 1);
-            encode_residual(m, e, d->mlp_post, h, 1);
+            encode_residual(m, e, d->mlp_post, h, 1, 1);
             m->info.dispatches += 3;
         }
-        encode_norm(m, e, m->final_norm, h);
+        encode_norm(m, e, m->final_norm, h, 1, 0);
         encode_projection(m, e, &m->head, m->normalized, h, m->logits, model->vocab, h, 1);
         if (!complete(m, command, e)) return -1;
         memcpy(model->state, m->state.contents, (size_t)(h * 4));
@@ -743,6 +751,157 @@ int plamo_metal_forward(struct plamo_metal *m, struct model *model, uint64_t tok
             mix->rotation->scale_bits = m->ropes[m->layers[i].rope].scale;
         }
         ++m->info.fused_decodes;
+        m->info.fused_mlps += model->count;
+        return 1;
+    }
+}
+
+int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32_t *ids,
+                         uint64_t tokens, float *states) {
+    if (!model || !ids || !states || !tokens) return -1;
+    if (m->config.memory == PLAMO_METAL_STREAM || tokens > 4096) return 0;
+    for (uint64_t t = 0; t < tokens; ++t) if (ids[t] >= model->vocab) return -1;
+    @autoreleasepool {
+        plamo_metal_maintain(m);
+        if (!plamo_metal_prepare_model(m, model)) return -1;
+        uint64_t h = model->hidden, qkv = 0, attention = 0, gate = 0, score_row = 0;
+        // Resolve every retained tile before any state/KV change. Maintenance
+        // cannot evict a projection while this single command is encoded.
+        for (uint64_t i = 0; i < model->count; ++i) {
+            const struct layer *l = model->layers[i];
+            const struct qkv *q = l->mixer->qkv;
+            const struct cache *c = l->mixer->cache;
+            struct decode_layer *d = &m->layers[i];
+            if (c->count > c->capacity || (!c->sliding && tokens > c->capacity - c->count)) return -1;
+            if (c->count > UINT32_MAX - tokens) return 0;
+            if (!resident_projection(m, q->weight, (q->qh + 2 * q->kh) * q->dim, h, &d->qkv) ||
+                !resident_projection(m, l->mixer->weight, h, q->qh * q->dim, &d->attention) ||
+                !resident_projection(m, l->mlp->gu, l->mlp->intermediate * 2, h, &d->gate) ||
+                !resident_projection(m, l->mlp->down, h, l->mlp->intermediate, &d->down)) return 0;
+            uint64_t count = c->count + tokens;
+            if (count > c->capacity) count = c->capacity;
+            if (count * q->qh > score_row) score_row = count * q->qh;
+            if (!prepare_rope(m, &m->ropes[d->rope], count) ||
+                !cache_view(m, &d->k, c->k, count, c->width, c->capacity) ||
+                !cache_view(m, &d->v, c->v, count, c->width, c->capacity) ||
+                !cache_view(m, &d->rotated, l->mixer->rotation->out, count, c->width, c->capacity)) return -1;
+            uint64_t width = (q->qh + 2 * q->kh) * q->dim;
+            if (width > qkv) qkv = width;
+            if (q->qh * q->dim > attention) attention = q->qh * q->dim;
+            if (2 * l->mlp->intermediate > gate) gate = 2 * l->mlp->intermediate;
+        }
+        if (!resident_projection(m, model->head, model->vocab, h, &m->head)) return 0;
+        // Cap attention scratch at 16 MiB (or a single score row for a larger
+        // native context). Dispatches reuse it in query tiles, without waits.
+        if (score_row > m->device.maxBufferLength / 4) return 0;
+        uint64_t queries = 4 * MIB / score_row;
+        if (!queries) queries = 1;
+        if (queries > tokens) queries = tokens;
+        if (!ensure_buffer(m, &m->state, tokens * h * 4) ||
+            !ensure_buffer(m, &m->normalized, tokens * h * 4) ||
+            !ensure_buffer(m, &m->branch, tokens * h * 4) ||
+            !ensure_buffer(m, &m->gate, tokens * gate * 4) ||
+            !ensure_buffer(m, &m->qkv, tokens * qkv * 4) ||
+            !ensure_buffer(m, &m->attention, tokens * attention * 4) ||
+            !ensure_buffer(m, &m->scores, queries * score_row * 4)) return -1;
+        uint32_t *state = m->state.contents;
+        for (uint64_t t = 0; t < tokens; ++t)
+            for (uint64_t col = 0; col < h; ++col)
+                state[t * h + col] = (uint32_t)model->embedding[(uint64_t)ids[t] * h + col] << 16;
+        id<MTLCommandBuffer> command = [m->queue commandBuffer];
+        id<MTLComputeCommandEncoder> e = [command computeCommandEncoder];
+        if (!command || !e) { problem(m, "cannot create complete Metal prefill command"); return -1; }
+        for (uint64_t i = 0; i < model->count; ++i) {
+            const struct layer *l = model->layers[i];
+            const struct qkv *q = l->mixer->qkv;
+            const struct cache *c = l->mixer->cache;
+            const struct rotation *r = l->mixer->rotation;
+            const struct mlp *mlp = l->mlp;
+            const struct decode_layer *d = &m->layers[i];
+            id<MTLBuffer> table = m->ropes[d->rope].buffer;
+            uint32_t p[] = {(uint32_t)q->qh, (uint32_t)q->kh, (uint32_t)q->dim, (uint32_t)c->count,
+                            (uint32_t)tokens, (uint32_t)c->capacity, 0};
+            encode_norm(m, e, d->pre, h, tokens, 0);
+            encode_projection(m, e, &d->qkv, m->normalized, h, m->qkv, (q->qh + 2 * q->kh) * q->dim, h, tokens);
+            if (c->count && c->count + tokens <= c->capacity &&
+                (r->processed_count != c->count || r->scale_bits != m->ropes[d->rope].scale)) {
+                uint32_t dp[] = {p[0], p[1], p[2], p[3] + 1}, shift = 0;
+                [e setComputePipelineState:m->decode_keys];
+                [e setBuffer:d->k.buffer offset:d->k.offset atIndex:0];
+                [e setBuffer:d->v.buffer offset:d->v.offset atIndex:1];
+                [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:2];
+                [e setBuffer:table offset:0 atIndex:3];
+                [e setBytes:dp length:sizeof dp atIndex:4];
+                [e setBytes:&shift length:sizeof shift atIndex:5];
+                [e dispatchThreadgroups:MTLSizeMake((c->width / 2 + 127) / 128, 1, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+                ++m->info.dispatches;
+            }
+            [e setComputePipelineState:m->prefill_qkv];
+            [e setBuffer:m->qkv offset:0 atIndex:0];
+            [e setBuffer:m->decode_norms offset:d->qn atIndex:1];
+            [e setBuffer:m->decode_norms offset:d->kn atIndex:2];
+            [e setBuffer:d->k.buffer offset:d->k.offset atIndex:3];
+            [e setBuffer:d->v.buffer offset:d->v.offset atIndex:4];
+            [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:5];
+            [e setBuffer:table offset:0 atIndex:6];
+            [e setBytes:p length:sizeof p atIndex:7];
+            [e dispatchThreadgroups:MTLSizeMake(q->qh + q->kh, tokens, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+            ++m->info.dispatches;
+            [e setComputePipelineState:m->prefill_attention];
+            [e setBuffer:m->qkv offset:0 atIndex:0];
+            [e setBuffer:d->k.buffer offset:d->k.offset atIndex:1];
+            [e setBuffer:d->v.buffer offset:d->v.offset atIndex:2];
+            [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:3];
+            [e setBuffer:table offset:0 atIndex:4];
+            [e setBuffer:m->attention offset:0 atIndex:5];
+            [e setBuffer:m->scores offset:0 atIndex:6];
+            for (uint64_t first = 0; first < tokens; first += queries) {
+                uint64_t count = tokens - first;
+                if (count > queries) count = queries;
+                p[6] = (uint32_t)first;
+                [e setBytes:p length:sizeof p atIndex:7];
+                [e dispatchThreadgroups:MTLSizeMake(q->qh, count, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+                ++m->info.dispatches;
+            }
+            if (c->count + tokens > c->capacity) {
+                [e setComputePipelineState:m->prefill_store];
+                [e setBuffer:m->qkv offset:0 atIndex:0];
+                [e setBuffer:d->k.buffer offset:d->k.offset atIndex:1];
+                [e setBuffer:d->v.buffer offset:d->v.offset atIndex:2];
+                [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:3];
+                [e setBuffer:table offset:0 atIndex:4];
+                [e setBytes:p length:sizeof p atIndex:5];
+                [e dispatchThreadgroups:MTLSizeMake((c->width / 2 + 127) / 128, 1, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+                ++m->info.dispatches;
+            }
+            encode_projection(m, e, &d->attention, m->attention, q->qh * q->dim, m->branch, h, q->qh * q->dim, tokens);
+            encode_residual(m, e, d->post, h, tokens, 0);
+            encode_norm(m, e, d->mlp_pre, h, tokens, 0);
+            encode_projection(m, e, &d->gate, m->normalized, h, m->gate, 2 * mlp->intermediate, h, tokens);
+            uint32_t mp[] = {(uint32_t)h, (uint32_t)mlp->intermediate, (uint32_t)tokens};
+            [e setComputePipelineState:m->swiglu];
+            [e setBuffer:m->gate offset:0 atIndex:0];
+            [e setBytes:mp length:sizeof mp atIndex:1];
+            [e dispatchThreadgroups:MTLSizeMake((mlp->intermediate + 127) / 128, tokens, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+            ++m->info.dispatches;
+            encode_projection(m, e, &d->down, m->gate, 2 * mlp->intermediate, m->branch, h, mlp->intermediate, tokens);
+            encode_residual(m, e, d->mlp_post, h, tokens, 1);
+        }
+        encode_norm(m, e, m->final_norm, h, 1, (tokens - 1) * h * 4);
+        encode_projection(m, e, &m->head, m->normalized, h, m->logits, model->vocab, h, 1);
+        if (!complete(m, command, e)) return -1;
+        memcpy(states, m->state.contents, (size_t)(tokens * h * 4));
+        memcpy(model->state, (float *)m->state.contents + (tokens - 1) * h, (size_t)(h * 4));
+        memcpy(model->normalized, m->normalized.contents, (size_t)(h * 4));
+        memcpy(model->logits, m->logits.contents, (size_t)(model->vocab * 4));
+        for (uint64_t i = 0; i < model->count; ++i) {
+            struct mixer *mix = model->layers[i]->mixer;
+            mix->cache->count += tokens;
+            if (mix->cache->count > mix->cache->capacity) mix->cache->count = mix->cache->capacity;
+            mix->rotation->processed_count = mix->cache->count;
+            mix->rotation->scale_bits = m->ropes[m->layers[i].rope].scale;
+        }
+        ++m->info.fused_prefills;
         m->info.fused_mlps += model->count;
         return 1;
     }
@@ -802,6 +961,9 @@ static int mlp(const struct mlp *p, float *states, uint64_t tokens, void *contex
 }
 static int forward(struct model *model, uint64_t token, void *context) {
     return plamo_metal_forward(context, model, token);
+}
+static int prefill(struct model *model, const uint32_t *ids, uint64_t tokens, float *states, void *context) {
+    return plamo_metal_prefill(context, model, ids, tokens, states);
 }
 
 static void matmul(const struct plamo_matmul *p, void *context) {
@@ -877,8 +1039,11 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
             m->matvec[packed] = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
             fn = [library newFunctionWithName:packed ? @"plamo_matmul_vector_packed" : @"plamo_matmul_vector"];
             m->vector[packed] = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
-            fn = [library newFunctionWithName:packed ? @"plamo_matmul_packed" : @"plamo_matmul"];
-            m->matmul[packed] = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+            NSString *names[] = {@"plamo_matmul8", @"plamo_matmul16", @"plamo_matmul_short", @"plamo_matmul"};
+            for (unsigned n = 0; n < 4; ++n) {
+                fn = [library newFunctionWithName:packed ? [names[n] stringByAppendingString:@"_packed"] : names[n]];
+                m->matmul[packed][n] = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+            }
         }
         fn = [library newFunctionWithName:@"plamo_mlp_norm"];
         m->norm = [m->device newComputePipelineStateWithFunction:fn error:&failure];
@@ -906,17 +1071,26 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
         m->decode_attention = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
         fn = [library newFunctionWithName:@"plamo_decode_residual"];
         m->decode_residual = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+        fn = [library newFunctionWithName:@"plamo_prefill_qkv"];
+        m->prefill_qkv = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+        fn = [library newFunctionWithName:@"plamo_prefill_attention"];
+        m->prefill_attention = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+        fn = [library newFunctionWithName:@"plamo_prefill_store"];
+        m->prefill_store = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
         [library release];
         m->queue = [m->device newCommandQueue];
         int pipelines = m->norm && m->swiglu && m->residual && m->touch && m->analyze && m->pack && m->queue &&
-                        m->decode_keys && m->decode_qkv && m->decode_attention && m->decode_residual;
+                        m->decode_keys && m->decode_qkv && m->decode_attention && m->decode_residual &&
+                        m->prefill_qkv && m->prefill_attention && m->prefill_store;
         for (unsigned packed = 0; packed < 2; ++packed) {
-            pipelines = pipelines && m->matvec[packed] && m->vector[packed] && m->matmul[packed] &&
+            pipelines = pipelines && m->matvec[packed] && m->vector[packed] &&
                 m->matvec[packed].threadExecutionWidth == 32 && m->vector[packed].threadExecutionWidth == 32 &&
-                m->matmul[packed].threadExecutionWidth == 32 &&
-                m->matvec[packed].maxTotalThreadsPerThreadgroup >= 128 && m->vector[packed].maxTotalThreadsPerThreadgroup >= 128 &&
-                m->matmul[packed].maxTotalThreadsPerThreadgroup >= 128 &&
-                m->matmul[packed].staticThreadgroupMemoryLength <= m->device.maxThreadgroupMemoryLength;
+                m->matvec[packed].maxTotalThreadsPerThreadgroup >= 128 && m->vector[packed].maxTotalThreadsPerThreadgroup >= 128;
+            for (unsigned n = 0; n < 4; ++n) {
+                id<MTLComputePipelineState> p = m->matmul[packed][n];
+                pipelines = pipelines && p && p.threadExecutionWidth == 32 && p.maxTotalThreadsPerThreadgroup >= 128 &&
+                            p.staticThreadgroupMemoryLength <= m->device.maxThreadgroupMemoryLength;
+            }
         }
         if (!pipelines) {
             snprintf(error, cap, "Metal compute pipeline is unavailable: %s", failure ? failure.localizedDescription.UTF8String : "unsupported limits"); goto fail;
@@ -979,6 +1153,7 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
         plamo_matmul_kernel = matmul;
         plamo_mlp_kernel = mlp;
         plamo_forward_kernel = forward;
+        plamo_prefill_kernel = prefill;
         return m;
 fail:
         plamo_metal_close(m);
@@ -1002,6 +1177,7 @@ void plamo_metal_close(struct plamo_metal *m) {
     if (plamo_compute_context == m) {
         plamo_matvec_kernel = NULL; plamo_matmul_kernel = NULL; plamo_mlp_kernel = NULL; plamo_compute_context = NULL;
         plamo_forward_kernel = NULL;
+        plamo_prefill_kernel = NULL;
         plamo_weight_provider = NULL; plamo_weight_context = NULL; plamo_weight_chunk_bytes = 0;
     }
     release_decode(m);
@@ -1019,12 +1195,14 @@ void plamo_metal_close(struct plamo_metal *m) {
     [m->staging release]; [m->input release]; [m->output release];
     [m->state release]; [m->normalized release]; [m->gate release]; [m->branch release]; [m->norms release];
     for (unsigned packed = 0; packed < 2; ++packed) {
-        [m->matvec[packed] release]; [m->vector[packed] release]; [m->matmul[packed] release];
+        [m->matvec[packed] release]; [m->vector[packed] release];
+        for (unsigned n = 0; n < 4; ++n) [m->matmul[packed][n] release];
     }
     [m->norm release]; [m->swiglu release]; [m->residual release];
     [m->touch release];
     [m->pack_headers release]; [m->analyze release]; [m->pack release];
     [m->decode_keys release]; [m->decode_qkv release]; [m->decode_attention release]; [m->decode_residual release];
+    [m->prefill_qkv release]; [m->prefill_attention release]; [m->prefill_store release];
     [m->decode_norms release]; [m->qkv release]; [m->attention release]; [m->scores release]; [m->logits release];
     [m->queue release]; [m->device release];
     for (size_t i = 0; i < m->config.count; ++i)

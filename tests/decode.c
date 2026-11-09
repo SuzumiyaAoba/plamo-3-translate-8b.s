@@ -3,6 +3,7 @@
 #include <string.h>
 extern uint64_t plamo_decode_token(const char*,const char*,uint64_t,char*,uint64_t,uint32_t*,uint64_t);
 extern uint64_t plamo_translation_prompt(const char*,const char*,const char*,char*,uint64_t);
+extern uint64_t plamo_translation_prefix(const char*,char*,uint64_t);
 int main(void){
  const char *v="[\"日本語😀\", -1.0, \"NORMAL\"]\n[\"<0xFF>\", 0.0, \"BYTE\"]\n";char out[1024];uint32_t scratch[100];
  uint64_t n=plamo_decode_token(v,v+strlen(v),0,out,sizeof out,scratch,100);
@@ -14,5 +15,9 @@ int main(void){
  n=plamo_translation_prompt("Hello.","en","ja",out,sizeof out);
  if(n!=strlen(prompt)||strcmp(out,prompt))return 5;
  if(plamo_translation_prompt("Hello.","en","ja",out,3)!=UINT64_MAX)return 6;
+ n=plamo_translation_prefix("en",out,sizeof out);
+ const char *text=strstr(prompt,"Hello.");
+ if(n!=(uint64_t)(text-prompt)||memcmp(out,prompt,n)||out[n])return 7;
+ if(plamo_translation_prefix("en",out,n)!=UINT64_MAX)return 8;
  puts("token decode / translation prompt: PASS");
 }

@@ -163,9 +163,9 @@ inline void matmul_vector(device const ushort *w, device const float *x, device 
     }
 }
 
-// 32 output rows x 32 prompt tokens. BF16 expands exactly to FP32; both
+// 32 output rows x 8/16/24/32 prompt tokens. BF16 expands exactly to FP32; both
 // operands and accumulation remain FP32 in every temporary tile.
-template<bool Packed>
+template<bool Packed, uint N>
 inline void matmul_tile(device const ushort *w, device const float *x, device float *y,
                         constant Linear &p, uint3 group, uint tid, uint simd,
                         threadgroup float *weights, threadgroup float *inputs, threadgroup float *outputs) {
@@ -180,8 +180,8 @@ inline void matmul_tile(device const ushort *w, device const float *x, device fl
                 if (row < p.rows && col + j < p.columns) value[j] = bf16(weight_bits<Packed>(w, ulong(row) * p.columns + col + j, p));
             for (uint j = 0; j < 4; ++j) weights[i * 4 + j] = value[j];
         }
-        for (uint i = tid; i < 32 * 8; i += 128) {
-            uint token = group.y * 32 + i / 8, col = base + (i % 8) * 4;
+        for (uint i = tid; i < N * 8; i += 128) {
+            uint token = group.y * N + i / 8, col = base + (i % 8) * 4;
             float4 value = 0.0f;
             if (token < p.tokens && col + 3 < p.columns && !(p.input_stride % 4))
                 value = *((device const float4 *)(x + ulong(token) * p.input_stride + col));
@@ -194,23 +194,23 @@ inline void matmul_tile(device const ushort *w, device const float *x, device fl
             simdgroup_float8x8 a, b0, b1, b2, b3;
             simdgroup_load(a, weights + simd * 8 * 32 + k, 32);
             simdgroup_load(b0, inputs + k, 32, ulong2(0), true);
-            simdgroup_load(b1, inputs + 8 * 32 + k, 32, ulong2(0), true);
-            simdgroup_load(b2, inputs + 16 * 32 + k, 32, ulong2(0), true);
-            simdgroup_load(b3, inputs + 24 * 32 + k, 32, ulong2(0), true);
+            if (N > 8) simdgroup_load(b1, inputs + 8 * 32 + k, 32, ulong2(0), true);
+            if (N > 16) simdgroup_load(b2, inputs + 16 * 32 + k, 32, ulong2(0), true);
+            if (N > 24) simdgroup_load(b3, inputs + 24 * 32 + k, 32, ulong2(0), true);
             simdgroup_multiply_accumulate(total0, a, b0, total0);
-            simdgroup_multiply_accumulate(total1, a, b1, total1);
-            simdgroup_multiply_accumulate(total2, a, b2, total2);
-            simdgroup_multiply_accumulate(total3, a, b3, total3);
+            if (N > 8) simdgroup_multiply_accumulate(total1, a, b1, total1);
+            if (N > 16) simdgroup_multiply_accumulate(total2, a, b2, total2);
+            if (N > 24) simdgroup_multiply_accumulate(total3, a, b3, total3);
         }
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
-    simdgroup_store(total0, outputs + simd * 8 * 32, 32);
-    simdgroup_store(total1, outputs + simd * 8 * 32 + 8, 32);
-    simdgroup_store(total2, outputs + simd * 8 * 32 + 16, 32);
-    simdgroup_store(total3, outputs + simd * 8 * 32 + 24, 32);
+    simdgroup_store(total0, outputs + simd * 8 * N, N);
+    if (N > 8) simdgroup_store(total1, outputs + simd * 8 * N + 8, N);
+    if (N > 16) simdgroup_store(total2, outputs + simd * 8 * N + 16, N);
+    if (N > 24) simdgroup_store(total3, outputs + simd * 8 * N + 24, N);
     threadgroup_barrier(mem_flags::mem_threadgroup);
-    for (uint i = tid; i < 32 * 32; i += 128) {
-        uint row = group.x * 32 + i / 32, token = group.y * 32 + i % 32;
+    for (uint i = tid; i < 32 * N; i += 128) {
+        uint row = group.x * 32 + i / N, token = group.y * N + i % N;
         if (row < p.rows && token < p.tokens) y[ulong(token) * p.output_stride + row] = outputs[i];
     }
 }
@@ -225,15 +225,21 @@ VECTOR_KERNEL(plamo_matvec_packed, matvec, true)
 VECTOR_KERNEL(plamo_matmul_vector, matmul_vector, false)
 VECTOR_KERNEL(plamo_matmul_vector_packed, matmul_vector, true)
 
-#define MATRIX_KERNEL(NAME, PACKED) \
+#define MATRIX_KERNEL(NAME, PACKED, N) \
 kernel void NAME(device const ushort *w [[buffer(0)]], device const float *x [[buffer(1)]], \
                  device float *y [[buffer(2)]], constant Linear &p [[buffer(3)]], \
                  uint3 group [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]], \
                  uint simd [[simdgroup_index_in_threadgroup]]) { \
-    threadgroup float weights[32 * 32], inputs[32 * 32]; \
-    matmul_tile<PACKED>(w, x, y, p, group, tid, simd, weights, inputs, weights); }
-MATRIX_KERNEL(plamo_matmul, false)
-MATRIX_KERNEL(plamo_matmul_packed, true)
+    threadgroup float weights[32 * 32], inputs[N * 32]; \
+    matmul_tile<PACKED, N>(w, x, y, p, group, tid, simd, weights, inputs, weights); }
+MATRIX_KERNEL(plamo_matmul, false, 32)
+MATRIX_KERNEL(plamo_matmul8, false, 8)
+MATRIX_KERNEL(plamo_matmul16, false, 16)
+MATRIX_KERNEL(plamo_matmul_short, false, 24)
+MATRIX_KERNEL(plamo_matmul_packed, true, 32)
+MATRIX_KERNEL(plamo_matmul8_packed, true, 8)
+MATRIX_KERNEL(plamo_matmul16_packed, true, 16)
+MATRIX_KERNEL(plamo_matmul_short_packed, true, 24)
 
 // RMSNorm stays entirely FP32; exponentials use the CPU polynomial.
 // Pairwise FP32 reduction of nonnegative squares. Each lane's partial and the
@@ -397,8 +403,140 @@ kernel void plamo_decode_attention(device const float *q [[buffer(0)]], device c
 #define DECODE_RESIDUAL(NAME, OFFSET) \
 kernel void NAME(device float *state [[buffer(0)]], device const ushort *w [[buffer(1)]], \
                  device const float *branch [[buffer(2)]], constant MLP &p [[buffer(3)]], \
-                 uint tid [[thread_index_in_threadgroup]]) { \
+                 uint token [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]]) { \
     threadgroup float partials[4], inverse; \
-    rms_inverse(branch, p.hidden, tid, partials, inverse); \
-    for (uint i = tid; i < p.hidden; i += 128) state[i] += (branch[i] * inverse) * (bf16(w[i]) + OFFSET); }
+    ulong base = ulong(token) * p.hidden; \
+    rms_inverse(branch + base, p.hidden, tid, partials, inverse); \
+    for (uint i = tid; i < p.hidden; i += 128) state[base + i] += (branch[base + i] * inverse) * (bf16(w[i]) + OFFSET); }
 DECODE_RESIDUAL(plamo_decode_residual, 0.2f)
+
+struct Prefill { uint qh, kh, dim, prefix, tokens, capacity, query_offset; };
+
+// Normalize all prompt Q/K heads in parallel. For a sliding batch that would
+// overwrite a prefix still needed by earlier queries, retain normalized K/V
+// in QKV until attention has finished. Otherwise use canonical KV directly.
+kernel void plamo_prefill_qkv(device float *qkv [[buffer(0)]], device const ushort *qn [[buffer(1)]],
+                               device const ushort *kn [[buffer(2)]], device float *k [[buffer(3)]],
+                               device float *v [[buffer(4)]], device float *rotated [[buffer(5)]],
+                               device const float *table [[buffer(6)]], constant Prefill &p [[buffer(7)]],
+                               uint2 group [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]]) {
+    uint head = group.x, token = group.y, half_dim = p.dim / 2;
+    ulong width = ulong(p.qh + 2 * p.kh) * p.dim, base = ulong(token) * width + ulong(head) * p.dim;
+    threadgroup float inverse;
+    if (!tid) {
+        float sum = 0.0f;
+        for (uint col = 0; col < p.dim; ++col) sum += qkv[base + col] * qkv[base + col];
+        inverse = 1.0f / sqrt(sum / float(p.dim) + 0.000001f);
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    device const ushort *w = head < p.qh ? qn : kn;
+    for (uint col = tid; col < half_dim; col += 128) {
+        float2 raw = float2((qkv[base + col] * inverse) * (bf16(w[col]) + 1.0f),
+                           (qkv[base + col + half_dim] * inverse) * (bf16(w[col + half_dim]) + 1.0f));
+        uint position = min(p.prefix + token, p.capacity - 1);
+        ulong t = ulong(position) * p.dim + col;
+        float2 r = rotate_pair(raw, float2(table[t], table[t + half_dim]));
+        if (head < p.qh) {
+            qkv[base + col] = r.x; qkv[base + col + half_dim] = r.y;
+        } else if (p.prefix + p.tokens <= p.capacity) {
+            ulong dest = (ulong(p.prefix + token) * p.kh + head - p.qh) * p.dim + col;
+            k[dest] = raw.x; k[dest + half_dim] = raw.y;
+            rotated[dest] = r.x; rotated[dest + half_dim] = r.y;
+            v[dest] = qkv[base + ulong(p.kh) * p.dim + col];
+            v[dest + half_dim] = qkv[base + ulong(p.kh) * p.dim + col + half_dim];
+        } else {
+            qkv[base + col] = raw.x; qkv[base + col + half_dim] = raw.y;
+        }
+    }
+}
+
+// Each head/query owns one score row. Query tiles reuse bounded score scratch
+// without storing a tokens x tokens attention matrix for the whole prompt.
+// Keep sequential FP32 dot products, softmax sum and value accumulation.
+kernel void plamo_prefill_attention(device const float *qkv [[buffer(0)]], device const float *k [[buffer(1)]],
+                                     device const float *v [[buffer(2)]], device const float *rotated [[buffer(3)]],
+                                     device const float *table [[buffer(4)]], device float *out [[buffer(5)]],
+                                     device float *scores [[buffer(6)]], constant Prefill &p [[buffer(7)]],
+                                     uint2 group [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]]) {
+    uint head = group.x, token = p.query_offset + group.y, kh = head / (p.qh / p.kh);
+    uint count = min(p.prefix + token + 1, p.capacity), first = p.prefix + token + 1 - count;
+    uint half_dim = p.dim / 2, kv_width = p.kh * p.dim, width = (p.qh + 2 * p.kh) * p.dim;
+    bool sliding = p.prefix + p.tokens > p.capacity;
+    device const float *q = qkv + ulong(token) * width + ulong(head) * p.dim;
+    device float *s = scores + (ulong(group.y) * p.qh + head) * min(p.prefix + p.tokens, p.capacity);
+    threadgroup float maximum, denominator;
+    float scale = 1.0f / sqrt(float(p.dim));
+    for (uint row = tid; row < count; row += 128) {
+        float sum = 0.0f;
+        if (!sliding) {
+            for (uint col = 0; col < p.dim; ++col)
+                sum = fma(q[col], rotated[(ulong(row) * p.kh + kh) * p.dim + col], sum);
+        } else {
+            uint source = first + row;
+            device const float *key = source < p.prefix ? k + ulong(source) * kv_width + kh * p.dim :
+                qkv + ulong(source - p.prefix) * width + (p.qh + kh) * p.dim;
+            // Sliding RoPE uses local positions after each eviction, matching
+            // CPU rebasing even across several window lengths in one batch.
+            for (uint col = 0; col < p.dim; ++col) {
+                uint pair = col % half_dim;
+                ulong t = ulong(row) * p.dim + pair;
+                float2 r = rotate_pair(float2(key[pair], key[pair + half_dim]), float2(table[t], table[t + half_dim]));
+                sum = fma(q[col], col < half_dim ? r.x : r.y, sum);
+            }
+        }
+        s[row] = sum * scale;
+    }
+    threadgroup_barrier(mem_flags::mem_device);
+    if (!tid) {
+        float value = s[0];
+        for (uint row = 1; row < count; ++row) value = max(value, s[row]);
+        maximum = value;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    for (uint row = tid; row < count; row += 128) s[row] = plamo_exp(s[row] - maximum);
+    threadgroup_barrier(mem_flags::mem_device);
+    if (!tid) {
+        float sum = 0.0f;
+        for (uint row = 0; row < count; ++row) sum += s[row];
+        denominator = sum;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    for (uint row = tid; row < count; row += 128) s[row] /= denominator;
+    threadgroup_barrier(mem_flags::mem_device);
+    for (uint col = tid; col < p.dim; col += 128) {
+        float sum = 0.0f;
+        for (uint row = 0; row < count; ++row) {
+            uint source = first + row;
+            float value = !sliding || source < p.prefix ? v[ulong(sliding ? source : row) * kv_width + kh * p.dim + col] :
+                qkv[ulong(source - p.prefix) * width + (p.qh + p.kh + kh) * p.dim + col];
+            sum = fma(s[row], value, sum);
+        }
+        out[(ulong(token) * p.qh + head) * p.dim + col] = sum;
+    }
+}
+
+// Commit only the final sliding window after every query has consumed the old
+// prefix. A thread owns a coordinate pair and copies rows forward in order.
+kernel void plamo_prefill_store(device const float *qkv [[buffer(0)]], device float *k [[buffer(1)]],
+                                 device float *v [[buffer(2)]], device float *rotated [[buffer(3)]],
+                                 device const float *table [[buffer(4)]], constant Prefill &p [[buffer(5)]],
+                                 uint pair [[thread_position_in_grid]]) {
+    uint half_dim = p.dim / 2, head = pair / half_dim, col = pair % half_dim;
+    if (head >= p.kh) return;
+    uint count = min(p.prefix + p.tokens, p.capacity), first = p.prefix + p.tokens - count;
+    uint width = (p.qh + 2 * p.kh) * p.dim;
+    for (uint row = 0; row < count; ++row) {
+        uint source = first + row;
+        ulong dest = (ulong(row) * p.kh + head) * p.dim + col;
+        device const float *key = source < p.prefix ? k + (ulong(source) * p.kh + head) * p.dim :
+            qkv + ulong(source - p.prefix) * width + (p.qh + head) * p.dim;
+        device const float *value = source < p.prefix ? v + (ulong(source) * p.kh + head) * p.dim :
+            qkv + ulong(source - p.prefix) * width + (p.qh + p.kh + head) * p.dim;
+        float2 raw = float2(key[col], key[col + half_dim]), val = float2(value[col], value[col + half_dim]);
+        ulong t = ulong(row) * p.dim + col;
+        float2 r = rotate_pair(raw, float2(table[t], table[t + half_dim]));
+        k[dest] = raw.x; k[dest + half_dim] = raw.y;
+        v[dest] = val.x; v[dest + half_dim] = val.y;
+        rotated[dest] = r.x; rotated[dest + half_dim] = r.y;
+    }
+}

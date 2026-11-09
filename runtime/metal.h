@@ -21,7 +21,7 @@ struct plamo_metal_config {
 struct plamo_metal_info {
     char device[128], precision[16], weight_storage[24], note[256];
     struct plamo_weight_cache_info cache;
-    uint64_t dispatches, command_buffers, fused_mlps, fused_decodes, cpu_fallbacks, errors;
+    uint64_t dispatches, command_buffers, fused_mlps, fused_decodes, fused_prefills, cpu_fallbacks, errors;
     uint64_t allocated_bytes, recommended_working_set_bytes;
     uint64_t packed_weight_bytes;
     unsigned residency_sets;
@@ -49,6 +49,10 @@ int plamo_metal_prepare_model(struct plamo_metal *, struct model *);
    projection and leaves all model state untouched; -1 is an execution failure.
    On success the ordinary CPU state, logits and KV remain immediately usable. */
 int plamo_metal_forward(struct plamo_metal *, struct model *, uint64_t token);
+/* Complete layer-major prompt processing with one GPU submission. Shares the
+   canonical KV and returns every prompt state plus final state/logits. Like
+   forward, 0 declines without state changes and -1 must not be retried. */
+int plamo_metal_prefill(struct plamo_metal *, struct model *, const uint32_t *, uint64_t tokens, float *states);
 /* Synchronous dense projection; 0 leaves the caller free to use its CPU kernel.
    Input/output must not overlap. Arbitrary FP32 strides and BF16 row/column
    tails are supported. */

@@ -43,6 +43,8 @@ _plamo_matmul_kernel: .quad 0
 _plamo_mlp_kernel: .quad 0
 .globl _plamo_forward_kernel
 _plamo_forward_kernel: .quad 0
+.globl _plamo_prefill_kernel
+_plamo_prefill_kernel: .quad 0
 .globl _plamo_compute_context
 _plamo_compute_context: .quad 0
 // Reuse each row panel across all prompt tokens while it fits in CPU cache.

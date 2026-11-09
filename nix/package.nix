@@ -32,6 +32,7 @@ stdenv.mkDerivation {
       ../docs/benchmarks/fp32-fused.json
       ../docs/benchmarks/startup.json
       ../docs/benchmarks/decode.json
+      ../docs/benchmarks/ttft.json
       ../README.md
       ../LICENSE
       ../LICENSES
@@ -112,6 +113,7 @@ stdenv.mkDerivation {
     install -Dm644 docs/benchmarks/fp32-fused.json "$out/share/doc/plamo/benchmarks/fp32-fused.json"
     install -Dm644 docs/benchmarks/startup.json "$out/share/doc/plamo/benchmarks/startup.json"
     install -Dm644 docs/benchmarks/decode.json "$out/share/doc/plamo/benchmarks/decode.json"
+    install -Dm644 docs/benchmarks/ttft.json "$out/share/doc/plamo/benchmarks/ttft.json"
     install -Dm644 LICENSES/PLaMo-Community.en.txt "$out/share/doc/plamo/LICENSES/PLaMo-Community.en.txt"
     install -Dm644 LICENSES/PLaMo-Community.ja.txt "$out/share/doc/plamo/LICENSES/PLaMo-Community.ja.txt"
     runHook postInstall

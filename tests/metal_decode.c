@@ -8,6 +8,33 @@
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "Decode check failed at %d: %s\n", __LINE__, #x); exit(1); } } while (0)
 extern int (*plamo_forward_kernel)(struct model *, uint64_t, void *);
+extern int (*plamo_prefill_kernel)(struct model *, const uint32_t *, uint64_t, float *, void *);
+extern void (*plamo_matvec_kernel)(const uint16_t *, const float *, float *, uint64_t, uint64_t, void *);
+extern void (*plamo_matmul_kernel)(const struct plamo_matmul *, void *);
+extern int (*plamo_mlp_kernel)(const struct mlp *, float *, uint64_t, void *);
+struct hooks {
+    __typeof__(plamo_forward_kernel) forward;
+    __typeof__(plamo_prefill_kernel) prefill;
+    __typeof__(plamo_matvec_kernel) matvec;
+    __typeof__(plamo_matmul_kernel) matmul;
+    __typeof__(plamo_mlp_kernel) mlp;
+};
+static struct hooks cpu_begin(void) {
+    struct hooks saved = {plamo_forward_kernel, plamo_prefill_kernel, plamo_matvec_kernel, plamo_matmul_kernel, plamo_mlp_kernel};
+    plamo_forward_kernel = NULL; plamo_prefill_kernel = NULL;
+    plamo_matvec_kernel = NULL; plamo_matmul_kernel = NULL; plamo_mlp_kernel = NULL;
+    return saved;
+}
+static void cpu_end(struct hooks saved) {
+    plamo_forward_kernel = saved.forward; plamo_prefill_kernel = saved.prefill;
+    plamo_matvec_kernel = saved.matvec; plamo_matmul_kernel = saved.matmul; plamo_mlp_kernel = saved.mlp;
+}
+static int cpu_prefill(struct model *m, const uint32_t *ids, uint64_t n, float *states) {
+    struct hooks saved = cpu_begin(); int ok = plamo_prefill(m, ids, n, states); cpu_end(saved); return ok;
+}
+static int cpu_forward(struct model *m, uint64_t token) {
+    struct hooks saved = cpu_begin(); int ok = plamo_forward(m, token); cpu_end(saved); return ok;
+}
 static uint64_t available_bytes = UINT64_C(128) * 1024 * 1024;
 static uint64_t available(void) { return available_bytes; }
 struct allocation { void *base; size_t bytes; };
@@ -95,6 +122,48 @@ static void compare(struct fixture *a, struct fixture *b) {
         CHECK(a->rotation[i].scale_bits == b->rotation[i].scale_bits);
     }
 }
+static void reset(struct fixture *f) {
+    for (size_t i = 0; i < 2; ++i) {
+        f->cache[i].count = 0; f->rotation[i].processed_count = 0; f->rotation[i].scale_bits = 0;
+    }
+}
+static void prefills(struct plamo_metal *metal, struct fixture *a, struct fixture *b) {
+    const size_t counts[] = {1, 2, 3, 4, 7, 8, 9, 17, 33, 129, 4096};
+    const size_t prefixes[] = {0, 2, 6};
+    size_t h = a->model.hidden;
+    for (size_t pi = 0; pi < sizeof prefixes / sizeof *prefixes; ++pi)
+        for (size_t ni = 0; ni < sizeof counts / sizeof *counts; ++ni) {
+            size_t prefix = prefixes[pi], n = counts[ni];
+            if (n + prefix >= a->cache[1].capacity) continue;
+            if (n == 4096 && prefix != 2) continue;
+            reset(a); reset(b);
+            for (size_t j = 0; j < prefix; ++j) {
+                CHECK(cpu_forward(&a->model, j % 17)); CHECK(cpu_forward(&b->model, j % 17));
+            }
+            // Rebuild stale prefix rotations; a repeated request also reuses
+            // the same allocated GPU views/workspace with shorter prefixes.
+            for (size_t j = 0; j < 2; ++j) a->rotation[j].processed_count = 0;
+            uint32_t ids[4096]; for (size_t j = 0; j < n; ++j) ids[j] = (j * 7 + 3) % 17;
+            float *actual = calloc(n * h, 4), *expected = calloc(n * h, 4); CHECK(actual && expected);
+            struct plamo_metal_info before, after; plamo_metal_get_info(metal, &before);
+            CHECK(plamo_prefill(&a->model, ids, n, actual)); plamo_metal_get_info(metal, &after);
+            CHECK(after.command_buffers == before.command_buffers + 1 && after.fused_prefills == before.fused_prefills + 1);
+            CHECK(cpu_prefill(&b->model, ids, n, expected));
+            equal_floats(actual, expected, n * h, "all prompt states"); compare(a, b);
+            CHECK(plamo_forward(&a->model, 7)); CHECK(cpu_forward(&b->model, 7)); compare(a, b);
+            free(actual); free(expected);
+        }
+    reset(a); reset(b);
+    uint32_t ids[] = {2, 5, 9};
+    float *actual = calloc(3 * h, 4), *expected = calloc(3 * h, 4); CHECK(actual && expected);
+    available_bytes = 1; plamo_metal_maintain(metal);
+    CHECK(plamo_metal_prefill(metal, &a->model, ids, 3, actual) == 0); compare(a, b);
+    for (size_t j = 0; j < 3 * h; ++j) CHECK(actual[j] == 0);
+    CHECK(plamo_prefill(&a->model, ids, 3, actual)); CHECK(cpu_prefill(&b->model, ids, 3, expected));
+    equal_floats(actual, expected, 3 * h, "prefill pressure fallback"); compare(a, b);
+    available_bytes = UINT64_C(128) * 1024 * 1024; plamo_metal_maintain(metal); preload(metal, &a->model);
+    free(actual); free(expected); reset(a); reset(b);
+}
 static int run(size_t h, size_t n, size_t dim, size_t capacity, int require_gpu) {
     size_t qh = 4, kh = 2, words = 35 * h + 2 * (4 * h + (qh + 2 * kh) * dim * h + 2 * dim + h * qh * dim + 3 * h * n);
     uint16_t *data = malloc(words * 2); CHECK(data);
@@ -105,19 +174,28 @@ static int run(size_t h, size_t n, size_t dim, size_t capacity, int require_gpu)
     struct fixture a, b; initialize(&a, base, h, n, dim, capacity); initialize(&b, base, h, n, dim, capacity);
     struct plamo_mapping map = {base, words * 2};
     struct plamo_metal_config config = {.memory = PLAMO_METAL_AUTO, .maps = &map, .fds = &fd, .count = 1,
-        .packing = PLAMO_PACK_RAW, .reserve = 64 * 1024 * 1024, .available = available};
+        .packing = n > 1000 ? PLAMO_PACK_LOSSLESS : PLAMO_PACK_RAW, .reserve = 64 * 1024 * 1024, .available = available};
     char error[1024]; struct plamo_metal *metal = plamo_metal_open(&config, error, sizeof error);
     if (!metal) {
         int skip = !require_gpu && !strcmp(error, "Metal requires an available Apple Silicon GPU");
         fprintf(stderr, "Decode tests %s: %s\n", skip ? "SKIPPED" : "FAILED", error); return skip ? 77 : 1;
     }
     CHECK(plamo_metal_forward(metal, &a.model, 2) == 0); compare(&a, &b);
+    uint32_t ids[] = {2, 5, 9}; float *untouched = calloc(3 * h, 4); CHECK(untouched);
+    CHECK(plamo_metal_prefill(metal, &a.model, ids, 3, untouched) == 0); compare(&a, &b);
+    ids[2] = 17;
+    CHECK(plamo_metal_prefill(metal, &a.model, ids, 3, untouched) == -1); compare(&a, &b);
+    for (size_t j = 0; j < 3 * h; ++j) CHECK(untouched[j] == 0);
+    free(untouched);
     preload(metal, &a.model); CHECK(plamo_metal_prepare_model(metal, &a.model));
-    for (size_t step = 0; step < capacity; ++step) {
+    prefills(metal, &a, &b);
+    struct plamo_metal_info initial; plamo_metal_get_info(metal, &initial);
+    CHECK((initial.packed_weight_bytes != 0) == (n > 1000));
+    for (size_t step = 0; step < capacity && step < 140; ++step) {
         if (step == 9) {
             // CPU batch writes directly into the GPU-visible canonical KV.
             uint32_t ids[] = {2, 5, 9}; float *as = calloc(3 * h, 4), *bs = calloc(3 * h, 4); CHECK(as && bs);
-            CHECK(plamo_prefill(&a.model, ids, 3, as)); CHECK(plamo_prefill(&b.model, ids, 3, bs));
+            CHECK(plamo_prefill(&a.model, ids, 3, as)); CHECK(cpu_prefill(&b.model, ids, 3, bs));
             equal_floats(as, bs, 3 * h, "prefill"); free(as); free(bs); compare(&a, &b);
             for (size_t i = 0; i < 2; ++i) {
                 a.cache[i].count = b.cache[i].count = 0;
@@ -127,8 +205,7 @@ static int run(size_t h, size_t n, size_t dim, size_t capacity, int require_gpu)
         if (step == 17) {
             for (size_t i = 0; i < 2; ++i) a.rotation[i].processed_count = b.rotation[i].processed_count = 0;
         }
-        int (*hook)(struct model *, uint64_t, void *) = plamo_forward_kernel;
-        plamo_forward_kernel = NULL; CHECK(plamo_forward(&b.model, (step * 7 + 2) % 17)); plamo_forward_kernel = hook;
+        CHECK(cpu_forward(&b.model, (step * 7 + 2) % 17));
         struct plamo_metal_info before, after; plamo_metal_get_info(metal, &before);
         CHECK(plamo_forward(&a.model, (step * 7 + 2) % 17)); plamo_metal_get_info(metal, &after);
         CHECK(after.command_buffers == before.command_buffers + 1 && after.fused_decodes == before.fused_decodes + 1);
@@ -138,7 +215,7 @@ static int run(size_t h, size_t n, size_t dim, size_t capacity, int require_gpu)
             CHECK(plamo_metal_forward(metal, &a.model, 3) == 0); compare(&a, &b);
             // The ordinary assembly path can resume from GPU-produced KV.
             CHECK(plamo_forward(&a.model, 3));
-            plamo_forward_kernel = NULL; CHECK(plamo_forward(&b.model, 3)); plamo_forward_kernel = hook; compare(&a, &b);
+            CHECK(cpu_forward(&b.model, 3)); compare(&a, &b);
             available_bytes = UINT64_C(128) * 1024 * 1024; plamo_metal_maintain(metal); preload(metal, &a.model);
         }
     }
@@ -148,14 +225,15 @@ static int run(size_t h, size_t n, size_t dim, size_t capacity, int require_gpu)
     a.cache[1].count = b.cache[1].count = capacity;
     CHECK(!plamo_forward(&a.model, 2)); plamo_metal_get_info(metal, &after);
     CHECK(a.cache[1].count == capacity && after.command_buffers == before.command_buffers); compare(&a, &b);
-    plamo_metal_close(metal); CHECK(!plamo_forward_kernel);
+    plamo_metal_close(metal); CHECK(!plamo_forward_kernel && !plamo_prefill_kernel);
     destroy(&a); destroy(&b); CHECK(!munmap(base, words * 2)); CHECK(!fclose(file));
     return 0;
 }
 int main(int argc, char **argv) {
     int require = argc == 2 && !strcmp(argv[1], "--require-gpu");
-    int result = run(7, 11, 6, 140, require); if (result) return result == 77 ? 0 : result;
+    int result = run(7, 11, 6, 4100, require); if (result) return result == 77 ? 0 : result;
     result = run(128, 257, 128, 19, require); if (result) return result == 77 ? 0 : result;
-    puts("Metal decode: PASS (single command, CPU attention reference, shared KV, sliding eviction, growth past 128 rows, stale rotations, batched prefill, request reset, pressure fallback/recovery)");
+    result = run(128, 4097, 128, 19, require); if (result) return result == 77 ? 0 : result;
+    puts("Metal decode/prefill: PASS (single command, full CPU reference, all prompt states/logits/KV, sliding batches, existing prefixes, odd widths, growth past 128 rows, stale rotations, request reset, pressure fallback/recovery)");
     return 0;
 }

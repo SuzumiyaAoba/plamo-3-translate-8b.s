@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "prompt_cache.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,7 @@ extern int plamo_utf8_next(const char *, const char *, struct scalar *);
 extern uint64_t plamo_preprocess(const struct preprocess *);
 extern uint64_t plamo_encode_marked(const struct encoder *);
 extern uint64_t plamo_translation_prompt(const char *, const char *, const char *, char *, uint64_t);
+extern uint64_t plamo_translation_prefix(const char *, char *, uint64_t);
 extern uint64_t plamo_decode_token(const char *, const char *, uint64_t, char *, uint64_t, uint32_t *, uint64_t);
 
 struct plamo_engine {
@@ -25,10 +27,11 @@ struct plamo_engine {
     struct plamo_weight_cache *weight_cache;
     struct plamo_parallel *parallel;
     struct plamo_metal *metal;
+    struct plamo_prompt_cache *prefix[2];
     struct trie trie;
     const char *vocab, *rows[107521];
     size_t vocab_size;
-    int tokenizer_only, prepared;
+    int tokenizer_only, prepared, prefixes_prepared;
     uint32_t scratch[4096], bytes[256], input[4096], temp[16384], marked[49152], ids[16384];
     uint8_t flags[16385];
     int64_t costs[49153];
@@ -255,7 +258,7 @@ static int prepare_matrices(struct plamo_engine *e) {
     return prepare_matrix(e, plamo_model.head, plamo_model.vocab, plamo_model.hidden);
 }
 
-int plamo_engine_prepare(struct plamo_engine *e, char *error, size_t cap) {
+static int prepare_weights(struct plamo_engine *e, char *error, size_t cap) {
     if (e->prepared) return 1;
     int adaptive = !strcmp(e->info.memory_mode, "adaptive");
     if (!adaptive && !(e->metal && !strcmp(e->info.memory_mode, "resident"))) {
@@ -275,6 +278,45 @@ int plamo_engine_prepare(struct plamo_engine *e, char *error, size_t cap) {
 fail:
     snprintf(error, cap, "cannot prepare original BF16 weights before API readiness");
     return 0;
+}
+
+int plamo_engine_prepare(struct plamo_engine *e, char *error, size_t cap) {
+    const char *setting = getenv("PLAMO_PREFIX_CACHE");
+    if (setting && strcmp(setting, "0") && strcmp(setting, "1")) {
+        snprintf(error, cap, "PLAMO_PREFIX_CACHE must be 0 or 1"); return 0;
+    }
+    if (!prepare_weights(e, error, cap)) return 0;
+    if (e->prefixes_prepared || !e->metal || !strcmp(e->info.memory_mode, "stream") ||
+        (setting && !strcmp(setting, "0"))) return 1;
+    double start = now();
+    for (unsigned direction = 0; direction < 2; ++direction) {
+        const uint32_t *ids;
+        uint64_t bytes = plamo_translation_prefix(direction ? "ja" : "en", e->prompt, sizeof e->prompt);
+        if (bytes == UINT64_MAX) break;
+        uint64_t count = plamo_engine_tokenize(e, e->prompt, 0, &ids, error, cap);
+        if (!count || count == UINT64_MAX || count > PLAMO_PROMPT_PREFIX_LIMIT) break;
+        float *states = malloc((size_t)(count * plamo_model.hidden * 4));
+        if (!states) break;
+        plamo_reset_request(&plamo_model);
+        // Only a fully retained GPU graph primes a template. Partial models
+        // decline without reading uncached projections or running the CPU.
+        int ok = plamo_metal_prefill(e->metal, &plamo_model, ids, count, states);
+        free(states);
+        if (ok < 0) {
+            plamo_reset_request(&plamo_model);
+            snprintf(error, cap, "cannot prepare fixed translation prefixes"); return 0;
+        }
+        if (!ok) break;
+        e->prefix[direction] = plamo_prompt_cache_capture(&plamo_model, ids, count);
+        e->info.prefix_tokens[direction] = plamo_prompt_cache_tokens(e->prefix[direction]);
+        e->info.prefix_bytes += plamo_prompt_cache_bytes(e->prefix[direction]);
+    }
+    plamo_reset_request(&plamo_model);
+    e->info.prefix_seconds = now() - start;
+    e->info.preload_seconds += e->info.prefix_seconds;
+    e->info.load_seconds += e->info.prefix_seconds;
+    e->prefixes_prepared = 1;
+    return 1;
 }
 
 uint64_t plamo_engine_tokenize(struct plamo_engine *e, const char *text, unsigned direction,
@@ -334,9 +376,22 @@ int plamo_engine_translate(struct plamo_engine *e, const char *text, unsigned di
     size_t bytes = (size_t)count * (size_t)plamo_model.hidden * sizeof(float);
     float *states = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
     if (states == MAP_FAILED) { snprintf(error, cap, "cannot allocate prompt states"); return 0; }
+    struct plamo_metal_info gpu_prefill_before = {0}, gpu_prefill_after;
+    if (e->metal) plamo_metal_get_info(e->metal, &gpu_prefill_before);
     double prefill_start = now();
-    int ok = plamo_prefill(&plamo_model, ids, count, states);
+    // A one-shot CLI has not passed through worker readiness. Fill only the
+    // retainable projections before dispatch, so its very first prompt can
+    // use the complete GPU graph too. This I/O remains in request timings.
+    if (e->metal && !prepare_weights(e, error, cap)) { munmap(states, bytes); return 0; }
+    if (direction) result->cached_prompt_tokens = plamo_prompt_cache_restore(e->prefix[direction - 1], &plamo_model, ids, count);
+    int ok = plamo_prefill(&plamo_model, ids + result->cached_prompt_tokens, count - result->cached_prompt_tokens, states);
     result->prefill_seconds = now() - prefill_start;
+    if (e->metal) {
+        plamo_metal_get_info(e->metal, &gpu_prefill_after);
+        result->prefill_gpu_seconds = gpu_prefill_after.gpu_seconds - gpu_prefill_before.gpu_seconds;
+        result->prefill_command_buffers = gpu_prefill_after.command_buffers - gpu_prefill_before.command_buffers;
+        result->prefill_gpu_dispatches = gpu_prefill_after.dispatches - gpu_prefill_before.dispatches;
+    }
     munmap(states, bytes);
     if (!ok) { snprintf(error, cap, "prefill failed"); return 0; }
     result->prefill_logits_hash = hash(plamo_model.logits, plamo_model.vocab * 4);

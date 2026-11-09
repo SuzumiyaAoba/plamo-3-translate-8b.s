@@ -134,6 +134,7 @@ class PersistentWorker:
             result["threads"] = info.get("threads", 1)
             result["compute"] = info.get("compute", {"backend": "cpu"})
             result["memory"] = info["memory"]
+            result["prompt_cache"] = info.get("prompt_cache", {})
         if error:
             result["error"] = error
         return result
@@ -274,6 +275,7 @@ class TranslationServer(ThreadingHTTPServer):
 class TranslationHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     server_version = "plamo-api/0.2"
+    disable_nagle_algorithm = True  # Send each small SSE token without waiting for another packet.
 
     def setup(self):
         super().setup()

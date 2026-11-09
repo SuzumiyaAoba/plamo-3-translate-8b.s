@@ -85,15 +85,17 @@ APIの既定の`--memory auto`は、CPU・Metalの両方で、保持可能な行
 
 QKV・Attention出力・MLP・出力ヘッドを推論で使う順に読み込み、推論時と同じ行ブロック境界で保持します。上限に収まらない範囲は読み飛ばすため、31Bなど全重みが収まらないモデルも部分的に先読みできます。巨大なEmbedding全体は先読みせず、入力で選ばれる行を元のmmapから読みます。Embeddingと出力ヘッドが共有されるモデルでは、ヘッドとして先読みします。
 
-GPUでは保持ブロックを読み込むごとに各ページへの初回アクセスを完了させ、大量の未準備バッファを後回しにしません。ダミーの翻訳やKVキャッシュの作成は行わず、ページ準備専用の小さなカーネルを使います。BF16の元バイト列とFP32演算を維持します。起動後も空きの減少に合わせて保持量を縮小するため、待機中のメモリ圧によっては初回要求でも一部の読み込みが発生します。
+GPUでは保持ブロックを読み込むごとに各ページへの初回アクセスを完了させ、大量の未準備バッファを後回しにしません。ページ準備には専用の小さなカーネルを使います。その後、全行列を保持できた場合は英日・日英の固定接頭12トークンを計算し、K・V・回転済みKを保存します。要求時はトークン列が完全一致する接頭だけを復元し、本文以降を計算します。本文や直前の翻訳結果をキャッシュする仕組みではありません。BF16の元バイト列とFP32演算を維持します。起動後も空きの減少に合わせて保持量を縮小するため、待機中のメモリ圧によっては初回要求でも一部の読み込みが発生します。
 
-`--memory resident`は従来どおり完全先読みを要求します。`--memory stream`は起動時の重み先読みを行いません。単発CLIの`auto`は利用時に読む方式です。
+`--memory resident`は従来どおり完全先読みを要求します。`--memory stream`は起動時の重み先読みを行いません。単発CLIの`auto`は最初の入力処理中に保持可能な行列を準備します。固定接頭2方向の事前計算は常駐APIだけで行います。
 
 ウォームアップなしの起動・初回・2回目を別々に測るには:
 
 ```sh
 python3 tools/benchmark_startup.py --model 2b --backend metal --memory auto --report build/startup-2b.json
 ```
+
+`/health`の`prompt_cache`には`en_ja_tokens`・`ja_en_tokens`・`bytes`・`prepare_seconds`を表示します。準備時間は`load_seconds`・`preload_seconds`にも含まれます。8Bの固定接頭は2方向で約4.7 MBです。GPUの全行列が保持できない場合、CPU、`stream`では事前計算を省きます。`PLAMO_PREFIX_CACHE=0`で固定接頭の再利用を無効にし、同じバイナリで比較できます。単発CLIの起動込み待ち時間は`tools/benchmark_cli.py`で別に測定できます。
 
 Apple M2・24 GiBで、`Hello.`を起動完了直後に送り、初回と2回目を測りました。ダミー要求・キャンセル・トークナイザー検査を先に実行せず、3プロセスずつの中央値です。初回トークンの時間は`ready`後の要求送信から計測し、起動時間は別に記録しています。
 
@@ -120,7 +122,7 @@ curl http://127.0.0.1:8000/translate \
 
 `translation`、`finish_reason`、入力・生成トークン数、トークン化・入力処理・生成の時間、明示的な重みI/O、メモリモードと終了時のメモリ情報が返ります。`weight_io`の`cache_hits`・`cache_hit_bytes`・`cache_misses`はその要求中の値です。`finish_reason`が`length`なら生成上限で止まっており、翻訳が完了したことを意味しません。
 
-`timings.decode_seconds`は生成の経過時間、`decode_steps`はモデルを追加実行した回数です。両者から読み込み・入力処理を除いた生成速度を計算できます。`decode_gpu_seconds`・`decode_command_buffers`・`decode_gpu_dispatches`は生成中だけのGPU時間・同期回数・カーネル数、`weight_io.decode_staged_bytes`・`decode_read_calls`は生成中だけの明示的な重みI/Oです。起動準備や入力処理の累積値を含みません。
+`timings.decode_seconds`は生成の経過時間、`decode_steps`はモデルを追加実行した回数です。両者から読み込み・入力処理を除いた生成速度を計算できます。`decode_gpu_seconds`・`decode_command_buffers`・`decode_gpu_dispatches`は生成中だけのGPU時間・同期回数・カーネル数、`weight_io.decode_staged_bytes`・`decode_read_calls`は生成中だけの明示的な重みI/Oです。起動準備や入力処理の累積値を含みません。`prefill_gpu_seconds`・`prefill_command_buffers`・`prefill_gpu_dispatches`は要求中の入力処理だけの値です。`usage.cached_prompt_tokens`は固定接頭から再利用した入力トークン数で、`prompt_tokens`には再利用分も含みます。
 
 | フィールド | 既定値・制約 |
 | --- | --- |

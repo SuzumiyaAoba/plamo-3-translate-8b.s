@@ -7,6 +7,27 @@
 .globl _plamo_prefill
 _plamo_prefill:
     cbz x2, Lprefillearly
+    adrp x9, _plamo_prefill_kernel@PAGE
+    ldr x9, [x9, _plamo_prefill_kernel@PAGEOFF]
+    cbz x9, Lprefill_cpu
+    stp x29, x30, [sp, #-48]!
+    stp x0, x1, [sp, #16]
+    stp x2, x3, [sp, #32]
+    adrp x4, _plamo_compute_context@PAGE
+    ldr x4, [x4, _plamo_compute_context@PAGEOFF]
+    blr x9
+    cbz x0, Lprefill_fallback
+    // A declined graph leaves all states untouched. A GPU failure must not
+    // retry after any KV writes, exactly as for the complete decode hook.
+    cmp x0, #1
+    cset x0, eq
+    ldp x29, x30, [sp], #48
+    ret
+Lprefill_fallback:
+    ldp x0, x1, [sp, #16]
+    ldp x2, x3, [sp, #32]
+    ldp x29, x30, [sp], #48
+Lprefill_cpu:
     stp x19, x30, [sp, #-176]!
     stp x20, x21, [sp, #16]
     stp x22, x23, [sp, #32]

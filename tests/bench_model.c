@@ -32,7 +32,7 @@ static void report(const char *phase,double elapsed,struct model *m){
 #ifdef PLAMO_RUNTIME_BACKEND
  struct plamo_engine_info info;plamo_engine_get_info(engine,&info);
  printf("\"weight_storage\":\"%s\",\"cached_storage_bytes\":%llu,\"packed_weight_bytes\":%llu,",info.gpu.weight_storage[0]?info.gpu.weight_storage:"bf16",(unsigned long long)info.cache.storage_bytes,(unsigned long long)info.gpu.packed_weight_bytes);
- printf("\"command_buffers\":%llu,\"fused_mlps\":%llu,\"fused_decodes\":%llu,",(unsigned long long)info.gpu.command_buffers,(unsigned long long)info.gpu.fused_mlps,(unsigned long long)info.gpu.fused_decodes);
+ printf("\"command_buffers\":%llu,\"fused_mlps\":%llu,\"fused_decodes\":%llu,\"fused_prefills\":%llu,",(unsigned long long)info.gpu.command_buffers,(unsigned long long)info.gpu.fused_mlps,(unsigned long long)info.gpu.fused_decodes,(unsigned long long)info.gpu.fused_prefills);
  printf("\"backend\":\"%s\",\"precision\":\"%s\",\"gpu_dispatches\":%llu,\"gpu_errors\":%llu,\"cached_weight_bytes\":%llu,\"cache_budget_bytes\":%llu,\"gpu_allocated_bytes\":%llu,\"residency_sets\":%s,",info.backend,info.gpu.precision[0]?info.gpu.precision:"fp32",(unsigned long long)info.gpu.dispatches,(unsigned long long)info.gpu.errors,(unsigned long long)info.cache.cached_bytes,(unsigned long long)info.cache.budget_bytes,(unsigned long long)info.gpu.allocated_bytes,info.gpu.residency_sets?"true":"false");
 #endif
  printf("\"phase\":\"%s\",\"seconds\":%.9f,\"token\":%llu,\"logits_hash\":\"%016llx\",\"state_hash\":\"%016llx\",\"major_faults\":%ld,\"max_rss_bytes\":%ld,\"staged_bytes\":%llu,\"read_calls\":%llu,\"advice_calls\":%llu,\"read_failures\":%llu}\n",phase,elapsed,(unsigned long long)plamo_argmax(m->logits,m->vocab),(unsigned long long)hash(m->logits,m->vocab*4),(unsigned long long)hash(m->state,m->hidden*4),u.ru_majflt,u.ru_maxrss,(unsigned long long)bytes,(unsigned long long)reads,(unsigned long long)advice,(unsigned long long)errors);fflush(stdout);
@@ -62,6 +62,7 @@ int main(int argc,char **argv){
  struct plamo_engine_info info;char error[1024];
  engine=plamo_engine_open(memory,0,4,backend,&info,error,sizeof error);
  if(!engine){fprintf(stderr,"%s\n",error);return 1;}
+ if(!plamo_engine_prepare(engine,error,sizeof error)){fprintf(stderr,"%s\n",error);return 1;}
 #else
  if(!plamo_model_open())return 1;
 #endif
