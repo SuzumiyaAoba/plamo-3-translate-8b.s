@@ -1,4 +1,4 @@
-# plamo-3-translate-8b.s
+# plamo-3-translate.s
 
 Apple Silicon / macOS 向けの手書き AArch64 アセンブリによる PLaMo 3 Translate の推論実装です。0.8B・2B・8B・31Bの公式BF16重みを変換せず直接読み込みます。
 
@@ -29,11 +29,11 @@ Apple SiliconのmacOSと、[Nix](https://nix.dev/install-nix)（`nix-command`・
 
 ```sh
 # 初回のみ。2Bの公式BF16重み約5.76 GBと語彙・ライセンスを取得
-nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#download-model -- --model 2b --weights
+nix run github:SuzumiyaAoba/plamo-3-translate.s#download-model -- --model 2b --weights
 
-nix run github:SuzumiyaAoba/plamo-3-translate-8b.s -- --model 2b -j 'Hello.'
-nix run github:SuzumiyaAoba/plamo-3-translate-8b.s -- --model 2b -e 'こんにちは。'
-nix run github:SuzumiyaAoba/plamo-3-translate-8b.s -- --help
+nix run github:SuzumiyaAoba/plamo-3-translate.s -- --model 2b -j 'Hello.'
+nix run github:SuzumiyaAoba/plamo-3-translate.s -- --model 2b -e 'こんにちは。'
+nix run github:SuzumiyaAoba/plamo-3-translate.s -- --help
 ```
 
 既定のデータルートは `${XDG_DATA_HOME:-$HOME/.local/share}/plamo-3-translate-SIZE` です。2Bの保存先はその下の `models/2b`、8Bは従来どおり `models/plamo` です。上表の重みサイズに加え、付属ファイル用の空き容量が必要です。重み・語彙はGitリポジトリ、Nixパッケージ、Nix storeに含めません。Nixのビルドではモデルの取得も推論も実行しません。
@@ -42,8 +42,8 @@ nix run github:SuzumiyaAoba/plamo-3-translate-8b.s -- --help
 
 ```sh
 export PLAMO_DATA_DIR="$HOME/plamo-data"
-nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#download-model -- --weights
-nix run github:SuzumiyaAoba/plamo-3-translate-8b.s -- -j 'Hello.'
+nix run github:SuzumiyaAoba/plamo-3-translate.s#download-model -- --weights
+nix run github:SuzumiyaAoba/plamo-3-translate.s -- -j 'Hello.'
 ```
 
 新規ダウンロードは固定リビジョンのサイズ・SHA-256を検証してから確定します。中断時は再実行すると完了済みファイルを再利用します。取得済み重みもハッシュ検証するには `#download-model -- --weights --verify` を使います。モデルの利用条件は[公式ライセンス](https://huggingface.co/pfnet/plamo-3-translate-8b/blob/19ecab3fb31424ee937b7503730318b50e55771c/LICENSE/ja)を確認してください。
@@ -51,8 +51,8 @@ nix run github:SuzumiyaAoba/plamo-3-translate-8b.s -- -j 'Hello.'
 ローカルで開発する場合:
 
 ```sh
-git clone https://github.com/SuzumiyaAoba/plamo-3-translate-8b.s.git
-cd plamo-3-translate-8b.s
+git clone https://github.com/SuzumiyaAoba/plamo-3-translate.s.git
+cd plamo-3-translate.s
 nix flake check                  # モデルなしでビルド・テスト
 nix build                       # result/bin/plamo、result/bin/plamo-download
 nix develop                     # 固定された開発環境に入る
@@ -74,7 +74,7 @@ PLAMO_DATA_DIR="$PWD" nix run . -- -j 'Hello.'
 ## 常駐API
 
 ```sh
-nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#serve -- --model 2b --memory auto --port 8000
+nix run github:SuzumiyaAoba/plamo-3-translate.s#serve -- --model 2b --memory auto --port 8000
 ```
 
 別ターミナルから:

@@ -7,10 +7,10 @@
 公式モデルを取得済みなら、次で起動できます。
 
 ```sh
-nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#serve -- --model 2b --memory auto --port 8000
+nix run github:SuzumiyaAoba/plamo-3-translate.s#serve -- --model 2b --memory auto --port 8000
 ```
 
-初回の取得は `nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#download-model -- --model 2b --weights` です。`--model`には`0.8b`・`2b`・`8b`・`31b`を指定できます。省略時は`PLAMO_MODEL`または8Bです。1サーバーにつき1モデルを保持し、変更時は再起動します。データ保存先はCLIと同じ `PLAMO_DATA_DIR` を使います。開発時の `./models/plamo` を利用する場合:
+初回の取得は `nix run github:SuzumiyaAoba/plamo-3-translate.s#download-model -- --model 2b --weights` です。`--model`には`0.8b`・`2b`・`8b`・`31b`を指定できます。省略時は`PLAMO_MODEL`または8Bです。1サーバーにつき1モデルを保持し、変更時は再起動します。データ保存先はCLIと同じ `PLAMO_DATA_DIR` を使います。開発時の `./models/plamo` を利用する場合:
 
 ```sh
 PLAMO_DATA_DIR="$PWD" nix run .#serve -- --memory auto

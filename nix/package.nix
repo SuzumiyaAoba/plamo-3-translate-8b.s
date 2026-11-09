@@ -8,7 +8,7 @@
 }:
 
 stdenv.mkDerivation {
-  pname = "plamo-3-translate-8b";
+  pname = "plamo-3-translate";
   version = "0.3.0";
 
   # Explicit inputs keep model files and local build artifacts out of the store,
@@ -104,7 +104,7 @@ stdenv.mkDerivation {
 
   meta = {
     description = "PLaMo 3 Translate 0.8B/2B/8B/31B in handwritten AArch64 assembly, without bundled weights";
-    homepage = "https://github.com/SuzumiyaAoba/plamo-3-translate-8b.s";
+    homepage = "https://github.com/SuzumiyaAoba/plamo-3-translate.s";
     license = lib.licenses.mit;
     platforms = [ "aarch64-darwin" ];
     mainProgram = "plamo";

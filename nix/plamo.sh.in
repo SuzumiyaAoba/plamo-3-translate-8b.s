@@ -13,7 +13,7 @@ usage() {
         '  --model    checkpoint size (default: PLAMO_MODEL or 8b)' \
         '' \
         'First download the original model files:' \
-        '  nix run github:SuzumiyaAoba/plamo-3-translate-8b.s#download-model -- --model 2b --weights' \
+        '  nix run github:SuzumiyaAoba/plamo-3-translate.s#download-model -- --model 2b --weights' \
         '' \
         "Data root: \$PLAMO_DATA_DIR or \${XDG_DATA_HOME:-\$HOME/.local/share}/plamo-3-translate-SIZE" \
         'Built with PLaMo. Model files have their own PLaMo Community License.'
