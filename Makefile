@@ -91,6 +91,14 @@ build/metal_kernels.h: runtime/kernels.metal tools/embed_metal.py
 	mkdir -p build
 	$(PYTHON) tools/embed_metal.py $< $@
 
+build/metal_layout_kernels.h: runtime/kernels.metal tests/metal_layout.metal tools/embed_metal_layout.py
+	mkdir -p build
+	$(PYTHON) tools/embed_metal_layout.py runtime/kernels.metal tests/metal_layout.metal $@
+
+build/bench-metal-layout: tests/bench_metal_layout.m runtime/packing.h build/metal_layout_kernels.h
+	mkdir -p build
+	$(CC) $(CFLAGS) tests/bench_metal_layout.m $(METAL_FLAGS) -o $@
+
 $(BUILD_DIR)/plamo-asm: src/main.s $(CORE) $(GENERATED) $(BUILD_DIR)/generated/.stamp
 	mkdir -p $(BUILD_DIR)
 	$(CC) -arch arm64 -nostdlib -Wl,-e,_start $(filter %.s,$^) -lSystem -o $@
