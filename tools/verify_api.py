@@ -5,35 +5,11 @@ import json
 from pathlib import Path
 import random
 import statistics
-import struct
 import subprocess
 from model_catalog import add_model_argument, profile
+from worker_protocol import check_memory, close_worker, receive, send
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def receive(process):
-    line = process.stdout.readline()
-    if not line:
-        raise RuntimeError("worker exited unexpectedly")
-    event = json.loads(line)
-    if event["event"] == "error":
-        raise RuntimeError(event["message"])
-    return event
-
-
-def send(process, op, direction, limit, text):
-    payload = text.encode()
-    process.stdin.write(struct.pack("<4I", op, direction, limit, len(payload)) + payload)
-    process.stdin.flush()
-
-
-def check_memory(memory):
-    if memory["mode"] == "adaptive":
-        assert 0 <= memory["preloaded_weight_bytes"] <= memory['weight_bytes'], memory
-        assert 0 < memory["staging_bytes"] <= 64 * 1024 * 1024, memory
-        assert memory["staging_bytes"] <= memory["budget_bytes"] <= memory["max_budget_bytes"], memory
-        assert memory.get('cached_storage_bytes', memory['cached_weight_bytes']) + memory["staging_bytes"] <= memory["budget_bytes"], memory
 
 
 def main():
@@ -132,13 +108,7 @@ def main():
         if args.report:
             args.report.write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n')
     finally:
-        process.stdin.close()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.terminate()
-            process.wait(timeout=5)
-        process.stdout.close()
+        close_worker(process)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-#include "parallel.h"
+#include "compute.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <sys/qos.h>
@@ -21,9 +21,6 @@ struct plamo_parallel {
     int stopping, matvec;
 };
 
-extern void (*plamo_matvec_kernel)(const uint16_t *, const float *, float *, uint64_t, uint64_t, void *);
-extern void (*plamo_matmul_kernel)(const struct plamo_matmul *, void *);
-extern void *plamo_compute_context;
 
 static void compute(const struct plamo_matmul *m, int matvec) {
     if (matvec) plamo_bf16_matvec_serial(m->weights, m->input, m->output, m->rows, m->columns);

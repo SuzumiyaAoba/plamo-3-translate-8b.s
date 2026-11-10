@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import subprocess
 from model_catalog import add_model_argument, profile
-from verify_api import receive, send
+from worker_protocol import close_worker, receive, send
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = (
@@ -47,13 +47,7 @@ def run(p, backend, memory):
             print(f'{p.size} {backend}: {text!r} -> {results[-1]["text"]!r}', flush=True)
         return {'ready': ready, 'translations': results}
     finally:
-        process.stdin.close()
-        try:
-            process.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
-        process.stdout.close()
+        close_worker(process, timeout=10)
 
 
 def main():

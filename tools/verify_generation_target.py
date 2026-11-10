@@ -12,7 +12,7 @@ import subprocess
 import time
 from benchmark_decode import request, TEXT
 from model_catalog import add_model_argument, profile
-from verify_api import receive
+from worker_protocol import close_worker, receive
 
 ROOT = Path(__file__).resolve().parents[1]
 JAPANESE = (
@@ -49,13 +49,7 @@ def run(worker, p, data, repeats, limit):
                       f'({sample["decode_steps"]} decode steps)', flush=True)
         return dict(ready=ready, warmup=warmup, samples=samples)
     finally:
-        process.stdin.close()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
-        process.stdout.close()
+        close_worker(process)
         time.sleep(1)
 
 

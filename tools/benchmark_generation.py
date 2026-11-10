@@ -23,6 +23,8 @@ def main():
     parser.add_argument('--worker', type=Path)
     parser.add_argument('--data-dir', type=Path, help='default: the installed API data directory')
     parser.add_argument('--storage', choices=('auto', 'raw', 'lossless'), default='lossless')
+    parser.add_argument('--backend', choices=('cpu', 'metal'), default='metal')
+    parser.add_argument('--memory', choices=('auto', 'resident', 'stream'), default='auto')
     parser.add_argument('--budget-mib', type=int, default=0, help='benchmark-only memory ceiling for the candidate worker')
     parser.add_argument('--repeats', type=int, default=3)
     parser.add_argument('--max-tokens', type=int, default=12)
@@ -40,7 +42,7 @@ def main():
     source_hashes = {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
     data_dir = (args.data_dir or p.data_root(True)).resolve()
     saved = os.environ.get('PLAMO_DATA_DIR')
-    config = SimpleNamespace(backend='metal', memory='auto', text=args.text, direction='en-ja', repeats=1, max_tokens=args.max_tokens)
+    config = SimpleNamespace(backend=args.backend, memory=args.memory, text=args.text, direction='en-ja', repeats=1, max_tokens=args.max_tokens)
     runs = {'before': [], 'after': []}
     comparable = []
     reference = None
@@ -76,6 +78,9 @@ def main():
     for name in ('before', 'after'):
         samples = [r['requests'][0] for i, r in enumerate(runs[name]) if comparable[i]]
         summary[name] = None if not samples else dict(
+            prefill_seconds=statistics.median(s['result']['timings']['prefill_seconds'] for s in samples),
+            first_token_seconds=statistics.median(s['result']['timings']['first_token_seconds'] for s in samples),
+            total_seconds=statistics.median(s['result']['timings']['total_seconds'] for s in samples),
             tokens_per_second=statistics.median(s['decode_tokens_per_second'] for s in samples),
             seconds_per_step=statistics.median(s['seconds_per_decode_step'] for s in samples),
             io_bytes_per_step=statistics.median(s['result']['weight_io']['decode_staged_bytes'] / s['decode_steps'] for s in samples),
@@ -84,7 +89,8 @@ def main():
             commands_per_step=statistics.median(s['result']['timings']['decode_command_buffers'] / s['decode_steps'] for s in samples))
     result = dict(timestamp_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(), model=p.name, revision=p.revision,
                   platform=platform.platform(), text=args.text, data_dir=str(data_dir), budget_mib=args.budget_mib,
-                  max_tokens=args.max_tokens, storage=args.storage, weight_cache_environment=os.environ.get('PLAMO_METAL_CACHE', 'auto'),
+                  max_tokens=args.max_tokens, storage=args.storage, backend=args.backend, memory=args.memory,
+                  weight_cache_environment=os.environ.get('PLAMO_METAL_CACHE', 'auto'),
                   budgeted_resident_sha256=hashlib.sha256(resident.read_bytes()).hexdigest() if resident else None,
                   source_sha256=source_hashes, worker_sha256=digests, comparable_pairs=comparable, summary=summary,
                   runs=runs, exact_outputs_and_hashes=True,

@@ -30,8 +30,8 @@ def worker(p, budget):
     resident = directory / 'resident.c'
     if not resident.exists() or resident.read_text() != source:
         resident.write_text(source)
-    runtime = f'runtime/engine.c {resident.relative_to(ROOT)} runtime/weight_cache.c runtime/parallel.c runtime/prompt_cache.c runtime/metal.m runtime/disk_cache.c'
-    subprocess.run(['make', 'MODEL=' + p.size, 'BUILD_DIR=' + str(directory.relative_to(ROOT)), 'RUNTIME=' + runtime,
+    subprocess.run(['make', 'MODEL=' + p.size, 'BUILD_DIR=' + str(directory.relative_to(ROOT)),
+                    'RESIDENT_SOURCE=' + str(resident.relative_to(ROOT)),
                     'CFLAGS=-O2 -arch arm64 -Wall -Wextra -Iruntime', str(directory.relative_to(ROOT) / 'plamo-worker')], cwd=ROOT, check=True)
     return directory / 'plamo-worker', resident
 

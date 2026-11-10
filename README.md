@@ -132,6 +132,8 @@ make models
 
 ## 実装
 
+[コードの責務・共有ABI・変更時の検証方法](docs/ARCHITECTURE.md)をまとめています。
+
 - BF16 → FP32 の NEON 行列ベクトル演算、オフセット付き RMSNorm、指数関数・softmax・SwiGLU
 - 結合 QKV 射影、Q/K ヘッド正規化、GQA、出力射影
 - 回転前キーを保持する KV キャッシュ、スライディング時の古いトークン除去

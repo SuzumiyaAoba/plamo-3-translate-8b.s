@@ -18,6 +18,13 @@ struct plamo_mapping { void *base; uint64_t bytes; };
 struct plamo_weight_spec { const char *name; uint64_t rank; const uint64_t *shape; void **slot; };
 
 _Static_assert(sizeof(struct model) == 88, "assembly model ABI");
+_Static_assert(sizeof(struct qkv) == 72, "assembly QKV ABI");
+_Static_assert(sizeof(struct cache) == 48, "assembly cache ABI");
+_Static_assert(sizeof(struct rotation) == 72, "assembly rotation ABI");
+_Static_assert(sizeof(struct gqa) == 72, "assembly GQA ABI");
+_Static_assert(sizeof(struct mixer) == 56, "assembly mixer ABI");
+_Static_assert(sizeof(struct mlp) == 80, "assembly MLP ABI");
+_Static_assert(sizeof(struct layer) == 64, "assembly layer ABI");
 _Static_assert(offsetof(struct layer, mixer) == 40, "assembly layer ABI");
 _Static_assert(offsetof(struct cache, count) == 24, "assembly cache ABI");
 _Static_assert(offsetof(struct rotation, processed_count) == 56, "assembly rotation ABI");

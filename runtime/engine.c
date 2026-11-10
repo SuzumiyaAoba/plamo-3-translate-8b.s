@@ -1,27 +1,13 @@
 #include "engine.h"
 #include "prompt_cache.h"
 #include "draft.h"
-#include <fcntl.h>
+#include "tokenizer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-
-struct node { uint32_t cp, child, sibling; int32_t id, score; uint32_t terminal; };
-struct trie { struct node *nodes; uint64_t capacity, used; uint32_t *roots; };
-struct preprocess { const uint32_t *in; uint64_t count; uint32_t *temp; uint64_t temp_capacity; uint32_t *out; uint64_t capacity; uint8_t *flags; };
-struct encoder { struct trie *trie; const uint32_t *cp; uint64_t count; uint32_t *bytes; int64_t *costs; void *paths, *candidates; uint64_t capacity; uint32_t *out; uint64_t out_capacity; };
-struct scalar { const char *next; uint64_t cp; };
-extern uint64_t plamo_vocab_load(const char *, const char *, struct trie *, uint32_t *, uint64_t, uint32_t *);
-extern int plamo_utf8_next(const char *, const char *, struct scalar *);
-extern uint64_t plamo_preprocess(const struct preprocess *);
-extern uint64_t plamo_encode_marked(const struct encoder *);
-extern uint64_t plamo_translation_prompt(const char *, const char *, const char *, char *, uint64_t);
-extern uint64_t plamo_translation_prefix(const char *, char *, uint64_t);
-extern uint64_t plamo_decode_token(const char *, const char *, uint64_t, char *, uint64_t, uint32_t *, uint64_t);
 
 struct plamo_engine {
     struct plamo_engine_info info;
@@ -31,15 +17,8 @@ struct plamo_engine {
     struct plamo_draft *draft;
     int draft_prepared;
     struct plamo_prompt_cache *prefix[2];
-    struct trie trie;
-    const char *vocab, *rows[107521];
-    size_t vocab_size;
+    struct plamo_tokenizer *tokenizer;
     int tokenizer_only, prepared, prefixes_prepared;
-    uint32_t scratch[4096], bytes[256], input[4096], temp[16384], marked[49152], ids[16384];
-    uint8_t flags[16385];
-    int64_t costs[49153];
-    unsigned char paths[1179648], candidates[65552];
-    char prompt[16384], decoded[16384];
 };
 
 static double now(void) {
@@ -121,30 +100,14 @@ struct plamo_engine *plamo_engine_open(enum plamo_memory_mode mode, int tokenize
     info->threads = 1;
     info->backend = "cpu";
     struct plamo_engine *e = calloc(1, sizeof *e);
-    if (!e) { snprintf(error, cap, "cannot allocate tokenizer state"); return NULL; }
-    int fd = open(plamo_vocab_path, O_RDONLY);
-    struct stat st;
-    if (fd < 0 || fstat(fd, &st) || st.st_size <= 0) {
-        if (fd >= 0) close(fd);
-        model_files_error(error, cap, "tokenizer is missing");
+    if (!e) { snprintf(error, cap, "cannot allocate engine state"); return NULL; }
+    e->tokenizer = plamo_tokenizer_open(plamo_vocab_path, error, cap);
+    if (!e->tokenizer) {
+        char message[256];
+        snprintf(message, sizeof message, "%s", error);
+        model_files_error(error, cap, message);
         goto fail;
     }
-    e->vocab_size = (size_t)st.st_size;
-    void *vocab = mmap(NULL, e->vocab_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    close(fd);
-    if (vocab == MAP_FAILED) { snprintf(error, cap, "cannot map tokenizer"); goto fail; }
-    e->vocab = vocab;
-    e->trie = (struct trie){calloc(1000000, sizeof(struct node)), 1000000, 1, calloc(0x110000, sizeof(uint32_t))};
-    if (!e->trie.nodes || !e->trie.roots) { snprintf(error, cap, "cannot allocate vocabulary trie"); goto fail; }
-    uint64_t rows = plamo_vocab_load(e->vocab, e->vocab + e->vocab_size, &e->trie, e->scratch, 4096, e->bytes);
-    if (rows != 107520) { snprintf(error, cap, "vocabulary must contain 107520 valid rows"); goto fail; }
-    /* Index original rows once; decoding no longer scans the full JSONL per token. */
-    size_t row = 0;
-    e->rows[0] = e->vocab;
-    for (size_t i = 0; i < e->vocab_size; ++i)
-        if (e->vocab[i] == '\n' && row < 107520) e->rows[++row] = e->vocab + i + 1;
-    if (row == 107519 && e->vocab[e->vocab_size - 1] != '\n') e->rows[++row] = e->vocab + e->vocab_size;
-    if (row != 107520) { snprintf(error, cap, "invalid vocabulary row boundaries"); goto fail; }
     e->tokenizer_only = tokenizer_only;
     info->memory_mode = tokenizer_only ? "tokenizer" : "stream";
     info->physical_bytes = plamo_physical_memory();
@@ -224,9 +187,7 @@ struct plamo_engine *plamo_engine_open(enum plamo_memory_mode mode, int tokenize
     e->info = *info;
     return e;
 fail:
-    if (e->vocab) munmap((void *)e->vocab, e->vocab_size);
-    free(e->trie.nodes);
-    free(e->trie.roots);
+    plamo_tokenizer_close(e->tokenizer);
     free(e);
     return NULL;
 }
@@ -332,9 +293,7 @@ int plamo_engine_prepare(struct plamo_engine *e, char *error, size_t cap) {
     double start = now();
     for (unsigned direction = 0; direction < 2; ++direction) {
         const uint32_t *ids;
-        uint64_t bytes = plamo_translation_prefix(direction ? "ja" : "en", e->prompt, sizeof e->prompt);
-        if (bytes == UINT64_MAX) break;
-        uint64_t count = plamo_engine_tokenize(e, e->prompt, 0, &ids, error, cap);
+        uint64_t count = plamo_tokenizer_prefix(e->tokenizer, direction, &ids, error, cap);
         if (!count || count == UINT64_MAX || count > PLAMO_PROMPT_PREFIX_LIMIT) break;
         float *states = malloc((size_t)(count * plamo_model.hidden * 4));
         if (!states) break;
@@ -363,43 +322,18 @@ int plamo_engine_prepare(struct plamo_engine *e, char *error, size_t cap) {
 
 uint64_t plamo_engine_tokenize(struct plamo_engine *e, const char *text, unsigned direction,
                               const uint32_t **ids, char *error, size_t cap) {
-    if (direction > 2) { snprintf(error, cap, "unsupported translation direction"); return UINT64_MAX; }
-    const char *input = text;
-    if (direction) {
-        const char *source = direction == 1 ? "en" : "ja", *target = direction == 1 ? "ja" : "en";
-        if (plamo_translation_prompt(text, source, target, e->prompt, sizeof e->prompt) == UINT64_MAX) {
-            snprintf(error, cap, "translation prompt exceeds the byte capacity"); return UINT64_MAX;
-        }
-        input = e->prompt;
-    }
-    const char *end = input + strlen(input);
-    uint64_t count = 0;
-    while (input < end) {
-        struct scalar scalar;
-        if (count == 4096 || !plamo_utf8_next(input, end, &scalar)) {
-            snprintf(error, cap, "prompt exceeds 4096 Unicode scalars or is not valid UTF-8"); return UINT64_MAX;
-        }
-        e->input[count++] = (uint32_t)scalar.cp;
-        input = scalar.next;
-    }
-    struct preprocess p = {e->input, count, e->temp, 16384, e->marked, 49152, e->flags};
-    uint64_t marked = plamo_preprocess(&p);
-    if (marked == UINT64_MAX) { snprintf(error, cap, "tokenizer preprocessing failed"); return UINT64_MAX; }
-    struct encoder encoder = {&e->trie, e->marked, marked, e->bytes, e->costs, e->paths, e->candidates, 4097, e->ids, 16384};
-    uint64_t tokens = plamo_encode_marked(&encoder);
-    if (tokens == UINT64_MAX) { snprintf(error, cap, "tokenizer encoding failed"); return UINT64_MAX; }
-    *ids = e->ids;
-    return tokens;
+    return plamo_tokenizer_encode(e->tokenizer, text, direction, ids, error, cap);
 }
 
 static int emit_token(struct plamo_engine *e, uint32_t id, const struct plamo_callbacks *cb,
                       struct plamo_result *r, double start, char *error, size_t cap) {
     if (id == 1 || id == 16) { r->finish_reason = "stop"; return 0; }
     if (id >= plamo_model.vocab) { snprintf(error, cap, "invalid generated token"); return -1; }
-    uint64_t n = plamo_decode_token(e->rows[id], e->rows[id + 1], 0, e->decoded, sizeof e->decoded, e->scratch, 4096);
+    const char *decoded;
+    uint64_t n = plamo_tokenizer_decode(e->tokenizer, id, &decoded);
     if (n == UINT64_MAX) { snprintf(error, cap, "token decoding failed"); return -1; }
     double ready = now() - start;
-    if (cb && cb->token && !cb->token(id, e->decoded, (size_t)n, cb->context)) {
+    if (cb && cb->token && !cb->token(id, decoded, (size_t)n, cb->context)) {
         r->finish_reason = "cancelled"; return 0;
     }
     if (!r->completion_tokens) r->first_token_seconds = ready;

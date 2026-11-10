@@ -89,6 +89,8 @@ stdenv.mkDerivation {
     done
     install -Dm644 tools/download.py "$out/share/plamo/download.py"
     install -Dm644 tools/server.py "$out/share/plamo/server.py"
+    install -Dm644 tools/worker_client.py "$out/share/plamo/worker_client.py"
+    install -Dm644 tools/worker_protocol.py "$out/share/plamo/worker_protocol.py"
     install -Dm644 tools/model-manifest.json "$out/share/plamo/model-manifest.json"
     install -Dm644 tools/model_catalog.py "$out/share/plamo/model_catalog.py"
     install -Dm644 tools/prepare_weights.py "$out/share/plamo/prepare_weights.py"

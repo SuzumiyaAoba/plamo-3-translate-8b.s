@@ -10,7 +10,7 @@ import statistics
 import subprocess
 import time
 from model_catalog import add_model_argument, profile
-from verify_api import check_memory, receive, send
+from worker_protocol import close_worker, check_memory, receive, send
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -51,13 +51,7 @@ def measure(worker, p, backend, memory, text, direction, max_tokens, storage):
         assert requests[0]['token_ids'] == requests[1]['token_ids'] and requests[0]['translation'] == requests[1]['translation']
         return {'startup_wall_seconds': startup, 'ready': ready, 'requests': requests}
     finally:
-        process.stdin.close()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
-        process.stdout.close()
+        close_worker(process)
         # Let the previous process's GPU allocations be released before the
         # next worker samples available memory for its fixed startup ceiling.
         time.sleep(1)

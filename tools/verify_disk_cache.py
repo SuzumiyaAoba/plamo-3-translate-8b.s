@@ -10,7 +10,7 @@ import subprocess
 import time
 from benchmark_decode import request
 from model_catalog import add_model_argument, profile
-from verify_api import receive
+from worker_protocol import close_worker, receive
 from verify_prefix_cache import CASES
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,13 +29,7 @@ def run(worker, p, memory, storage, cache, limit):
         samples = [dict(direction=direction, input=text, **request(process, text, direction, limit)) for direction, text in CASES]
         return dict(startup_wall_seconds=startup, ready=ready, requests=samples)
     finally:
-        process.stdin.close()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
-        process.stdout.close()
+        close_worker(process)
         time.sleep(1)
 
 
