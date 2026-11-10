@@ -163,8 +163,20 @@ struct plamo_engine *plamo_engine_open(enum plamo_memory_mode mode, int tokenize
                 .packing = packing, .working_weight_bytes = working_weight_bytes(&plamo_model),
                 .maps = plamo_weight_mappings, .fds = plamo_weight_fds,
                 .count = (size_t)plamo_weight_mapping_count, .schema = plamo_weight_schema,
-                .reserve = PLAMO_MEMORY_RESERVE, .available = plamo_reclaimable_memory
+                .reserve = PLAMO_MEMORY_RESERVE, .available = plamo_reclaimable_memory,
+                .revision = plamo_model_revision
             };
+            const char *disk_cache = getenv("PLAMO_METAL_CACHE");
+            char default_cache[4096];
+            if (!disk_cache) {
+                const char *slash = strrchr(plamo_vocab_path, '/');
+                size_t prefix = slash ? (size_t)(slash - plamo_vocab_path + 1) : 0;
+                if (prefix + sizeof "metal-cache-v1.bin" > sizeof default_cache) { snprintf(error, cap, "model cache path is too long"); goto fail; }
+                memcpy(default_cache, plamo_vocab_path, prefix);
+                memcpy(default_cache + prefix, "metal-cache-v1.bin", sizeof "metal-cache-v1.bin");
+                if (!access(default_cache, F_OK)) disk_cache = default_cache;
+            }
+            if (disk_cache && *disk_cache && strcmp(disk_cache, "off")) config.disk_cache_path = disk_cache;
             e->metal = plamo_metal_open(&config, error, cap);
             if (!e->metal && backend != PLAMO_BACKEND_AUTO) goto fail;
             if (!e->metal) snprintf(info->gpu.note, sizeof info->gpu.note, "%s", error);

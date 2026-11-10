@@ -26,6 +26,8 @@ stdenv.mkDerivation {
       ../docs/config.json
       ../docs/API.md
       ../docs/METAL.md
+      ../docs/WEIGHT_CACHE.md
+      ../docs/benchmarks/weight-cache.json
       ../docs/MODELS.md
       ../docs/benchmarks/multi-model.json
       ../docs/benchmarks/metal.json
@@ -73,6 +75,7 @@ stdenv.mkDerivation {
     runHook preInstall
     install -Dm755 build/plamo "$out/libexec/plamo"
     install -Dm755 build/plamo-worker "$out/libexec/plamo-worker"
+    install -Dm755 build/pack-metal-weights "$out/libexec/plamo-pack-weights"
     install -Dm755 build/plamo "$out/libexec/plamo-8b"
     install -Dm755 build/plamo-asm "$out/libexec/plamo-asm-8b"
     install -Dm755 build/plamo-worker "$out/libexec/plamo-worker-8b"
@@ -85,6 +88,8 @@ stdenv.mkDerivation {
     install -Dm644 tools/server.py "$out/share/plamo/server.py"
     install -Dm644 tools/model-manifest.json "$out/share/plamo/model-manifest.json"
     install -Dm644 tools/model_catalog.py "$out/share/plamo/model_catalog.py"
+    install -Dm644 tools/prepare_weights.py "$out/share/plamo/prepare_weights.py"
+    install -Dm644 tools/weight_schema.py "$out/share/plamo/weight_schema.py"
     cp -r tools/profiles "$out/share/plamo/profiles"
     mkdir -p "$out/bin"
     substitute nix/plamo.sh.in "$out/bin/plamo" \
@@ -101,12 +106,19 @@ stdenv.mkDerivation {
       --subst-var-by python '${python3}/bin/python3' \
       --subst-var-by script "$out/share/plamo/server.py" \
       --subst-var-by workers "$out/libexec"
-    chmod +x "$out/bin/plamo" "$out/bin/plamo-download" "$out/bin/plamo-server"
-    shellcheck "$out/bin/plamo" "$out/bin/plamo-download" "$out/bin/plamo-server"
+    substitute nix/plamo-prepare-weights.sh.in "$out/bin/plamo-prepare-weights" \
+      --subst-var-by shell '${bash}/bin/bash' \
+      --subst-var-by python '${python3}/bin/python3' \
+      --subst-var-by script "$out/share/plamo/prepare_weights.py" \
+      --subst-var-by packer "$out/libexec/plamo-pack-weights"
+    chmod +x "$out/bin/plamo" "$out/bin/plamo-download" "$out/bin/plamo-server" "$out/bin/plamo-prepare-weights"
+    shellcheck "$out/bin/plamo" "$out/bin/plamo-download" "$out/bin/plamo-server" "$out/bin/plamo-prepare-weights"
     install -Dm644 LICENSE "$out/share/doc/plamo/LICENSE"
     install -Dm644 THIRD_PARTY_NOTICES.md "$out/share/doc/plamo/THIRD_PARTY_NOTICES.md"
     install -Dm644 docs/API.md "$out/share/doc/plamo/API.md"
     install -Dm644 docs/METAL.md "$out/share/doc/plamo/METAL.md"
+    install -Dm644 docs/WEIGHT_CACHE.md "$out/share/doc/plamo/WEIGHT_CACHE.md"
+    install -Dm644 docs/benchmarks/weight-cache.json "$out/share/doc/plamo/benchmarks/weight-cache.json"
     install -Dm644 docs/MODELS.md "$out/share/doc/plamo/MODELS.md"
     install -Dm644 docs/benchmarks/multi-model.json "$out/share/doc/plamo/benchmarks/multi-model.json"
     install -Dm644 docs/benchmarks/metal.json "$out/share/doc/plamo/benchmarks/metal.json"

@@ -39,7 +39,7 @@ python3 tools/server.py --backend metal --memory auto
 
 すべての経路で活性値・演算・累積はFP32です。元BF16重みのFP32への展開は正確で、FP16への丸めや追加の量子化はありません。加算順序が異なるためGPUのハッシュはCPU基準と一致しません。元BF16の共有メモリ保持、精度、検証範囲は[Metalバックエンド](METAL.md)を参照してください。
 
-`/health`の`compute`にバックエンド・GPU名・精度モード・`gpu_dispatches`・`command_buffers`・`fused_mlps`・`fused_decodes`・`cpu_fallbacks`・`errors`・累積`gpu_seconds`を返します。`fused_decodes`は全層の生成を一つのGPUコマンドで実行したステップ数です。`weight_storage`は`bf16`または`lossless-bf16`、`packed_weight_bytes`は圧縮して保持する元データ量です。`allocated_bytes`はMetalの確保量、`recommended_working_set_bytes`はデバイスの推奨量、`residency_sets`はGPUリソースの常駐管理が有効かを示します。数値は起動時・翻訳終了時の通知で更新します。GPUの初期化・実行エラーの理由は`compute.note`に表示します。
+`/health`の`compute`にバックエンド・GPU名・精度モード・`gpu_dispatches`・`command_buffers`・`fused_mlps`・`fused_decodes`・`cpu_fallbacks`・`errors`・累積`gpu_seconds`を返します。`fused_decodes`は全層の生成を一つのGPUコマンドで実行したステップ数です。`weight_storage`は`bf16`または`lossless-bf16`、`packed_weight_bytes`は圧縮して保持する元データ量です。`disk_cache_hits`・`disk_cache_weight_bytes`・`disk_cache_storage_bytes`は[事前作成した重みファイル](WEIGHT_CACHE.md)からの累積読み込み回数・元BF16換算の量・保存形式での量です。`allocated_bytes`はMetalの確保量、`recommended_working_set_bytes`はデバイスの推奨量、`residency_sets`はGPUリソースの常駐管理が有効かを示します。数値は起動時・翻訳終了時の通知で更新します。GPUの初期化・実行エラーの理由は`compute.note`に表示します。
 
 ## CPUスレッド
 

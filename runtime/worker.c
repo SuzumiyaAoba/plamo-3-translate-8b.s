@@ -73,6 +73,8 @@ static void report_compute(struct plamo_engine *engine) {
     printf(",\"precision\":"); json_string(info.gpu.precision[0] ? info.gpu.precision : "fp32");
     printf(",\"weight_storage\":"); json_string(info.gpu.weight_storage[0] ? info.gpu.weight_storage : "bf16");
     printf(",\"packed_weight_bytes\":%" PRIu64, info.gpu.packed_weight_bytes);
+    printf(",\"disk_cache_hits\":%" PRIu64 ",\"disk_cache_weight_bytes\":%" PRIu64 ",\"disk_cache_storage_bytes\":%" PRIu64,
+           info.gpu.disk_cache_hits, info.gpu.disk_cache_weight_bytes, info.gpu.disk_cache_storage_bytes);
     printf(",\"residency_sets\":%s", info.gpu.residency_sets ? "true" : "false");
     printf(",\"gpu_dispatches\":%" PRIu64 ",\"command_buffers\":%" PRIu64 ",\"fused_mlps\":%" PRIu64 ",\"fused_decodes\":%" PRIu64 ",\"fused_prefills\":%" PRIu64 ",\"cpu_fallbacks\":%" PRIu64 ",\"errors\":%" PRIu64 ",\"gpu_seconds\":%.9f,"
            "\"allocated_bytes\":%" PRIu64 ",\"recommended_working_set_bytes\":%" PRIu64 ",\"note\":",

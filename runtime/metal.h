@@ -17,6 +17,7 @@ struct plamo_metal_config {
     const struct plamo_weight_spec *schema;
     uint64_t reserve;
     uint64_t (*available)(void);
+    const char *disk_cache_path, *revision;
 };
 struct plamo_metal_info {
     char device[128], precision[16], weight_storage[24], note[256];
@@ -24,6 +25,7 @@ struct plamo_metal_info {
     uint64_t dispatches, command_buffers, fused_mlps, fused_decodes, fused_prefills, cpu_fallbacks, errors;
     uint64_t allocated_bytes, recommended_working_set_bytes;
     uint64_t packed_weight_bytes;
+    uint64_t disk_cache_hits, disk_cache_weight_bytes, disk_cache_storage_bytes;
     unsigned residency_sets;
     double gpu_seconds;
 };

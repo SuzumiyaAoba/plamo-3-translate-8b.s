@@ -51,6 +51,7 @@ test: build/test-cache-rope-cached build/test-simd-attention build/test-simd-act
 	./build/test-cache-simd
 	./build/test-runtime
 	./build/test-prompt-cache
+	./build/test-disk-cache
 	./build/test-weight-cache
 	./build/test-parallel
 	./build/test-metal
@@ -67,13 +68,13 @@ BUILD_DIR ?= $(if $(filter 8b,$(MODEL)),build,build/$(MODEL))
 GENERATED_NAMES = weight_schema.s model_layout.s rope_constants.s model_profile.s
 GENERATED = $(addprefix $(BUILD_DIR)/generated/,$(GENERATED_NAMES))
 CORE = $(filter-out src/main.s $(addprefix src/,$(GENERATED_NAMES)),$(wildcard src/*.s))
-RUNTIME = runtime/engine.c runtime/resident.c runtime/weight_cache.c runtime/parallel.c runtime/prompt_cache.c runtime/metal.m
-RUNTIME_HEADERS = runtime/engine.h runtime/model.h runtime/resident.h runtime/weight_cache.h runtime/parallel.h runtime/prompt_cache.h runtime/metal.h runtime/packing.h build/metal_kernels.h
+RUNTIME = runtime/engine.c runtime/resident.c runtime/weight_cache.c runtime/parallel.c runtime/prompt_cache.c runtime/metal.m runtime/disk_cache.c
+RUNTIME_HEADERS = runtime/engine.h runtime/model.h runtime/resident.h runtime/weight_cache.h runtime/parallel.h runtime/prompt_cache.h runtime/metal.h runtime/packing.h runtime/disk_cache.h build/metal_kernels.h
 METAL_FLAGS = -Ibuild -framework Foundation -framework Metal
 PROFILE_INPUTS = $(wildcard tools/profiles/$(MODEL)/*.json) tools/generate_model.py tools/model_catalog.py tools/weight_schema.py tools/model_layout.py tools/rope_constants.py
 
 .PHONY: all models
-all: $(BUILD_DIR)/plamo $(BUILD_DIR)/plamo-asm $(BUILD_DIR)/plamo-worker
+all: $(BUILD_DIR)/plamo $(BUILD_DIR)/plamo-asm $(BUILD_DIR)/plamo-worker build/pack-metal-weights
 test-tools: $(BUILD_DIR)/plamo
 models:
 	$(MAKE) MODEL=0.8b all
@@ -98,6 +99,16 @@ build/metal_layout_kernels.h: runtime/kernels.metal tests/metal_layout.metal too
 build/bench-metal-layout: tests/bench_metal_layout.m runtime/packing.h build/metal_layout_kernels.h
 	mkdir -p build
 	$(CC) $(CFLAGS) tests/bench_metal_layout.m $(METAL_FLAGS) -o $@
+
+build/pack-metal-weights: tools/pack_weights.m runtime/disk_cache.h runtime/model.h runtime/packing.h build/metal_kernels.h
+	mkdir -p build
+	$(CC) $(CFLAGS) tools/pack_weights.m $(METAL_FLAGS) -o $@
+
+test: build/test-disk-cache
+
+build/test-disk-cache: runtime/disk_cache.c runtime/disk_cache.h runtime/packing.h tests/disk_cache.c
+	mkdir -p build
+	$(CC) $(CFLAGS) runtime/disk_cache.c tests/disk_cache.c -o $@
 
 $(BUILD_DIR)/plamo-asm: src/main.s $(CORE) $(GENERATED) $(BUILD_DIR)/generated/.stamp
 	mkdir -p $(BUILD_DIR)
@@ -303,12 +314,12 @@ build/test-parallel: src/math.s src/matmul.s src/matmul8.s src/matmul8x3.s src/p
 .PHONY: test-metal
 test-metal: build/test-metal
 	./build/test-metal
-build/test-metal: src/math.s src/activation.s src/rope_table.s src/trig.s src/matmul.s src/matmul8.s src/matmul8x3.s src/prefetch.s runtime/metal.m runtime/metal.h runtime/packing.h build/metal_kernels.h tests/metal.c
+build/test-metal: src/math.s src/activation.s src/rope_table.s src/trig.s src/matmul.s src/matmul8.s src/matmul8x3.s src/prefetch.s runtime/metal.m runtime/disk_cache.c runtime/disk_cache.h runtime/metal.h runtime/packing.h build/metal_kernels.h tests/metal.c
 	mkdir -p build
 	$(CC) $(CFLAGS) $(filter %.s %.c %.m,$^) $(METAL_FLAGS) -o $@
 
 test: build/test-metal-decode
-build/test-metal-decode: $(filter-out src/main.s,$(wildcard src/*.s)) runtime/metal.m runtime/metal.h runtime/packing.h build/metal_kernels.h tests/metal_decode.c
+build/test-metal-decode: $(filter-out src/main.s,$(wildcard src/*.s)) runtime/metal.m runtime/disk_cache.c runtime/disk_cache.h runtime/metal.h runtime/packing.h build/metal_kernels.h tests/metal_decode.c
 	mkdir -p build
 	$(CC) $(CFLAGS) $(filter %.s %.c %.m,$^) $(METAL_FLAGS) -o $@
 

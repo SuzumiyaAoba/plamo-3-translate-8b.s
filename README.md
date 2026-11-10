@@ -1,6 +1,6 @@
 # plamo-3-translate.c
 
-Apple Silicon / macOS 向けの C・Objective-C・Metal・手書き AArch64 アセンブリによる PLaMo 3 Translate の推論実装です。0.8B・2B・8B・31Bの公式BF16重みを変換せず直接読み込みます。CLI と API は同じ推論エンジンを使い、既定で Metal GPU を利用します。
+Apple Silicon / macOS 向けの C・Objective-C・Metal・手書き AArch64 アセンブリによる PLaMo 3 Translate の推論実装です。0.8B・2B・8B・31Bの公式BF16重みを直接読み込み、任意で無損失の実行用ファイルを事前作成できます。CLI と API は同じ推論エンジンを使い、既定で Metal GPU を利用します。
 
 [gpt2.s](https://github.com/ArneshBanerjee/gpt2.s) に着想を得た CPU カーネルに、Apple Silicon の共有メモリを使う GPU 実装を加えています。活性値と演算は FP32、重みは元の BF16 で、FP16 への丸めや追加の量子化を行いません。従来のアセンブリだけの CLI は `build/plamo-asm` に残しています。この実行ファイルは Darwin syscall を使い、`nm -u build/plamo-asm` は空です。
 
@@ -139,7 +139,7 @@ make models
 - 公式 Unigram 語彙の読み込み、Unicode Trie、整数 DP、バイトフォールバック
 - 特殊トークン・連続文字の境界前処理、UTF-8 復号
 
-キャッシュと作業領域は匿名 mmap で仮想領域を確保します。全重みの FP32 コピーは作りません。RoPE の周波数などの固定モデル定数と記述子は `tools/profiles/SIZE/config.json` から生成しています。`docs/config.json` は従来の8B設定です。モデル重みの事前変換はありません。
+キャッシュと作業領域は匿名 mmap で仮想領域を確保します。全重みの FP32 コピーは作りません。RoPE の周波数などの固定モデル定数と記述子は `tools/profiles/SIZE/config.json` から生成しています。`docs/config.json` は従来の8B設定です。8Bの起動時の圧縮を省くには、`python3 tools/prepare_weights.py --model 8b`で[実行用重みファイル](docs/WEIGHT_CACHE.md)を事前作成できます。元の全BF16ビットを保持します。
 
 ## 検証
 

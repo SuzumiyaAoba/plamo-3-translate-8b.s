@@ -3,6 +3,7 @@
 #include "metal.h"
 #include "metal_kernels.h"
 #include "packing.h"
+#include "disk_cache.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -54,6 +55,7 @@ struct plamo_metal {
     double checked_at;
     struct entry table[MAX_ENTRIES];
     struct packing_size sizes[MAX_ENTRIES];
+    struct plamo_disk_cache *disk_cache;
 };
 extern void (*plamo_matvec_kernel)(const uint16_t *, const float *, float *, uint64_t, uint64_t, void *);
 extern void (*plamo_matmul_kernel)(const struct plamo_matmul *, void *);
@@ -141,6 +143,16 @@ static int file_range(struct plamo_metal *m, uintptr_t address, uint64_t bytes, 
 
 static id<MTLBuffer> pack_cache(struct plamo_metal *, uint64_t, uint64_t, unsigned *, uint64_t *);
 
+static void retain_weights(struct plamo_metal *m, uintptr_t address, uint64_t bytes, uint64_t allocation,
+                           id<MTLBuffer> buffer, unsigned prepared, unsigned packed) {
+    m->table[m->entries++] = (struct entry){address, bytes, allocation, buffer, prepared, packed};
+    m->used += allocation;
+    m->info.cache.cached_bytes += bytes;
+    if (packed) m->info.packed_weight_bytes += bytes;
+    // Newly encoded packed buffers were registered by pack_cache already.
+    if (!prepared) residency_add(m, buffer);
+}
+
 static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t bytes, NSUInteger *buffer_offset,
                               int retain_only, unsigned *packed) {
     uintptr_t address = (uintptr_t)source;
@@ -164,6 +176,25 @@ static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t
     int mapped = file_range(m, address, bytes, &file, &offset);
     uint64_t allocation = aligned(bytes);
     uint64_t remaining = m->capacity - m->staging_bytes - m->used;
+    if (mapped && m->config.memory != PLAMO_METAL_STREAM) {
+        uint64_t stored = 0;
+        const void *data = plamo_disk_cache_get(m->disk_cache, source, bytes, m->use_packing, &stored);
+        int keep = stored <= remaining && m->entries < MAX_ENTRIES;
+        if (data && retain_only && !keep) return nil;
+        if (data && keep) {
+            id<MTLBuffer> cached = [m->device newBufferWithLength:(NSUInteger)stored options:MTLResourceStorageModeShared];
+            if (cached && plamo_disk_cache_read(m->disk_cache, data, cached.contents, stored, plamo_io_stats)) {
+                *packed = m->use_packing;
+                retain_weights(m, address, bytes, stored, cached, 0, *packed);
+                ++m->info.cache.misses;
+                ++m->info.disk_cache_hits;
+                m->info.disk_cache_weight_bytes += bytes;
+                m->info.disk_cache_storage_bytes += stored;
+                return cached;
+            }
+            [cached release];
+        }
+    }
     uint64_t blocks = (bytes / 2 + PLAMO_BF16_BLOCK - 1) / PLAMO_BF16_BLOCK;
     uint64_t minimum = aligned(((blocks * 8 + 15) & ~UINT64_C(15)) + blocks * PLAMO_BF16_BLOCK);
     int compress = mapped && m->use_packing && !(bytes & 1) && bytes >= MIB && m->config.memory != PLAMO_METAL_STREAM &&
@@ -223,11 +254,7 @@ static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t
         retain = 1;
     }
     if (retain) {
-        m->table[m->entries++] = (struct entry){address, bytes, allocation, buffer, *packed, *packed};
-        m->used += allocation;
-        m->info.cache.cached_bytes += bytes;
-        if (*packed) m->info.packed_weight_bytes += bytes;
-        else residency_add(m, buffer);
+        retain_weights(m, address, bytes, allocation, buffer, *packed, *packed);
     }
     return buffer;
 }
@@ -1140,6 +1167,11 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
             m->info.residency_sets = 1;
         }
 #endif
+        if (config->disk_cache_path && config->memory != PLAMO_METAL_STREAM) {
+            m->disk_cache = plamo_disk_cache_open(config->disk_cache_path, config->revision, config->maps,
+                                                config->count, m->info.note, sizeof m->info.note);
+        }
+        m->config.disk_cache_path = NULL; // The path is borrowed only during open.
         for (size_t i = 0; i < config->count; ++i) (void)fcntl((int)config->fds[i], F_NOCACHE, 1);
         m->checked_at = now();
         if (config->memory == PLAMO_METAL_RESIDENT && !preload(m)) { snprintf(error, cap, "%s", m->info.note); goto fail; }
@@ -1205,6 +1237,7 @@ void plamo_metal_close(struct plamo_metal *m) {
     [m->prefill_qkv release]; [m->prefill_attention release]; [m->prefill_store release];
     [m->decode_norms release]; [m->qkv release]; [m->attention release]; [m->scores release]; [m->logits release];
     [m->queue release]; [m->device release];
+    plamo_disk_cache_close(m->disk_cache);
     for (size_t i = 0; i < m->config.count; ++i)
         if (m->config.fds && m->config.fds[i] >= 0 && m->config.fds[i] <= INT_MAX) (void)fcntl((int)m->config.fds[i], F_NOCACHE, 0);
     free(m);

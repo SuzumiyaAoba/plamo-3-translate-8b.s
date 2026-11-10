@@ -1,0 +1,5 @@
+#!@shell@
+set -euo pipefail
+
+export PLAMO_PACK_TOOL="@packer@"
+exec "@python@" "@script@" --cache "$@"

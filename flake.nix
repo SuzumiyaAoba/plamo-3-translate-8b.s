@@ -32,6 +32,11 @@
           program = "${plamo}/bin/plamo-server";
           meta.description = "Run a local HTTP API with one persistent model worker";
         };
+        prepare-weights = {
+          type = "app";
+          program = "${plamo}/bin/plamo-prepare-weights";
+          meta.description = "Prepare exact BF16 GPU weight buffers for faster startup";
+        };
       };
 
       devShells.${system}.default = pkgs.mkShell {
