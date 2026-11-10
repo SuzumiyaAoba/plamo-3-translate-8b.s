@@ -154,7 +154,7 @@ static void retain_weights(struct plamo_metal *m, uintptr_t address, uint64_t by
 }
 
 static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t bytes, NSUInteger *buffer_offset,
-                              int retain_only, unsigned *packed) {
+                              int retain_only, unsigned *packed, int decode) {
     uintptr_t address = (uintptr_t)source;
     *buffer_offset = 0;
     *packed = 0;
@@ -181,18 +181,37 @@ static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t
         const void *data = plamo_disk_cache_get(m->disk_cache, source, bytes, m->use_packing, &stored);
         int keep = stored <= remaining && m->entries < MAX_ENTRIES;
         if (data && retain_only && !keep) return nil;
-        if (data && keep) {
-            id<MTLBuffer> cached = [m->device newBufferWithLength:(NSUInteger)stored options:MTLResourceStorageModeShared];
-            if (cached && plamo_disk_cache_read(m->disk_cache, data, cached.contents, stored, plamo_io_stats)) {
+        // Borrow immutable file pages only for one-token projections. Prompt
+        // matrix tiles keep raw staging; retained weights keep private copies.
+        int stage = decode && m->use_packing && !retain_only && stored <= m->staging_bytes;
+        if (data && stage && !keep) {
+            id<MTLBuffer> view = [m->device newBufferWithBytesNoCopy:(void *)data length:(NSUInteger)stored
+                                                         options:MTLResourceStorageModeShared deallocator:nil];
+            if (view) {
                 *packed = m->use_packing;
-                retain_weights(m, address, bytes, stored, cached, 0, *packed);
+                ++m->info.cache.misses;
+                ++m->info.disk_cache_hits;
+                m->info.disk_cache_weight_bytes += bytes;
+                m->info.disk_cache_storage_bytes += stored;
+                m->info.disk_cache_mapped_bytes += stored;
+                // The enclosing projection waits for the GPU before draining
+                // its autorelease pool. The archive mapping outlives the view.
+                return [view autorelease];
+            }
+        }
+        if (data && (keep || stage)) {
+            id<MTLBuffer> cached = keep ? [m->device newBufferWithLength:(NSUInteger)stored options:MTLResourceStorageModeShared] : m->staging;
+            int loaded = cached && plamo_disk_cache_read(m->disk_cache, data, cached.contents, stored, plamo_io_stats);
+            if (loaded) {
+                *packed = m->use_packing;
+                if (keep) retain_weights(m, address, bytes, stored, cached, 0, *packed);
                 ++m->info.cache.misses;
                 ++m->info.disk_cache_hits;
                 m->info.disk_cache_weight_bytes += bytes;
                 m->info.disk_cache_storage_bytes += stored;
                 return cached;
             }
-            [cached release];
+            if (keep) [cached release];
         }
     }
     uint64_t blocks = (bytes / 2 + PLAMO_BF16_BLOCK - 1) / PLAMO_BF16_BLOCK;
@@ -267,7 +286,7 @@ int plamo_metal_preload(struct plamo_metal *m, const void *source, uint64_t byte
         uint64_t errors = m->info.errors;
         NSUInteger offset;
         unsigned packed;
-        id<MTLBuffer> buffer = weights(m, source, bytes, &offset, 1, &packed);
+        id<MTLBuffer> buffer = weights(m, source, bytes, &offset, 1, &packed, 0);
         return errors == m->info.errors && (!buffer || prepare_buffer(m, buffer));
     }
 }
@@ -444,7 +463,7 @@ int plamo_metal_linear(struct plamo_metal *m, const struct plamo_matmul *p) {
             !ensure_buffer(m, &m->output, p->tokens * p->rows * 4)) return 0;
         NSUInteger offset = 0;
         unsigned packed = 0;
-        id<MTLBuffer> w = whole ? nil : weights(m, p->weights, p->rows * p->columns * 2, &offset, 0, &packed);
+        id<MTLBuffer> w = whole ? nil : weights(m, p->weights, p->rows * p->columns * 2, &offset, 0, &packed, p->tokens == 1);
         if (!whole && !w) return 0;
         for (uint64_t t = 0; t < p->tokens; ++t)
             memcpy((float *)m->input.contents + t * p->columns, p->input + t * p->input_stride, (size_t)p->columns * 4);
@@ -1018,7 +1037,7 @@ static int preload(struct plamo_metal *m) {
             const void *source = (const char *)*s->slot + first * row_bytes;
             NSUInteger offset;
             unsigned packed;
-            id<MTLBuffer> buffer = weights(m, source, count * row_bytes, &offset, 0, &packed);
+            id<MTLBuffer> buffer = weights(m, source, count * row_bytes, &offset, 0, &packed, 0);
             if (!buffer || buffer == m->staging) return problem(m, "BF16 matrices do not fit in the Metal residency budget");
             if (!prepare_buffer(m, buffer)) return 0;
         }

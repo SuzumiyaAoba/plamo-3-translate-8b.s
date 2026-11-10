@@ -28,6 +28,7 @@ stdenv.mkDerivation {
       ../docs/METAL.md
       ../docs/WEIGHT_CACHE.md
       ../docs/benchmarks/weight-cache.json
+      ../docs/benchmarks/generation.json
       ../docs/MODELS.md
       ../docs/benchmarks/multi-model.json
       ../docs/benchmarks/metal.json
@@ -119,6 +120,7 @@ stdenv.mkDerivation {
     install -Dm644 docs/METAL.md "$out/share/doc/plamo/METAL.md"
     install -Dm644 docs/WEIGHT_CACHE.md "$out/share/doc/plamo/WEIGHT_CACHE.md"
     install -Dm644 docs/benchmarks/weight-cache.json "$out/share/doc/plamo/benchmarks/weight-cache.json"
+    install -Dm644 docs/benchmarks/generation.json "$out/share/doc/plamo/benchmarks/generation.json"
     install -Dm644 docs/MODELS.md "$out/share/doc/plamo/MODELS.md"
     install -Dm644 docs/benchmarks/multi-model.json "$out/share/doc/plamo/benchmarks/multi-model.json"
     install -Dm644 docs/benchmarks/metal.json "$out/share/doc/plamo/benchmarks/metal.json"

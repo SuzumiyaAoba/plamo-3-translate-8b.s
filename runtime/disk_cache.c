@@ -108,7 +108,7 @@ int plamo_disk_cache_read(const struct plamo_disk_cache *c, const void *range,
     if (address < base || address - base >= c->bytes || bytes > c->bytes - (address - base)) return 0;
     uint64_t offset = address - base, done = 0;
     while (done < bytes) {
-        size_t count = (size_t)(bytes - done); if (count > 8 * 1024 * 1024) count = 8 * 1024 * 1024;
+        size_t count = (size_t)(bytes - done); if (count > PLAMO_DISK_RAW_LIMIT) count = PLAMO_DISK_RAW_LIMIT;
         if (io) ++io[1];
         ssize_t n = pread(c->fd, (char *)destination + done, count, (off_t)(offset + done));
         if (n < 0 && errno == EINTR) continue;

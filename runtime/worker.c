@@ -75,6 +75,7 @@ static void report_compute(struct plamo_engine *engine) {
     printf(",\"packed_weight_bytes\":%" PRIu64, info.gpu.packed_weight_bytes);
     printf(",\"disk_cache_hits\":%" PRIu64 ",\"disk_cache_weight_bytes\":%" PRIu64 ",\"disk_cache_storage_bytes\":%" PRIu64,
            info.gpu.disk_cache_hits, info.gpu.disk_cache_weight_bytes, info.gpu.disk_cache_storage_bytes);
+    printf(",\"disk_cache_mapped_bytes\":%" PRIu64, info.gpu.disk_cache_mapped_bytes);
     printf(",\"residency_sets\":%s", info.gpu.residency_sets ? "true" : "false");
     printf(",\"gpu_dispatches\":%" PRIu64 ",\"command_buffers\":%" PRIu64 ",\"fused_mlps\":%" PRIu64 ",\"fused_decodes\":%" PRIu64 ",\"fused_prefills\":%" PRIu64 ",\"cpu_fallbacks\":%" PRIu64 ",\"errors\":%" PRIu64 ",\"gpu_seconds\":%.9f,"
            "\"allocated_bytes\":%" PRIu64 ",\"recommended_working_set_bytes\":%" PRIu64 ",\"note\":",
@@ -111,7 +112,7 @@ static void report_result(const struct plamo_result *r, struct plamo_engine *eng
            "\"decode_gpu_seconds\":%.9f,\"decode_command_buffers\":%" PRIu64 ",\"decode_gpu_dispatches\":%" PRIu64 "},"
            "\"weight_io\":{\"staged_bytes\":%" PRIu64 ",\"read_calls\":%" PRIu64 ","
            "\"cache_hits\":%" PRIu64 ",\"cache_hit_bytes\":%" PRIu64 ",\"cache_misses\":%" PRIu64 ","
-           "\"decode_staged_bytes\":%" PRIu64 ",\"decode_read_calls\":%" PRIu64 "},"
+           "\"decode_staged_bytes\":%" PRIu64 ",\"decode_read_calls\":%" PRIu64 ",\"decode_mapped_bytes\":%" PRIu64 "},"
            "\"process_peak_rss_bytes\":%ld,"
            "\"verification\":{\"prefill_logits_hash\":\"%016" PRIx64 "\",\"prefill_state_hash\":\"%016" PRIx64 "\","
            "\"logits_hash\":\"%016" PRIx64 "\",\"state_hash\":\"%016" PRIx64 "\"},\"memory\":",
@@ -120,7 +121,7 @@ static void report_result(const struct plamo_result *r, struct plamo_engine *eng
            r->decode_steps, r->prefill_gpu_seconds, r->prefill_command_buffers, r->prefill_gpu_dispatches,
            r->decode_gpu_seconds, r->decode_command_buffers, r->decode_gpu_dispatches,
            r->staged_bytes, r->read_calls, r->cache_hits, r->cache_hit_bytes, r->cache_misses,
-           r->decode_staged_bytes, r->decode_read_calls, usage.ru_maxrss,
+           r->decode_staged_bytes, r->decode_read_calls, r->decode_mapped_bytes, usage.ru_maxrss,
            r->prefill_logits_hash, r->prefill_state_hash, r->logits_hash, r->state_hash);
     report_memory(engine);
     printf(",\"compute\":"); report_compute(engine);

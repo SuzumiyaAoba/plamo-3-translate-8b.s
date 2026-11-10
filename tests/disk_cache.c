@@ -58,7 +58,11 @@ int main(void) {
     assert(pwrite(fd, valid, bytes, 0) == (ssize_t)bytes);
     struct plamo_disk_cache *c = plamo_disk_cache_open(path, "synthetic", &source, 1, error, sizeof error); assert(c);
     assert(!unlink(path)); close(fd);
-    uint64_t storage; assert(plamo_disk_cache_get(c, original, sizeof original, 1, &storage));
+    uint64_t storage;
+    const void *payload = plamo_disk_cache_get(c, original, sizeof original, 1, &storage); assert(payload);
+    unsigned char loaded[PLAMO_DISK_ALIGNMENT];
+    assert(plamo_disk_cache_read(c, payload, loaded, storage, NULL));
+    assert(!memcmp(loaded, valid + PLAMO_DISK_ALIGNMENT, storage));
     plamo_disk_cache_close(c); plamo_disk_cache_close(NULL);
     free(data); free(valid);
     puts("disk cache: PASS (mapping lifetime, lookup, revision, ranges, packed headers)");

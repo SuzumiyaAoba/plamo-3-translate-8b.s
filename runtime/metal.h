@@ -26,6 +26,7 @@ struct plamo_metal_info {
     uint64_t allocated_bytes, recommended_working_set_bytes;
     uint64_t packed_weight_bytes;
     uint64_t disk_cache_hits, disk_cache_weight_bytes, disk_cache_storage_bytes;
+    uint64_t disk_cache_mapped_bytes;
     unsigned residency_sets;
     double gpu_seconds;
 };

@@ -437,6 +437,7 @@ int plamo_engine_translate(struct plamo_engine *e, const char *text, unsigned di
         result->decode_gpu_seconds = gpu_after.gpu_seconds - gpu_before.gpu_seconds;
         result->decode_command_buffers = gpu_after.command_buffers - gpu_before.command_buffers;
         result->decode_gpu_dispatches = gpu_after.dispatches - gpu_before.dispatches;
+        result->decode_mapped_bytes = gpu_after.disk_cache_mapped_bytes - gpu_before.disk_cache_mapped_bytes;
     }
     result->total_seconds = now() - start;
     result->staged_bytes = plamo_io_stats[0] - before_bytes;

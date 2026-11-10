@@ -23,6 +23,7 @@ struct plamo_result {
     uint64_t prompt_tokens, completion_tokens, decode_steps, staged_bytes, read_calls;
     uint64_t cache_hits, cache_hit_bytes, cache_misses;
     uint64_t decode_staged_bytes, decode_read_calls, decode_command_buffers, decode_gpu_dispatches;
+    uint64_t decode_mapped_bytes;
     uint64_t prefill_command_buffers, prefill_gpu_dispatches;
     uint64_t cached_prompt_tokens;
     uint64_t prefill_logits_hash, prefill_state_hash, logits_hash, state_hash;

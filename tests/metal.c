@@ -295,14 +295,16 @@ static void disk_cache(void) {
         }
         plamo_metal_close(metal); config.disk_cache_path = path;
         metal = plamo_metal_open(&config, error, sizeof error); if (!metal) fprintf(stderr, "%s\n", error); CHECK(metal);
+        CHECK(!unlink(path)); // Both bulk reads and borrowed GPU pages own the old archive lifetime.
         uint64_t reads = plamo_io_stats[0];
         for (unsigned c = 0; c < CHUNKS; ++c) CHECK(plamo_metal_preload(metal, (char *)base + c * MIB, MIB));
         struct plamo_metal_info info; plamo_metal_get_info(metal, &info);
         CHECK(info.disk_cache_hits == CHUNKS && info.disk_cache_storage_bytes == CHUNKS * stored && info.cache.cached_bytes == CHUNKS * MIB);
+        CHECK(!info.disk_cache_mapped_bytes);
         CHECK(plamo_io_stats[0] == reads + CHUNKS * stored && !info.errors);
         for (unsigned n = 0; n < 4; ++n) {
             struct plamo_matmul p = {base, input, actual, ROWS * 2, COLS, counts[n], COLS, ROWS * 2}; CHECK(plamo_metal_linear(metal, &p));
-            CHECK(!memcmp(actual, gold[n], (size_t)ROWS * 2 * counts[n] * 4)); free(gold[n]);
+            CHECK(!memcmp(actual, gold[n], (size_t)ROWS * 2 * counts[n] * 4)); if (n && n != 2) free(gold[n]);
         }
         struct plamo_matmul alias = {(uint16_t *)base + 8 * COLS, input, actual, 17, COLS, 1, COLS, 17};
         CHECK(plamo_metal_linear(metal, &alias));
@@ -310,16 +312,26 @@ static void disk_cache(void) {
         for (unsigned i = 0; i < 17; ++i) CHECK(fabsf(actual[i] - expected[i]) < 0.0002f * (1 + fabsf(expected[i])));
         available_bytes = 0; plamo_metal_maintain(metal); plamo_metal_get_info(metal, &info);
         CHECK(!info.cache.cached_bytes && !info.cache.storage_bytes);
+        uint64_t staged_reads = plamo_io_stats[0];
         struct plamo_matmul staged = {base, input, actual, ROWS * 2, COLS, 1, COLS, ROWS * 2};
         CHECK(plamo_metal_linear(metal, &staged));
+        CHECK(!memcmp(actual, gold[0], (size_t)ROWS * 2 * 4)); free(gold[0]);
         plamo_bf16_matvec_serial(base, input, expected, ROWS * 2, COLS);
         for (unsigned i = 0; i < ROWS * 2; ++i) CHECK(fabsf(actual[i] - expected[i]) < 0.0002f * (1 + fabsf(expected[i])));
         plamo_metal_get_info(metal, &info);
-        CHECK(!info.cache.cached_bytes && info.disk_cache_hits == CHUNKS);
+        CHECK(!info.cache.cached_bytes && info.disk_cache_hits == CHUNKS + (packed ? 2 : 0));
+        CHECK(info.disk_cache_mapped_bytes == (packed ? 2 * stored : 0));
+        CHECK(plamo_io_stats[0] - staged_reads == (packed ? 0 : 2 * MIB));
+        uint64_t decode_hits = info.disk_cache_hits, prefill_reads = plamo_io_stats[0];
+        struct plamo_matmul prompt = {base, input, actual, ROWS * 2, COLS, counts[2], COLS, ROWS * 2};
+        CHECK(plamo_metal_linear(metal, &prompt));
+        CHECK(!memcmp(actual, gold[2], (size_t)ROWS * 2 * counts[2] * 4)); free(gold[2]);
+        plamo_metal_get_info(metal, &info);
+        CHECK(info.disk_cache_hits == decode_hits && plamo_io_stats[0] - prefill_reads == 2 * MIB);
         available_bytes = 13 * MIB; plamo_metal_maintain(metal);
         for (unsigned c = 0; c < CHUNKS; ++c) CHECK(plamo_metal_preload(metal, (char *)base + c * MIB, MIB));
-        plamo_metal_get_info(metal, &info); CHECK(info.disk_cache_hits == 2 * CHUNKS && !info.errors);
-        plamo_metal_close(metal); CHECK(!unlink(path));
+        plamo_metal_get_info(metal, &info); CHECK(info.disk_cache_hits == 2 * CHUNKS + (packed ? 2 : 0) && !info.errors);
+        plamo_metal_close(metal);
     }
     munmap(base, CHUNKS * MIB); fclose(source_file); free(original); free(input); free(expected); free(actual);
     available_bytes = UINT64_C(128) * 1024 * 1024;

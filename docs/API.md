@@ -122,7 +122,9 @@ curl http://127.0.0.1:8000/translate \
 
 `translation`、`finish_reason`、入力・生成トークン数、トークン化・入力処理・生成の時間、明示的な重みI/O、メモリモードと終了時のメモリ情報が返ります。`weight_io`の`cache_hits`・`cache_hit_bytes`・`cache_misses`はその要求中の値です。`finish_reason`が`length`なら生成上限で止まっており、翻訳が完了したことを意味しません。
 
-`timings.decode_seconds`は生成の経過時間、`decode_steps`はモデルを追加実行した回数です。両者から読み込み・入力処理を除いた生成速度を計算できます。`decode_gpu_seconds`・`decode_command_buffers`・`decode_gpu_dispatches`は生成中だけのGPU時間・同期回数・カーネル数、`weight_io.decode_staged_bytes`・`decode_read_calls`は生成中だけの明示的な重みI/Oです。起動準備や入力処理の累積値を含みません。`prefill_gpu_seconds`・`prefill_command_buffers`・`prefill_gpu_dispatches`は要求中の入力処理だけの値です。`usage.cached_prompt_tokens`は固定接頭から再利用した入力トークン数で、`prompt_tokens`には再利用分も含みます。
+`timings.decode_seconds`は生成の経過時間、`decode_steps`はモデルを追加実行した回数です。`decode_steps / decode_seconds`で起動・入力処理を除いた生成速度を計算できます。生成中の重みの再読み込み時間は含みます。`decode_gpu_seconds`・`decode_command_buffers`・`decode_gpu_dispatches`は生成中だけのGPU時間・同期回数・カーネル数、`weight_io.decode_staged_bytes`・`decode_read_calls`は生成中だけの明示的な重みI/Oです。起動準備や入力処理の累積値を含みません。`prefill_gpu_seconds`・`prefill_command_buffers`・`prefill_gpu_dispatches`は要求中の入力処理だけの値です。`usage.cached_prompt_tokens`は固定接頭から再利用した入力トークン数で、`prompt_tokens`には再利用分も含みます。
+
+8Bの部分保持では、[事前作成した重みファイル](WEIGHT_CACHE.md)のページを生成時にGPUから直接参照し、共有バッファへのコピーを省きます。`compute.disk_cache_mapped_bytes`は一時Metalビューで参照した保存領域の累積量、`weight_io.decode_mapped_bytes`はその要求の生成中だけの量です。現在の保持量や物理ディスクI/Oではありません。`decode_staged_bytes`が0でもOSによるページインは発生し得ます。実際の生成速度は[交互に比較した測定データ](benchmarks/generation.json)に記録します。
 
 | フィールド | 既定値・制約 |
 | --- | --- |
