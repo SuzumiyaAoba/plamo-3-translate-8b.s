@@ -19,12 +19,15 @@
 #define MAX_ENTRIES 4096
 struct entry { uintptr_t source; uint64_t bytes, allocated; id<MTLBuffer> buffer; unsigned prepared, packed; };
 struct packing_size { uintptr_t source; uint64_t bytes, allocated; unsigned packed; };
-struct tile { const struct entry *entry; NSUInteger offset; uint64_t first, rows; };
+struct mapped_weight { const void *data; uint64_t bytes; id<MTLBuffer> buffer; };
+struct tile { id<MTLBuffer> buffer; NSUInteger offset; uint64_t first, rows, mapped_bytes; unsigned packed; const void *mapped_data; };
 struct projection { struct tile tiles[128]; size_t count; };
 struct view { id<MTLBuffer> buffer; void *source; NSUInteger offset; uint64_t bytes; };
 struct decode_layer {
     struct projection qkv, attention, gate, down;
     struct view k, v, rotated;
+    id<MTLBuffer> proposal, proposal_rotated;
+    uint64_t verify_prefix;
     NSUInteger pre, post, mlp_pre, mlp_post, qn, kn;
     size_t rope;
 };
@@ -34,7 +37,7 @@ struct plamo_metal {
     struct plamo_metal_info info;
     id<MTLDevice> device;
     id<MTLCommandQueue> queue;
-    id<MTLComputePipelineState> matvec[2], vector[2], matmul[2][4], norm, swiglu, residual, touch, analyze, pack;
+    id<MTLComputePipelineState> matvec[3], vector[3], matmul[3][4], norm, swiglu, residual, touch, analyze, pack, quantize4;
     id<MTLComputePipelineState> decode_keys, decode_qkv, decode_attention, decode_residual;
     id<MTLComputePipelineState> prefill_qkv, prefill_attention, prefill_store;
     id<MTLBuffer> staging, input, output;
@@ -48,13 +51,16 @@ struct plamo_metal {
     uint64_t layer_count, rope_count;
     NSUInteger final_norm;
     id residency;
-    unsigned residency_dirty, use_packing;
+    unsigned residency_dirty, use_packing, cache_mappings, verify_encoding, draft_quantized;
+    uint64_t verification_tokens, verification_index;
     uint64_t maximum, capacity, used, staging_bytes;
     size_t entries;
     size_t packing_sizes;
+    size_t mapped_count;
     double checked_at;
     struct entry table[MAX_ENTRIES];
     struct packing_size sizes[MAX_ENTRIES];
+    struct mapped_weight mapped[MAX_ENTRIES];
     struct plamo_disk_cache *disk_cache;
 };
 extern void (*plamo_matvec_kernel)(const uint16_t *, const float *, float *, uint64_t, uint64_t, void *);
@@ -69,6 +75,7 @@ static double now(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t);
 static uint64_t aligned(uint64_t bytes) { return (bytes + 16383) / 16384 * 16384; }
 
 static void residency_add(struct plamo_metal *m, id<MTLBuffer> buffer) {
+    if (!buffer) return;
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
     if (@available(macOS 15.0, *)) {
         [m->residency addAllocation:buffer]; m->residency_dirty = 1;
@@ -79,6 +86,7 @@ static void residency_add(struct plamo_metal *m, id<MTLBuffer> buffer) {
 }
 
 static void residency_remove(struct plamo_metal *m, id<MTLBuffer> buffer) {
+    if (!buffer) return;
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
     if (@available(macOS 15.0, *)) {
         [m->residency removeAllocation:buffer]; m->residency_dirty = 1;
@@ -104,10 +112,39 @@ static int problem(struct plamo_metal *m, const char *message) {
     return 0;
 }
 
+static void release_mappings(struct plamo_metal *m) {
+    for (size_t i = 0; i < m->mapped_count; ++i) {
+        residency_remove(m, m->mapped[i].buffer);
+        [m->mapped[i].buffer release];
+    }
+    residency_commit(m);
+    m->mapped_count = 0;
+    m->info.disk_cache_mapping_bytes = 0;
+}
+
+static id<MTLBuffer> mapped_weights(struct plamo_metal *m, const void *data, uint64_t bytes) {
+    for (size_t i = 0; i < m->mapped_count; ++i)
+        if (m->mapped[i].data == data && m->mapped[i].bytes == bytes) return m->mapped[i].buffer;
+    id<MTLBuffer> buffer = [m->device newBufferWithBytesNoCopy:(void *)data length:(NSUInteger)bytes
+                                                   options:MTLResourceStorageModeShared deallocator:nil];
+    if (!buffer) return nil;
+    // Keep file-backed GPU resources resident just like private weights.
+    // Maintenance drops them before evicting private copies under pressure.
+    if (m->cache_mappings && m->mapped_count < MAX_ENTRIES) {
+        m->mapped[m->mapped_count++] = (struct mapped_weight){data, bytes, buffer};
+        m->info.disk_cache_mapping_bytes += bytes;
+        residency_add(m, buffer);
+        return buffer;
+    }
+    return [buffer autorelease];
+}
+
 void plamo_metal_maintain(struct plamo_metal *m) {
     m->checked_at = now();
     if (m->config.memory != PLAMO_METAL_AUTO) return;
     uint64_t available = m->config.available(), owned = m->used + m->staging_bytes;
+    m->cache_mappings = available >= m->config.reserve;
+    if (!m->cache_mappings) release_mappings(m);
     uint64_t total = available > UINT64_MAX - owned ? UINT64_MAX : available + owned;
     uint64_t target = total > m->config.reserve ? total - m->config.reserve : 0;
     if (target > m->maximum) target = m->maximum;
@@ -142,9 +179,12 @@ static int file_range(struct plamo_metal *m, uintptr_t address, uint64_t bytes, 
 }
 
 static id<MTLBuffer> pack_cache(struct plamo_metal *, uint64_t, uint64_t, unsigned *, uint64_t *);
+static id<MTLBuffer> quantize_cache(struct plamo_metal *, uint64_t, uint64_t);
 
 static void retain_weights(struct plamo_metal *m, uintptr_t address, uint64_t bytes, uint64_t allocation,
                            id<MTLBuffer> buffer, unsigned prepared, unsigned packed) {
+    // Growing the private cache can supersede previously borrowed ranges.
+    if (m->mapped_count) release_mappings(m);
     m->table[m->entries++] = (struct entry){address, bytes, allocation, buffer, prepared, packed};
     m->used += allocation;
     m->info.cache.cached_bytes += bytes;
@@ -176,7 +216,7 @@ static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t
     int mapped = file_range(m, address, bytes, &file, &offset);
     uint64_t allocation = aligned(bytes);
     uint64_t remaining = m->capacity - m->staging_bytes - m->used;
-    if (mapped && m->config.memory != PLAMO_METAL_STREAM) {
+    if (mapped && m->config.memory != PLAMO_METAL_STREAM && !m->draft_quantized) {
         uint64_t stored = 0;
         const void *data = plamo_disk_cache_get(m->disk_cache, source, bytes, m->use_packing, &stored);
         int keep = stored <= remaining && m->entries < MAX_ENTRIES;
@@ -185,8 +225,7 @@ static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t
         // matrix tiles keep raw staging; retained weights keep private copies.
         int stage = decode && m->use_packing && !retain_only && stored <= m->staging_bytes;
         if (data && stage && !keep) {
-            id<MTLBuffer> view = [m->device newBufferWithBytesNoCopy:(void *)data length:(NSUInteger)stored
-                                                         options:MTLResourceStorageModeShared deallocator:nil];
+            id<MTLBuffer> view = mapped_weights(m, data, stored);
             if (view) {
                 *packed = m->use_packing;
                 ++m->info.cache.misses;
@@ -194,9 +233,9 @@ static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t
                 m->info.disk_cache_weight_bytes += bytes;
                 m->info.disk_cache_storage_bytes += stored;
                 m->info.disk_cache_mapped_bytes += stored;
-                // The enclosing projection waits for the GPU before draining
-                // its autorelease pool. The archive mapping outlives the view.
-                return [view autorelease];
+                // Uncached wrappers live through this projection's GPU wait;
+                // cached wrappers are released on pressure or backend close.
+                return view;
             }
         }
         if (data && (keep || stage)) {
@@ -218,6 +257,8 @@ static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t
     uint64_t minimum = aligned(((blocks * 8 + 15) & ~UINT64_C(15)) + blocks * PLAMO_BF16_BLOCK);
     int compress = mapped && m->use_packing && !(bytes & 1) && bytes >= MIB && m->config.memory != PLAMO_METAL_STREAM &&
                    m->entries < MAX_ENTRIES && minimum <= remaining;
+    uint64_t quantized_bytes = aligned(((bytes / 2 + 31) / 32) * 20);
+    int quantize = mapped && m->draft_quantized && m->entries < MAX_ENTRIES && quantized_bytes <= remaining;
     size_t known = 0;
     if (compress) {
         for (; known < m->packing_sizes; ++known) {
@@ -231,9 +272,9 @@ static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t
     // can be changed/freed by their caller immediately after the projection.
     int retain = mapped && m->config.memory != PLAMO_METAL_STREAM && m->entries < MAX_ENTRIES &&
                  allocation <= remaining;
-    if (retain_only && !retain && !compress) return nil;
-    id<MTLBuffer> buffer = retain && !compress ? [m->device newBufferWithLength:(NSUInteger)allocation options:MTLResourceStorageModeShared] : nil;
-    if (retain_only && !compress && !buffer) return nil;
+    if (retain_only && !retain && !compress && !quantize) return nil;
+    id<MTLBuffer> buffer = retain && !compress && !quantize ? [m->device newBufferWithLength:(NSUInteger)allocation options:MTLResourceStorageModeShared] : nil;
+    if (retain_only && !compress && !quantize && !buffer) return nil;
     if (!buffer) { retain = 0; buffer = m->staging; }
     if (mapped) {
         ++m->info.cache.misses;
@@ -255,6 +296,11 @@ static id<MTLBuffer> weights(struct plamo_metal *m, const void *source, uint64_t
         }
     } else {
         memcpy(buffer.contents, source, (size_t)bytes);
+    }
+    if (quantize) {
+        id<MTLBuffer> result = quantize_cache(m, bytes, quantized_bytes);
+        if (!result) return retain_only || m->info.errors ? nil : m->staging;
+        buffer = result; *packed = 2; allocation = quantized_bytes; retain = 1;
     }
     if (compress) {
         uint64_t failures = m->info.errors;
@@ -313,7 +359,7 @@ static void encode_linear(struct plamo_metal *m, id<MTLComputeCommandEncoder> en
         (uint32_t)rows, (uint32_t)columns, (uint32_t)tokens, (uint32_t)xs, (uint32_t)ys,
         !(offset % 8), packed ? (uint32_t)(offset / 2) : 0
     };
-    int batched = tokens >= 8, vector = tokens >= 4 && !batched;
+    int batched = tokens >= 8 || (m->verify_encoding && tokens > 1), vector = tokens >= 4 && !batched;
     // Keep the minimum number of weight scans, then choose the narrowest
     // compiled tile: e.g. 69 tokens use 3 x 24 rather than 3 x 32.
     uint64_t panels = (tokens + 31) / 32;
@@ -389,6 +435,24 @@ static id<MTLBuffer> pack_cache(struct plamo_metal *m, uint64_t bytes, uint64_t 
     return buffer;
 }
 
+static id<MTLBuffer> quantize_cache(struct plamo_metal *m, uint64_t bytes, uint64_t allocation) {
+    id<MTLBuffer> buffer = [m->device newBufferWithLength:(NSUInteger)allocation options:MTLResourceStorageModeShared];
+    if (!buffer) return nil;
+    residency_add(m, buffer);
+    id<MTLCommandBuffer> command = [m->queue commandBuffer];
+    id<MTLComputeCommandEncoder> e = [command computeCommandEncoder];
+    uint32_t values = (uint32_t)(bytes / 2);
+    if (!command || !e) { problem(m, "cannot create proposal quantization command"); goto fail; }
+    [e setComputePipelineState:m->quantize4];
+    [e setBuffer:m->staging offset:0 atIndex:0]; [e setBuffer:buffer offset:0 atIndex:1];
+    [e setBytes:&values length:sizeof values atIndex:2];
+    [e dispatchThreadgroups:MTLSizeMake((values + 31) / 32, 1, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+    ++m->info.dispatches;
+    if (complete(m, command, e)) return buffer;
+fail:
+    residency_remove(m, buffer); residency_commit(m); [buffer release]; return nil;
+}
+
 static int prepare_buffer(struct plamo_metal *m, id<MTLBuffer> buffer) {
     @autoreleasepool {
         struct entry *entry = NULL;
@@ -423,7 +487,7 @@ int plamo_metal_warm_cache(struct plamo_metal *m) {
     return 1;
 }
 
-static int resident_projection(struct plamo_metal *, const uint16_t *, uint64_t, uint64_t, struct projection *);
+static int resolve_projection(struct plamo_metal *, const uint16_t *, uint64_t, uint64_t, struct projection *, int);
 static void encode_projection(struct plamo_metal *, id<MTLComputeCommandEncoder>, const struct projection *,
                                id<MTLBuffer>, uint64_t, id<MTLBuffer>, uint64_t, uint64_t, uint64_t);
 
@@ -442,7 +506,7 @@ int plamo_metal_linear(struct plamo_metal *m, const struct plamo_matmul *p) {
         int whole = p->rows * p->columns * 2 > m->staging_bytes;
         if (whole) {
             if (m->config.memory == PLAMO_METAL_AUTO && now() - m->checked_at >= 0.25) plamo_metal_maintain(m);
-            if (!resident_projection(m, p->weights, p->rows, p->columns, &projection)) {
+            if (!resolve_projection(m, p->weights, p->rows, p->columns, &projection, 0)) {
                 uint64_t window = m->staging_bytes / (p->columns * 2);
                 if (window >= 8) window = window / 8 * 8;
                 if (!window) return 0;
@@ -480,10 +544,11 @@ int plamo_metal_linear(struct plamo_metal *m, const struct plamo_matmul *p) {
     }
 }
 
-// Preflight without I/O, allocation or eviction: a fused command must never
-// refer to the reusable staging buffer or to an entry removed mid-command.
-static int resident_projection(struct plamo_metal *m, const uint16_t *w, uint64_t rows,
-                                uint64_t columns, struct projection *out) {
+// Resolve the complete graph before changing model state. Uncached file views
+// live in the enclosing autorelease pool until its GPU command is complete.
+// Never refer to staging or evict a retained entry during command encoding.
+static int resolve_projection(struct plamo_metal *m, const uint16_t *w, uint64_t rows,
+                               uint64_t columns, struct projection *out, int mapped) {
     uint64_t row_bytes = columns * 2, window = m->staging_bytes / row_bytes;
     if (window >= 8) window = window / 8 * 8;
     if (!window) return 0;
@@ -501,8 +566,47 @@ static int resident_projection(struct plamo_metal *m, const uint16_t *w, uint64_
                 found = e; break;
             }
         }
-        if (!found) return 0;
-        out->tiles[out->count++] = (struct tile){found, address - found->source, first, count};
+        if (found) {
+            out->tiles[out->count++] = (struct tile){found->buffer, address - found->source, first, count, 0, found->packed, NULL};
+        } else {
+            if (!mapped || !m->use_packing) return 0;
+            uint64_t stored = 0;
+            const void *data = plamo_disk_cache_get(m->disk_cache, (const void *)address, count * row_bytes, 1, &stored);
+            if (!data || stored > m->staging_bytes) return 0;
+            out->tiles[out->count++] = (struct tile){nil, 0, first, count, stored, 1, data};
+        }
+    }
+    return 1;
+}
+
+static int prepare_graph(struct plamo_metal *m) {
+    struct projection *projections[4 * 128 + 1];
+    size_t count = 0;
+    for (size_t i = 0; i < m->layer_count; ++i) {
+        struct decode_layer *d = &m->layers[i];
+        projections[count++] = &d->qkv; projections[count++] = &d->attention;
+        projections[count++] = &d->gate; projections[count++] = &d->down;
+    }
+    projections[count++] = &m->head;
+    // Check the whole file-backed working set before creating any views. A
+    // model larger than the device recommendation keeps the row-wise path.
+    uint64_t limit = m->device.recommendedMaxWorkingSetSize;
+    if (limit > 128 * MIB) limit -= 128 * MIB;
+    uint64_t bytes = m->used + m->staging_bytes;
+    for (size_t i = 0; i < count; ++i) {
+        struct projection *p = projections[i];
+        for (size_t j = 0; j < p->count; ++j) {
+            uint64_t n = p->tiles[j].mapped_bytes;
+            if (n && (bytes > limit || n > limit - bytes)) return 0;
+            bytes += n;
+        }
+    }
+    for (size_t i = 0; i < count; ++i) {
+        struct projection *p = projections[i];
+        for (size_t j = 0; j < p->count; ++j) {
+            struct tile *t = &p->tiles[j];
+            if (t->mapped_data && !(t->buffer = mapped_weights(m, t->mapped_data, t->mapped_bytes))) return 0;
+        }
     }
     return 1;
 }
@@ -512,9 +616,18 @@ static void encode_projection(struct plamo_metal *m, id<MTLComputeCommandEncoder
                                uint64_t columns, uint64_t tokens) {
     for (size_t i = 0; i < p->count; ++i) {
         const struct tile *t = &p->tiles[i];
-        encode_linear(m, encoder, t->entry->buffer, t->offset, t->entry->packed, x, xs, y, t->first * 4, ys, t->rows, columns, tokens);
-        ++m->info.cache.hits;
-        m->info.cache.hit_bytes += t->rows * columns * 2;
+        encode_linear(m, encoder, t->buffer, t->offset, t->packed, x, xs, y, t->first * 4, ys, t->rows, columns, tokens);
+        uint64_t bytes = t->rows * columns * 2;
+        if (t->mapped_bytes) {
+            ++m->info.cache.misses;
+            ++m->info.disk_cache_hits;
+            m->info.disk_cache_weight_bytes += bytes;
+            m->info.disk_cache_storage_bytes += t->mapped_bytes;
+            m->info.disk_cache_mapped_bytes += t->mapped_bytes;
+        } else {
+            ++m->info.cache.hits;
+            m->info.cache.hit_bytes += bytes;
+        }
     }
 }
 
@@ -543,17 +656,25 @@ static int cache_view(struct plamo_metal *m, struct view *v, void *source, uint6
     if (bytes > UINT64_MAX - offset - page) return 0;
     uint64_t length = (bytes + offset + page - 1) / page * page;
     if (length > m->device.maxBufferLength) return 0;
-    mach_vm_address_t base = address - offset, region = base;
-    mach_vm_size_t region_size = 0;
-    vm_region_basic_info_data_64_t info;
-    mach_msg_type_number_t count = VM_REGION_BASIC_INFO_COUNT_64;
-    mach_port_t object = MACH_PORT_NULL;
-    kern_return_t status = mach_vm_region(mach_task_self(), &region, &region_size, VM_REGION_BASIC_INFO_64,
-                                         (vm_region_info_t)&info, &count, &object);
-    if (object != MACH_PORT_NULL) mach_port_deallocate(mach_task_self(), object);
-    if (status != KERN_SUCCESS || region > base || base - region > region_size ||
-        length > region_size - (base - region) ||
-        (info.protection & (VM_PROT_READ | VM_PROT_WRITE)) != (VM_PROT_READ | VM_PROT_WRITE)) return 0;
+    mach_vm_address_t base = address - offset;
+    if (base > UINT64_MAX - length) return 0;
+    // Sharing/touching a prefix may split one anonymous arena into adjacent
+    // VM regions. Validate every covered region, rather than requiring the
+    // larger view to fit the first region left by an earlier shorter view.
+    for (mach_vm_address_t cursor = base; cursor < base + length;) {
+        mach_vm_address_t region = cursor;
+        mach_vm_size_t region_size = 0;
+        vm_region_basic_info_data_64_t info;
+        mach_msg_type_number_t count = VM_REGION_BASIC_INFO_COUNT_64;
+        mach_port_t object = MACH_PORT_NULL;
+        kern_return_t status = mach_vm_region(mach_task_self(), &region, &region_size, VM_REGION_BASIC_INFO_64,
+                                             (vm_region_info_t)&info, &count, &object);
+        if (object != MACH_PORT_NULL) mach_port_deallocate(mach_task_self(), object);
+        if (status != KERN_SUCCESS || region > cursor || region_size > UINT64_MAX - region ||
+            region + region_size <= cursor ||
+            (info.protection & (VM_PROT_READ | VM_PROT_WRITE)) != (VM_PROT_READ | VM_PROT_WRITE)) return 0;
+        cursor = region + region_size;
+    }
     id<MTLBuffer> replacement = [m->device newBufferWithBytesNoCopy:(void *)base length:(NSUInteger)length
                                                           options:MTLResourceStorageModeShared deallocator:nil];
     if (!replacement) return 0;
@@ -565,8 +686,11 @@ static int cache_view(struct plamo_metal *m, struct view *v, void *source, uint6
 }
 
 static void release_decode(struct plamo_metal *m) {
+    m->verification_tokens = 0;
     for (uint64_t i = 0; i < m->layer_count; ++i) {
         release_view(m, &m->layers[i].k); release_view(m, &m->layers[i].v); release_view(m, &m->layers[i].rotated);
+        residency_remove(m, m->layers[i].proposal); [m->layers[i].proposal release];
+        residency_remove(m, m->layers[i].proposal_rotated); [m->layers[i].proposal_rotated release];
     }
     for (uint64_t i = 0; i < m->rope_count; ++i) {
         residency_remove(m, m->ropes[i].buffer); [m->ropes[i].buffer release];
@@ -695,6 +819,7 @@ static void encode_residual(struct plamo_metal *m, id<MTLComputeCommandEncoder> 
 }
 
 int plamo_metal_forward(struct plamo_metal *m, struct model *model, uint64_t token) {
+    m->verification_tokens = 0;
     if (token >= model->vocab) return -1;
     if (m->config.memory == PLAMO_METAL_STREAM) return 0;
     @autoreleasepool {
@@ -709,10 +834,10 @@ int plamo_metal_forward(struct plamo_metal *m, struct model *model, uint64_t tok
             const struct cache *c = l->mixer->cache;
             struct decode_layer *d = &m->layers[i];
             if (c->count > c->capacity || (c->count == c->capacity && !c->sliding)) return -1;
-            if (!resident_projection(m, q->weight, (q->qh + 2 * q->kh) * q->dim, h, &d->qkv) ||
-                !resident_projection(m, l->mixer->weight, h, q->qh * q->dim, &d->attention) ||
-                !resident_projection(m, l->mlp->gu, l->mlp->intermediate * 2, h, &d->gate) ||
-                !resident_projection(m, l->mlp->down, h, l->mlp->intermediate, &d->down)) return 0;
+            if (!resolve_projection(m, q->weight, (q->qh + 2 * q->kh) * q->dim, h, &d->qkv, 1) ||
+                !resolve_projection(m, l->mixer->weight, h, q->qh * q->dim, &d->attention, 1) ||
+                !resolve_projection(m, l->mlp->gu, l->mlp->intermediate * 2, h, &d->gate, 1) ||
+                !resolve_projection(m, l->mlp->down, h, l->mlp->intermediate, &d->down, 1)) return 0;
             uint64_t n = c->count < c->capacity ? c->count + 1 : c->capacity;
             if (n * q->qh > scores) scores = n * q->qh;
             if (!prepare_rope(m, &m->ropes[d->rope], n) ||
@@ -720,7 +845,8 @@ int plamo_metal_forward(struct plamo_metal *m, struct model *model, uint64_t tok
                 !cache_view(m, &d->v, c->v, n, c->width, c->capacity) ||
                 !cache_view(m, &d->rotated, l->mixer->rotation->out, n, c->width, c->capacity)) return -1;
         }
-        if (!resident_projection(m, model->head, model->vocab, h, &m->head)) return 0;
+        if (!resolve_projection(m, model->head, model->vocab, h, &m->head, 1)) return 0;
+        if (!prepare_graph(m)) return 0;
         if (!ensure_buffer(m, &m->scores, scores * 4)) return -1;
         // A previous batched prefill can have resized these reusable buffers;
         // using a prefix is safe. Embedding expansion preserves every BF16 bit.
@@ -802,16 +928,17 @@ int plamo_metal_forward(struct plamo_metal *m, struct model *model, uint64_t tok
     }
 }
 
-int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32_t *ids,
-                         uint64_t tokens, float *states) {
-    if (!model || !ids || !states || !tokens) return -1;
+static int prefill_batch(struct plamo_metal *m, struct model *model, const uint32_t *ids,
+                         uint64_t tokens, float *states, int verification) {
+    m->verification_tokens = 0;
+    if (!model || !ids || (!states && !verification) || !tokens) return -1;
     if (m->config.memory == PLAMO_METAL_STREAM || tokens > 4096) return 0;
     for (uint64_t t = 0; t < tokens; ++t) if (ids[t] >= model->vocab) return -1;
     @autoreleasepool {
         plamo_metal_maintain(m);
         if (!plamo_metal_prepare_model(m, model)) return -1;
         uint64_t h = model->hidden, qkv = 0, attention = 0, gate = 0, score_row = 0;
-        // Resolve every retained tile before any state/KV change. Maintenance
+        // Resolve every retained or file-backed tile before state/KV changes. Maintenance
         // cannot evict a projection while this single command is encoded.
         for (uint64_t i = 0; i < model->count; ++i) {
             const struct layer *l = model->layers[i];
@@ -820,10 +947,10 @@ int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32
             struct decode_layer *d = &m->layers[i];
             if (c->count > c->capacity || (!c->sliding && tokens > c->capacity - c->count)) return -1;
             if (c->count > UINT32_MAX - tokens) return 0;
-            if (!resident_projection(m, q->weight, (q->qh + 2 * q->kh) * q->dim, h, &d->qkv) ||
-                !resident_projection(m, l->mixer->weight, h, q->qh * q->dim, &d->attention) ||
-                !resident_projection(m, l->mlp->gu, l->mlp->intermediate * 2, h, &d->gate) ||
-                !resident_projection(m, l->mlp->down, h, l->mlp->intermediate, &d->down)) return 0;
+            if (!resolve_projection(m, q->weight, (q->qh + 2 * q->kh) * q->dim, h, &d->qkv, 1) ||
+                !resolve_projection(m, l->mixer->weight, h, q->qh * q->dim, &d->attention, 1) ||
+                !resolve_projection(m, l->mlp->gu, l->mlp->intermediate * 2, h, &d->gate, 1) ||
+                !resolve_projection(m, l->mlp->down, h, l->mlp->intermediate, &d->down, 1)) return 0;
             uint64_t count = c->count + tokens;
             if (count > c->capacity) count = c->capacity;
             if (count * q->qh > score_row) score_row = count * q->qh;
@@ -832,11 +959,17 @@ int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32
                 !cache_view(m, &d->v, c->v, count, c->width, c->capacity) ||
                 !cache_view(m, &d->rotated, l->mixer->rotation->out, count, c->width, c->capacity)) return -1;
             uint64_t width = (q->qh + 2 * q->kh) * q->dim;
+            if (verification) {
+                if (!ensure_buffer(m, &d->proposal, tokens * width * 4) ||
+                    !ensure_buffer(m, &d->proposal_rotated, tokens * c->width * 4)) return -1;
+                d->verify_prefix = c->count;
+            }
             if (width > qkv) qkv = width;
             if (q->qh * q->dim > attention) attention = q->qh * q->dim;
             if (2 * l->mlp->intermediate > gate) gate = 2 * l->mlp->intermediate;
         }
-        if (!resident_projection(m, model->head, model->vocab, h, &m->head)) return 0;
+        if (!resolve_projection(m, model->head, model->vocab, h, &m->head, 1)) return 0;
+        if (!prepare_graph(m)) return 0;
         // Cap attention scratch at 16 MiB (or a single score row for a larger
         // native context). Dispatches reuse it in query tiles, without waits.
         if (score_row > m->device.maxBufferLength / 4) return 0;
@@ -849,7 +982,8 @@ int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32
             !ensure_buffer(m, &m->gate, tokens * gate * 4) ||
             !ensure_buffer(m, &m->qkv, tokens * qkv * 4) ||
             !ensure_buffer(m, &m->attention, tokens * attention * 4) ||
-            !ensure_buffer(m, &m->scores, queries * score_row * 4)) return -1;
+            !ensure_buffer(m, &m->scores, queries * score_row * 4) ||
+            !ensure_buffer(m, &m->logits, (verification ? tokens : 1) * model->vocab * 4)) return -1;
         uint32_t *state = m->state.contents;
         for (uint64_t t = 0; t < tokens; ++t)
             for (uint64_t col = 0; col < h; ++col)
@@ -857,6 +991,7 @@ int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32
         id<MTLCommandBuffer> command = [m->queue commandBuffer];
         id<MTLComputeCommandEncoder> e = [command computeCommandEncoder];
         if (!command || !e) { problem(m, "cannot create complete Metal prefill command"); return -1; }
+        m->verify_encoding = verification;
         for (uint64_t i = 0; i < model->count; ++i) {
             const struct layer *l = model->layers[i];
             const struct qkv *q = l->mixer->qkv;
@@ -865,11 +1000,12 @@ int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32
             const struct mlp *mlp = l->mlp;
             const struct decode_layer *d = &m->layers[i];
             id<MTLBuffer> table = m->ropes[d->rope].buffer;
+            id<MTLBuffer> qkv_buffer = verification ? d->proposal : m->qkv;
             uint32_t p[] = {(uint32_t)q->qh, (uint32_t)q->kh, (uint32_t)q->dim, (uint32_t)c->count,
-                            (uint32_t)tokens, (uint32_t)c->capacity, 0};
+                            (uint32_t)tokens, (uint32_t)c->capacity, 0, (uint32_t)verification};
             encode_norm(m, e, d->pre, h, tokens, 0);
-            encode_projection(m, e, &d->qkv, m->normalized, h, m->qkv, (q->qh + 2 * q->kh) * q->dim, h, tokens);
-            if (c->count && c->count + tokens <= c->capacity &&
+            encode_projection(m, e, &d->qkv, m->normalized, h, qkv_buffer, (q->qh + 2 * q->kh) * q->dim, h, tokens);
+            if (c->count && (verification || c->count + tokens <= c->capacity) &&
                 (r->processed_count != c->count || r->scale_bits != m->ropes[d->rope].scale)) {
                 uint32_t dp[] = {p[0], p[1], p[2], p[3] + 1}, shift = 0;
                 [e setComputePipelineState:m->decode_keys];
@@ -883,18 +1019,18 @@ int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32
                 ++m->info.dispatches;
             }
             [e setComputePipelineState:m->prefill_qkv];
-            [e setBuffer:m->qkv offset:0 atIndex:0];
+            [e setBuffer:qkv_buffer offset:0 atIndex:0];
             [e setBuffer:m->decode_norms offset:d->qn atIndex:1];
             [e setBuffer:m->decode_norms offset:d->kn atIndex:2];
             [e setBuffer:d->k.buffer offset:d->k.offset atIndex:3];
             [e setBuffer:d->v.buffer offset:d->v.offset atIndex:4];
-            [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:5];
+            [e setBuffer:verification ? d->proposal_rotated : d->rotated.buffer offset:verification ? 0 : d->rotated.offset atIndex:5];
             [e setBuffer:table offset:0 atIndex:6];
             [e setBytes:p length:sizeof p atIndex:7];
             [e dispatchThreadgroups:MTLSizeMake(q->qh + q->kh, tokens, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
             ++m->info.dispatches;
             [e setComputePipelineState:m->prefill_attention];
-            [e setBuffer:m->qkv offset:0 atIndex:0];
+            [e setBuffer:qkv_buffer offset:0 atIndex:0];
             [e setBuffer:d->k.buffer offset:d->k.offset atIndex:1];
             [e setBuffer:d->v.buffer offset:d->v.offset atIndex:2];
             [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:3];
@@ -909,9 +1045,9 @@ int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32
                 [e dispatchThreadgroups:MTLSizeMake(q->qh, count, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
                 ++m->info.dispatches;
             }
-            if (c->count + tokens > c->capacity) {
+            if (!verification && c->count + tokens > c->capacity) {
                 [e setComputePipelineState:m->prefill_store];
-                [e setBuffer:m->qkv offset:0 atIndex:0];
+                [e setBuffer:qkv_buffer offset:0 atIndex:0];
                 [e setBuffer:d->k.buffer offset:d->k.offset atIndex:1];
                 [e setBuffer:d->v.buffer offset:d->v.offset atIndex:2];
                 [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:3];
@@ -933,9 +1069,18 @@ int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32
             encode_projection(m, e, &d->down, m->gate, 2 * mlp->intermediate, m->branch, h, mlp->intermediate, tokens);
             encode_residual(m, e, d->mlp_post, h, tokens, 1);
         }
-        encode_norm(m, e, m->final_norm, h, 1, (tokens - 1) * h * 4);
-        encode_projection(m, e, &m->head, m->normalized, h, m->logits, model->vocab, h, 1);
-        if (!complete(m, command, e)) return -1;
+        encode_norm(m, e, m->final_norm, h, verification ? tokens : 1, verification ? 0 : (tokens - 1) * h * 4);
+        encode_projection(m, e, &m->head, m->normalized, h, m->logits, model->vocab, h, verification ? tokens : 1);
+        int completed = complete(m, command, e);
+        m->verify_encoding = 0;
+        if (!completed) return -1;
+        if (verification) {
+            m->verification_tokens = tokens;
+            m->verification_index = 0;
+            ++m->info.verification_batches;
+            m->info.verified_tokens += tokens;
+            return 1;
+        }
         memcpy(states, m->state.contents, (size_t)(tokens * h * 4));
         memcpy(model->state, (float *)m->state.contents + (tokens - 1) * h, (size_t)(h * 4));
         memcpy(model->normalized, m->normalized.contents, (size_t)(h * 4));
@@ -953,7 +1098,89 @@ int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32
     }
 }
 
+int plamo_metal_prefill(struct plamo_metal *m, struct model *model, const uint32_t *ids,
+                       uint64_t tokens, float *states) {
+    return prefill_batch(m, model, ids, tokens, states, 0);
+}
+
+int plamo_metal_verify(struct plamo_metal *m, struct model *model, const uint32_t *ids,
+                      uint64_t tokens, uint32_t *next) {
+    if (!next || !tokens || tokens > PLAMO_VERIFY_MAX) return 0;
+    int result = prefill_batch(m, model, ids, tokens, NULL, 1);
+    if (result == 1) {
+        const float *logits = m->logits.contents;
+        for (uint64_t i = 0; i < tokens; ++i) next[i] = (uint32_t)plamo_argmax(logits + i * model->vocab, model->vocab);
+    }
+    return result;
+}
+
+int plamo_metal_commit(struct plamo_metal *m, struct model *model, uint64_t index) {
+    if (m->model != model || index != m->verification_index || index >= m->verification_tokens) return 0;
+    int full = 0;
+    for (uint64_t i = 0; i < model->count; ++i) {
+        const struct cache *c = model->layers[i]->mixer->cache;
+        uint64_t count = m->layers[i].verify_prefix + index;
+        if (count > c->capacity) count = c->capacity;
+        if (c->count != count) return 0;
+        if (c->count == c->capacity) {
+            if (!c->sliding) return 0;
+            full = 1;
+        }
+    }
+    @autoreleasepool {
+        // Rebase full sliding windows on the GPU. Ordinary appends only copy
+        // values and precomputed rotations; they introduce no new arithmetic.
+        if (full) {
+            id<MTLCommandBuffer> command = [m->queue commandBuffer];
+            id<MTLComputeCommandEncoder> e = [command computeCommandEncoder];
+            if (!command || !e) { problem(m, "cannot commit verified KV"); return -1; }
+            for (uint64_t i = 0; i < model->count; ++i) {
+                const struct mixer *mix = model->layers[i]->mixer;
+                const struct qkv *q = mix->qkv; const struct cache *c = mix->cache;
+                const struct decode_layer *d = &m->layers[i];
+                if (c->count != c->capacity) continue;
+                uint32_t p[] = {(uint32_t)q->qh, (uint32_t)q->kh, (uint32_t)q->dim,
+                    (uint32_t)c->count, 1, (uint32_t)c->capacity, 0, 0};
+                uint64_t width = (q->qh + 2 * q->kh) * q->dim;
+                [e setComputePipelineState:m->prefill_store];
+                [e setBuffer:d->proposal offset:(NSUInteger)(index * width * 4) atIndex:0];
+                [e setBuffer:d->k.buffer offset:d->k.offset atIndex:1];
+                [e setBuffer:d->v.buffer offset:d->v.offset atIndex:2];
+                [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:3];
+                [e setBuffer:m->ropes[d->rope].buffer offset:0 atIndex:4];
+                [e setBytes:p length:sizeof p atIndex:5];
+                [e dispatchThreadgroups:MTLSizeMake((c->width / 2 + 127) / 128, 1, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+                ++m->info.dispatches;
+            }
+            if (!complete(m, command, e)) return -1;
+        }
+        for (uint64_t i = 0; i < model->count; ++i) {
+            struct mixer *mix = model->layers[i]->mixer;
+            const struct qkv *q = mix->qkv; struct cache *c = mix->cache;
+            const struct decode_layer *d = &m->layers[i];
+            if (c->count < c->capacity) {
+                uint64_t width = (q->qh + 2 * q->kh) * q->dim;
+                const float *values = (const float *)d->proposal.contents + index * width;
+                memcpy(c->k + c->count * c->width, values + q->qh * q->dim, (size_t)c->width * 4);
+                memcpy(c->v + c->count * c->width, values + (q->qh + q->kh) * q->dim, (size_t)c->width * 4);
+                memcpy(mix->rotation->out + c->count * c->width,
+                       (const float *)d->proposal_rotated.contents + index * c->width, (size_t)c->width * 4);
+                ++c->count;
+            }
+            mix->rotation->processed_count = c->count;
+            mix->rotation->scale_bits = m->ropes[d->rope].scale;
+        }
+        memcpy(model->state, (const float *)m->state.contents + index * model->hidden, (size_t)model->hidden * 4);
+        memcpy(model->normalized, (const float *)m->normalized.contents + index * model->hidden, (size_t)model->hidden * 4);
+        memcpy(model->logits, (const float *)m->logits.contents + index * model->vocab, (size_t)model->vocab * 4);
+        ++m->verification_index;
+        ++m->info.committed_tokens;
+        return 1;
+    }
+}
+
 int plamo_metal_mlp(struct plamo_metal *m, const struct mlp *p, float *states, uint64_t tokens) {
+    m->verification_tokens = 0;
     if (!tokens) return 1;
     uint64_t h = p->hidden, n = p->intermediate;
     uint64_t norm_stride = (h * 2 + 15) & ~UINT64_C(15);
@@ -962,8 +1189,8 @@ int plamo_metal_mlp(struct plamo_metal *m, const struct mlp *p, float *states, u
     @autoreleasepool {
         if (m->config.memory == PLAMO_METAL_AUTO && now() - m->checked_at >= 0.25) plamo_metal_maintain(m);
         struct projection gate, down;
-        if (!resident_projection(m, p->gu, 2 * n, h, &gate) ||
-            !resident_projection(m, p->down, h, n, &down)) return 0;
+        if (!resolve_projection(m, p->gu, 2 * n, h, &gate, 0) ||
+            !resolve_projection(m, p->down, h, n, &down, 0)) return 0;
         if (!ensure_buffer(m, &m->state, tokens * h * 4) ||
             !ensure_buffer(m, &m->normalized, tokens * h * 4) ||
             !ensure_buffer(m, &m->gate, tokens * n * 8) ||
@@ -1049,13 +1276,14 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
     @autoreleasepool {
         if (!config || !config->available || config->count > PLAMO_MAX_WEIGHT_FILES ||
             (unsigned)config->memory > PLAMO_METAL_STREAM || config->precision != PLAMO_METAL_FP32 ||
-            (unsigned)config->packing > PLAMO_PACK_LOSSLESS ||
+            (unsigned)config->packing > PLAMO_PACK_DRAFT_Q4 ||
             plamo_compute_context || plamo_weight_provider) {
             snprintf(error, cap, "invalid Metal configuration or an existing compute owner"); return NULL;
         }
         struct plamo_metal *m = calloc(1, sizeof *m);
         if (!m) { snprintf(error, cap, "cannot allocate Metal state"); return NULL; }
         m->config = *config;
+        m->draft_quantized = config->packing == PLAMO_PACK_DRAFT_Q4 && config->memory != PLAMO_METAL_STREAM;
         m->device = MTLCreateSystemDefaultDevice();
         if (!m->device || !m->device.hasUnifiedMemory || ![m->device supportsFamily:MTLGPUFamilyApple7]) {
             snprintf(error, cap, "Metal requires an available Apple Silicon GPU"); goto fail;
@@ -1080,14 +1308,15 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
         [options release];
         if (!library) { snprintf(error, cap, "Metal shader compilation failed: %s", failure.localizedDescription.UTF8String); goto fail; }
         id<MTLFunction> fn;
-        for (unsigned packed = 0; packed < 2; ++packed) {
-            fn = [library newFunctionWithName:packed ? @"plamo_matvec_packed" : @"plamo_matvec"];
+        for (unsigned packed = 0; packed < (m->draft_quantized ? 3u : 2u); ++packed) {
+            NSString *suffix = packed == 2 ? @"_q4" : packed ? @"_packed" : @"";
+            fn = [library newFunctionWithName:[@"plamo_matvec" stringByAppendingString:suffix]];
             m->matvec[packed] = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
-            fn = [library newFunctionWithName:packed ? @"plamo_matmul_vector_packed" : @"plamo_matmul_vector"];
+            fn = [library newFunctionWithName:[@"plamo_matmul_vector" stringByAppendingString:suffix]];
             m->vector[packed] = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
             NSString *names[] = {@"plamo_matmul8", @"plamo_matmul16", @"plamo_matmul_short", @"plamo_matmul"};
             for (unsigned n = 0; n < 4; ++n) {
-                fn = [library newFunctionWithName:packed ? [names[n] stringByAppendingString:@"_packed"] : names[n]];
+                fn = [library newFunctionWithName:[names[n] stringByAppendingString:suffix]];
                 m->matmul[packed][n] = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
             }
         }
@@ -1109,6 +1338,10 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
         fn = [library newFunctionWithName:@"plamo_pack_encode"];
         m->pack = [m->device newComputePipelineStateWithFunction:fn error:&failure];
         [fn release];
+        if (m->draft_quantized) {
+            fn = [library newFunctionWithName:@"plamo_draft_quantize4"];
+            m->quantize4 = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+        }
         fn = [library newFunctionWithName:@"plamo_decode_keys"];
         m->decode_keys = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
         fn = [library newFunctionWithName:@"plamo_decode_qkv"];
@@ -1125,10 +1358,10 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
         m->prefill_store = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
         [library release];
         m->queue = [m->device newCommandQueue];
-        int pipelines = m->norm && m->swiglu && m->residual && m->touch && m->analyze && m->pack && m->queue &&
+        int pipelines = (!m->draft_quantized || m->quantize4) && m->norm && m->swiglu && m->residual && m->touch && m->analyze && m->pack && m->queue &&
                         m->decode_keys && m->decode_qkv && m->decode_attention && m->decode_residual &&
                         m->prefill_qkv && m->prefill_attention && m->prefill_store;
-        for (unsigned packed = 0; packed < 2; ++packed) {
+        for (unsigned packed = 0; packed < (m->draft_quantized ? 3u : 2u); ++packed) {
             pipelines = pipelines && m->matvec[packed] && m->vector[packed] &&
                 m->matvec[packed].threadExecutionWidth == 32 && m->vector[packed].threadExecutionWidth == 32 &&
                 m->matvec[packed].maxTotalThreadsPerThreadgroup >= 128 && m->vector[packed].maxTotalThreadsPerThreadgroup >= 128;
@@ -1167,7 +1400,7 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
             (config->packing == PLAMO_PACK_LOSSLESS ||
              (config->packing == PLAMO_PACK_AUTO && working > m->capacity - m->staging_bytes));
         if (config->memory == PLAMO_METAL_RESIDENT &&
-            ((!m->use_packing && total > spare) || (m->use_packing && total / 2 > m->capacity - m->staging_bytes))) {
+            ((!m->use_packing && !m->draft_quantized && total > spare) || (m->use_packing && total / 2 > m->capacity - m->staging_bytes))) {
             snprintf(error, cap, "Metal BF16 preload requires weights plus the memory reserve"); goto fail;
         }
         m->staging = [m->device newBufferWithLength:(NSUInteger)m->staging_bytes options:MTLResourceStorageModeShared];
@@ -1186,9 +1419,10 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
             m->info.residency_sets = 1;
         }
 #endif
-        if (config->disk_cache_path && config->memory != PLAMO_METAL_STREAM) {
+        if (config->disk_cache_path && config->memory != PLAMO_METAL_STREAM && !m->draft_quantized) {
             m->disk_cache = plamo_disk_cache_open(config->disk_cache_path, config->revision, config->maps,
                                                 config->count, m->info.note, sizeof m->info.note);
+            if (config->packing == PLAMO_PACK_AUTO && plamo_disk_cache_packed(m->disk_cache)) m->use_packing = 1;
         }
         m->config.disk_cache_path = NULL; // The path is borrowed only during open.
         for (size_t i = 0; i < config->count; ++i) (void)fcntl((int)config->fds[i], F_NOCACHE, 1);
@@ -1218,7 +1452,7 @@ void plamo_metal_get_info(const struct plamo_metal *m, struct plamo_metal_info *
     out->cache.max_budget_bytes = m->maximum;
     out->cache.staging_bytes = m->staging_bytes;
     out->cache.storage_bytes = m->used;
-    snprintf(out->weight_storage, sizeof out->weight_storage, "%s", m->info.packed_weight_bytes ? "lossless-bf16" : "bf16");
+    snprintf(out->weight_storage, sizeof out->weight_storage, "%s", m->draft_quantized ? "q4-draft" : m->info.packed_weight_bytes || m->info.disk_cache_mapped_bytes ? "lossless-bf16" : "bf16");
     out->allocated_bytes = m->device.currentAllocatedSize;
     out->recommended_working_set_bytes = m->device.recommendedMaxWorkingSetSize;
 }
@@ -1232,6 +1466,7 @@ void plamo_metal_close(struct plamo_metal *m) {
         plamo_weight_provider = NULL; plamo_weight_context = NULL; plamo_weight_chunk_bytes = 0;
     }
     release_decode(m);
+    release_mappings(m);
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
     if (@available(macOS 15.0, *)) {
         if (m->residency) {
@@ -1245,13 +1480,13 @@ void plamo_metal_close(struct plamo_metal *m) {
     for (size_t i = 0; i < m->entries; ++i) [m->table[i].buffer release];
     [m->staging release]; [m->input release]; [m->output release];
     [m->state release]; [m->normalized release]; [m->gate release]; [m->branch release]; [m->norms release];
-    for (unsigned packed = 0; packed < 2; ++packed) {
+    for (unsigned packed = 0; packed < (m->draft_quantized ? 3u : 2u); ++packed) {
         [m->matvec[packed] release]; [m->vector[packed] release];
         for (unsigned n = 0; n < 4; ++n) [m->matmul[packed][n] release];
     }
     [m->norm release]; [m->swiglu release]; [m->residual release];
     [m->touch release];
-    [m->pack_headers release]; [m->analyze release]; [m->pack release];
+    [m->pack_headers release]; [m->analyze release]; [m->pack release]; [m->quantize4 release];
     [m->decode_keys release]; [m->decode_qkv release]; [m->decode_attention release]; [m->decode_residual release];
     [m->prefill_qkv release]; [m->prefill_attention release]; [m->prefill_store release];
     [m->decode_norms release]; [m->qkv release]; [m->attention release]; [m->scores release]; [m->logits release];

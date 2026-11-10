@@ -1,6 +1,6 @@
 # 常駐翻訳API
 
-モデルと語彙を一度読み込んだワーカーを維持し、複数リクエストで再利用します。重み・モデル構造・greedy生成は変更していません。リクエスト間ではKVキャッシュの件数とRoPEの状態をリセットし、前の文章を次へ持ち越しません。
+モデルと語彙を一度読み込んだワーカーを維持し、複数リクエストで再利用します。翻訳を決定する本体の重み・モデル構造・greedy生成は変更していません。リクエスト間ではKVキャッシュの件数とRoPEの状態をリセットし、前の文章を次へ持ち越しません。
 
 ## 起動
 
@@ -10,7 +10,7 @@
 nix run github:SuzumiyaAoba/plamo-3-translate.c#serve -- --model 2b --memory auto --port 8000
 ```
 
-初回の取得は `nix run github:SuzumiyaAoba/plamo-3-translate.c#download-model -- --model 2b --weights` です。`--model`には`0.8b`・`2b`・`8b`・`31b`を指定できます。省略時は`PLAMO_MODEL`または8Bです。1サーバーにつき1モデルを保持し、変更時は再起動します。データ保存先はCLIと同じ `PLAMO_DATA_DIR` を使います。開発時の `./models/plamo` を利用する場合:
+初回の取得は `nix run github:SuzumiyaAoba/plamo-3-translate.c#download-model -- --model 2b --weights` です。`--model`には`0.8b`・`2b`・`8b`・`31b`を指定できます。省略時は`PLAMO_MODEL`または8Bです。1サーバーにつき1つの翻訳モデルを保持し、変更時は再起動します。8Bの候補作成には補助0.8Bワーカーが加わる場合があります。データ保存先はCLIと同じ `PLAMO_DATA_DIR` を使います。開発時の `./models/plamo` を利用する場合:
 
 ```sh
 PLAMO_DATA_DIR="$PWD" nix run .#serve -- --memory auto
@@ -37,7 +37,11 @@ curl http://127.0.0.1:8000/health
 python3 tools/server.py --backend metal --memory auto
 ```
 
-すべての経路で活性値・演算・累積はFP32です。元BF16重みのFP32への展開は正確で、FP16への丸めや追加の量子化はありません。加算順序が異なるためGPUのハッシュはCPU基準と一致しません。元BF16の共有メモリ保持、精度、検証範囲は[Metalバックエンド](METAL.md)を参照してください。
+翻訳本体はすべての経路で活性値・演算・累積がFP32です。元BF16重みのFP32への展開は正確で、FP16への丸めや追加の量子化はありません。加算順序が異なるためGPUのハッシュはCPU基準と一致しません。元BF16の共有メモリ保持、精度、検証範囲は[Metalバックエンド](METAL.md)を参照してください。
+
+8BのMetal生成は、0.8Bのワーカーと重みがあれば、候補作成と8Bの一括検証を自動で使います。`plamo-download --model 0.8b --weights`で補助重みを用意できます。補助モデルだけはQ4で保持し、確定するトークンは元の8BがBF16重み・FP32演算で検証します。通常の逐次生成とはFP32の丸め差があります。`/health.speculative.enabled`・`block_tokens`で有効状態を確認でき、`PLAMO_SPECULATIVE=0`で無効化できます。補助モデルが利用できない場合や通信が切れた場合は通常生成へ戻ります。[設定・メモリ・数値検証](METAL.md#8bの候補検証による生成)を参照してください。
+
+翻訳結果の`speculative`には`batches`・`consumed_tokens`・`proposed_tokens`・`accepted_tokens`・`draft_seconds`も返します。採用候補が複数あると1回の検証で複数トークンを確定するため、`timings.decode_steps`とコマンド数は一致しません。`decode_steps / decode_seconds`は補助処理、8B検証、KV反映を含む生成速度です。`compute.verification_batches`・`verified_tokens`・`committed_tokens`はGPU側の累積値です。
 
 `/health`の`compute`にバックエンド・GPU名・精度モード・`gpu_dispatches`・`command_buffers`・`fused_mlps`・`fused_decodes`・`cpu_fallbacks`・`errors`・累積`gpu_seconds`を返します。`fused_decodes`は全層の生成を一つのGPUコマンドで実行したステップ数です。`weight_storage`は`bf16`または`lossless-bf16`、`packed_weight_bytes`は圧縮して保持する元データ量です。`disk_cache_hits`・`disk_cache_weight_bytes`・`disk_cache_storage_bytes`は[事前作成した重みファイル](WEIGHT_CACHE.md)からの累積読み込み回数・元BF16換算の量・保存形式での量です。`allocated_bytes`はMetalの確保量、`recommended_working_set_bytes`はデバイスの推奨量、`residency_sets`はGPUリソースの常駐管理が有効かを示します。数値は起動時・翻訳終了時の通知で更新します。GPUの初期化・実行エラーの理由は`compute.note`に表示します。
 
@@ -85,7 +89,7 @@ APIの既定の`--memory auto`は、CPU・Metalの両方で、保持可能な行
 
 QKV・Attention出力・MLP・出力ヘッドを推論で使う順に読み込み、推論時と同じ行ブロック境界で保持します。上限に収まらない範囲は読み飛ばすため、31Bなど全重みが収まらないモデルも部分的に先読みできます。巨大なEmbedding全体は先読みせず、入力で選ばれる行を元のmmapから読みます。Embeddingと出力ヘッドが共有されるモデルでは、ヘッドとして先読みします。
 
-GPUでは保持ブロックを読み込むごとに各ページへの初回アクセスを完了させ、大量の未準備バッファを後回しにしません。ページ準備には専用の小さなカーネルを使います。その後、全行列を保持できた場合は英日・日英の固定接頭12トークンを計算し、K・V・回転済みKを保存します。要求時はトークン列が完全一致する接頭だけを復元し、本文以降を計算します。本文や直前の翻訳結果をキャッシュする仕組みではありません。BF16の元バイト列とFP32演算を維持します。起動後も空きの減少に合わせて保持量を縮小するため、待機中のメモリ圧によっては初回要求でも一部の読み込みが発生します。
+GPUでは保持ブロックを読み込むごとに各ページへの初回アクセスを完了させ、大量の未準備バッファを後回しにしません。ページ準備には専用の小さなカーネルを使います。その後、全行列を専用バッファまたは実行用ファイルからGPUで参照できる場合は、英日・日英の固定接頭12トークンを計算し、K・V・回転済みKを保存します。要求時はトークン列が完全一致する接頭だけを復元し、本文以降を計算します。本文や直前の翻訳結果をキャッシュする仕組みではありません。BF16の元バイト列とFP32演算を維持します。起動後も空きの減少に合わせて保持量を縮小するため、待機中のメモリ圧によっては初回要求でも一部の読み込みが発生します。
 
 `--memory resident`は従来どおり完全先読みを要求します。`--memory stream`は起動時の重み先読みを行いません。単発CLIの`auto`は最初の入力処理中に保持可能な行列を準備します。固定接頭2方向の事前計算は常駐APIだけで行います。
 
@@ -95,7 +99,7 @@ GPUでは保持ブロックを読み込むごとに各ページへの初回ア�
 python3 tools/benchmark_startup.py --model 2b --backend metal --memory auto --report build/startup-2b.json
 ```
 
-`/health`の`prompt_cache`には`en_ja_tokens`・`ja_en_tokens`・`bytes`・`prepare_seconds`を表示します。準備時間は`load_seconds`・`preload_seconds`にも含まれます。8Bの固定接頭は2方向で約4.7 MBです。GPUの全行列が保持できない場合、CPU、`stream`では事前計算を省きます。`PLAMO_PREFIX_CACHE=0`で固定接頭の再利用を無効にし、同じバイナリで比較できます。単発CLIの起動込み待ち時間は`tools/benchmark_cli.py`で別に測定できます。
+`/health`の`prompt_cache`には`en_ja_tokens`・`ja_en_tokens`・`bytes`・`prepare_seconds`を表示します。準備時間は`load_seconds`・`preload_seconds`にも含まれます。8Bの固定接頭は2方向で約4.7 MBです。必要なGPU射影が解決できない場合、CPU、`stream`では事前計算を省きます。`PLAMO_PREFIX_CACHE=0`で固定接頭の再利用を無効にし、同じバイナリで比較できます。単発CLIの起動込み待ち時間は`tools/benchmark_cli.py`で別に測定できます。
 
 Apple M2・24 GiBで、`Hello.`を起動完了直後に送り、初回と2回目を測りました。ダミー要求・キャンセル・トークナイザー検査を先に実行せず、3プロセスずつの中央値です。初回トークンの時間は`ready`後の要求送信から計測し、起動時間は別に記録しています。
 
@@ -124,7 +128,7 @@ curl http://127.0.0.1:8000/translate \
 
 `timings.decode_seconds`は生成の経過時間、`decode_steps`はモデルを追加実行した回数です。`decode_steps / decode_seconds`で起動・入力処理を除いた生成速度を計算できます。生成中の重みの再読み込み時間は含みます。`decode_gpu_seconds`・`decode_command_buffers`・`decode_gpu_dispatches`は生成中だけのGPU時間・同期回数・カーネル数、`weight_io.decode_staged_bytes`・`decode_read_calls`は生成中だけの明示的な重みI/Oです。起動準備や入力処理の累積値を含みません。`prefill_gpu_seconds`・`prefill_command_buffers`・`prefill_gpu_dispatches`は要求中の入力処理だけの値です。`usage.cached_prompt_tokens`は固定接頭から再利用した入力トークン数で、`prompt_tokens`には再利用分も含みます。
 
-8Bの部分保持では、[事前作成した重みファイル](WEIGHT_CACHE.md)のページを生成時にGPUから直接参照し、共有バッファへのコピーを省きます。`compute.disk_cache_mapped_bytes`は一時Metalビューで参照した保存領域の累積量、`weight_io.decode_mapped_bytes`はその要求の生成中だけの量です。現在の保持量や物理ディスクI/Oではありません。`decode_staged_bytes`が0でもOSによるページインは発生し得ます。実際の生成速度は[交互に比較した測定データ](benchmarks/generation.json)に記録します。
+8Bの部分保持では、[事前作成した重みファイル](WEIGHT_CACHE.md)をGPUから直接参照し、共有バッファへのコピーを省きます。全射影がそろい、作業領域がGPUの推奨量に収まれば、ファイル参照分を含めて全層1コマンドで実行します。`compute.disk_cache_mapped_bytes`は参照した保存領域の累積量、`weight_io.decode_mapped_bytes`はその要求の生成中だけの量です。`compute.disk_cache_mapping_bytes`は再利用のため保持しているGPUファイルビューの範囲で、専用コピーの予算とは別です。GPUの確保量は`compute.allocated_bytes`にも反映されます。これらは物理ディスクI/Oではなく、`decode_staged_bytes`が0でもOSによるページインは発生し得ます。
 
 | フィールド | 既定値・制約 |
 | --- | --- |

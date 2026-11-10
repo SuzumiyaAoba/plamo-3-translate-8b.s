@@ -82,6 +82,11 @@ invalid:
     snprintf(error, cap, "invalid or incompatible Metal weight cache; regenerate it with prepare_weights.py");
     return NULL;
 }
+int plamo_disk_cache_packed(const struct plamo_disk_cache *c) {
+    if (c) for (uint32_t i = 0; i < c->header->entries; ++i) if (c->entries[i].packed) return 1;
+    return 0;
+}
+
 const void *plamo_disk_cache_get(const struct plamo_disk_cache *c, const void *source,
     uint64_t bytes, unsigned packed, uint64_t *storage_bytes) {
     if (!c || !bytes) return NULL;

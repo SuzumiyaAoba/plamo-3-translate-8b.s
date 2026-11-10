@@ -5,7 +5,7 @@
 
 enum plamo_metal_memory { PLAMO_METAL_AUTO, PLAMO_METAL_RESIDENT, PLAMO_METAL_STREAM };
 enum plamo_metal_precision { PLAMO_METAL_FP32 };
-enum plamo_metal_packing { PLAMO_PACK_AUTO, PLAMO_PACK_RAW, PLAMO_PACK_LOSSLESS };
+enum plamo_metal_packing { PLAMO_PACK_AUTO, PLAMO_PACK_RAW, PLAMO_PACK_LOSSLESS, PLAMO_PACK_DRAFT_Q4 };
 struct plamo_metal_config {
     enum plamo_metal_memory memory;
     enum plamo_metal_precision precision;
@@ -27,6 +27,8 @@ struct plamo_metal_info {
     uint64_t packed_weight_bytes;
     uint64_t disk_cache_hits, disk_cache_weight_bytes, disk_cache_storage_bytes;
     uint64_t disk_cache_mapped_bytes;
+    uint64_t disk_cache_mapping_bytes;
+    uint64_t verification_batches, verified_tokens, committed_tokens;
     unsigned residency_sets;
     double gpu_seconds;
 };
@@ -48,14 +50,21 @@ int plamo_metal_warm_cache(struct plamo_metal *);
    build exact CPU RoPE tables before readiness. The model retains its KV
    storage; GPU views share those same pages without a second KV cache. */
 int plamo_metal_prepare_model(struct plamo_metal *, struct model *);
-/* One complete FP32 decode, including attention/KV. 0 means a missing retained
-   projection and leaves all model state untouched; -1 is an execution failure.
+/* One complete FP32 decode, including attention/KV. Private weights and saved
+   file views can share one graph. 0 declines a missing/oversized graph without
+   changing model state; -1 is an execution failure.
    On success the ordinary CPU state, logits and KV remain immediately usable. */
 int plamo_metal_forward(struct plamo_metal *, struct model *, uint64_t token);
 /* Complete layer-major prompt processing with one GPU submission. Shares the
    canonical KV and returns every prompt state plus final state/logits. Like
    forward, 0 declines without state changes and -1 must not be retried. */
 int plamo_metal_prefill(struct plamo_metal *, struct model *, const uint32_t *, uint64_t tokens, float *states);
+enum { PLAMO_VERIFY_MAX = 16 };
+/* Verify a candidate block without changing state/logits/raw KV/counts. A
+   derived rotation cache may be refreshed. Commit a verified prefix in order;
+   a new forward/prefill invalidates the remaining candidates. */
+int plamo_metal_verify(struct plamo_metal *, struct model *, const uint32_t *, uint64_t tokens, uint32_t *next);
+int plamo_metal_commit(struct plamo_metal *, struct model *, uint64_t index);
 /* Synchronous dense projection; 0 leaves the caller free to use its CPU kernel.
    Input/output must not overlap. Arbitrary FP32 strides and BF16 row/column
    tails are supported. */

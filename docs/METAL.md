@@ -26,11 +26,40 @@ python3 tools/server.py --backend cpu --memory auto --threads 4
 
 FP16への丸めを削除し、入力の長さによらずFP32に統一しました。BF16からFP32への展開はビットのシフトだけで、元の値を正確に保持します。生成では隣接するSIMDレーンが同じ行の隣接列を読み、SIMDグループ内で和を取ります。4〜7入力トークンでは各BF16ロードを共有し、8トークン以上は入力長に合わせた32行×8/16/24/32トークンのSIMD-group行列タイルを使います。内部のKタイルは32列です。計算が済んだ重みタイルを出力の転置にも再利用し、共有作業領域はタイルに応じて5〜8 KiBです。GPUの行列演算APIは[Appleの解説](https://developer.apple.com/videos/play/tech-talks/10858/)も参照してください。
 
-GPUでは加算順序が異なるためCPUとのビット一致は保証しません。追加の量子化・低精度化・近似的なトークン選択は行いません。元のCPU参照に対する全logits・最終状態の相対L2誤差と、生成トークン列を検証します。
+GPUでは加算順序が異なるためCPUとのビット一致は保証しません。翻訳を決定するモデルは追加の量子化・低精度化を行いません。元のCPU参照に対する全logits・最終状態の相対L2誤差と、生成トークン列を検証します。
+
+## 8Bの候補検証による生成
+
+8BのMetal生成では、0.8Bワーカーとその重みが利用できれば候補検証を自動で有効にします。補助モデルが最大8トークンの候補を作り、8Bが元のBF16重み・FP32演算で一括計算します。8Bのgreedy選択と一致する接頭だけを採用し、不一致位置のトークンは8Bが選びます。確定前のKVは別領域に置き、採用した分だけ既存のKVへ反映します。棄却した候補が後の生成に混ざることはありません。
+
+候補の作成時間を短縮するため、**補助モデルだけ**は32値ごとのQ4をGPUメモリ上で作ります。元の0.8Bファイルと8Bの重みは変更しません。補助モデルの誤りは候補の採用率に影響し、最終トークンは8Bで検証します。8Bの一括行列計算はFP32の加算順序が逐次生成と異なるため、通常の丸め差があります。
+
+```sh
+# Nix版：補助モデルを既定のモデルキャッシュへ取得
+plamo-download --model 0.8b --weights
+plamo-server --model 8b
+# ソース版：8Bに加えて0.8Bワーカーもビルド
+make MODEL=0.8b all
+python3 tools/server.py --model 8b
+```
+
+`/health.speculative.enabled`と`block_tokens`で起動時の有効状態を確認します。補助ワーカー・重みがない場合、起動失敗・通信切断時、全層のGPU検証が使えない場合は通常の8B生成へ戻ります。`PLAMO_SPECULATIVE=0`で無効化できます。`PLAMO_SPECULATIVE_TOKENS=2..16`で候補数を変更でき、`PLAMO_DRAFT_WORKER`・`PLAMO_DRAFT_DATA_DIR`で補助ワーカーと作業ディレクトリを指定できます。既定では同じビルドの0.8Bワーカー、現在の`models/0.8b`または通常の0.8Bモデルキャッシュを使います。CPU・`--memory stream`・他サイズの通常生成では使いません。
+
+応答の`speculative`は検証バッチ数、消費したトークン数、提案数、採用数、補助処理時間を記録します。提案数・採用数は先頭の既知の8Bトークンを除きます。`timings.decode_steps`は確定した8B状態の更新数で、コマンド数とは異なります。生成速度は補助処理・検証・KV反映を含む`decode_seconds`で測り、HTTPのSSE受信時刻でも確認します。起動と入力処理は別計測です。補助プロセスにも重み・KV・入力処理のメモリが必要です。
+
+```sh
+make build/generation-probe
+python3 tools/verify_speculative.py --report build/speculative-accuracy.json
+python3 tools/verify_speculative_api.py --target 10 --repeats 3
+```
+
+合成GPUテストでは1〜16候補、逐次コミット、棄却後の通常生成、満杯のスライディングKVを検証します。実モデルの比較は全logits・内部状態を各出力トークンで採取し、通常のFP32生成とトークン列、EOS、長さ制限、キャンセル、要求リセットを照合します。補助Q4は独立したCPUの量子化・復元値と行列演算を比較します。
+
+## 全層のGPU処理
 
 保持済みのMLPは、前正規化→gate/up射影→SwiGLU→down射影→後正規化・残差を一つのコマンドバッファで実行します。FP32の活性値をGPU上で再利用し、RMSNormの二乗和もFP32で並列に集計します。SwiGLUの指数関数の多項式・飽和条件はCPU実装と共通です。重みが保持されていなければ状態を変更せず通常の射影経路へ戻ります。
 
-生成では全層のQKV・出力射影・MLP・出力ヘッドを事前に確認し、保持済みなら正規化、Q/Kの正規化、RoPE、KV追加・スライド、Attentionを含む1トークン分を一つのコマンドにまとめます。Embeddingの展開とgreedy選択はCPUです。KVは既存の匿名メモリを[Metalのコピーなしバッファ](https://developer.apple.com/documentation/metal/mtldevice/makebuffer%28bytesnocopy%3Alength%3Aoptions%3Adeallocator%3A%29?language=objc)で共有します。GPU専用のKVコピーや、毎トークンのKV転送は作りません。利用中の行数に合わせてページ境界の参照範囲を広げ、262K行の仮想容量全体を常駐させません。
+生成では全層のQKV・出力射影・MLP・出力ヘッドを事前に確認し、専用バッファまたは実行用ファイルで参照可能なら正規化、Q/Kの正規化、RoPE、KV追加・スライド、Attentionを含む1トークン分を一つのコマンドにまとめます。Embeddingの展開とgreedy選択はCPUです。KVは既存の匿名メモリを[Metalのコピーなしバッファ](https://developer.apple.com/documentation/metal/mtldevice/makebuffer%28bytesnocopy%3Alength%3Aoptions%3Adeallocator%3A%29?language=objc)で共有します。GPU専用のKVコピーや、毎トークンのKV転送は作りません。利用中の行数に合わせてページ境界の参照範囲を広げ、262K行の仮想容量全体を常駐させません。
 
 RoPEのcos/sin表は、CPUと同じFP32の角度形成・倍精度の範囲縮小・多項式で起動時に作ります。API上限のプロンプトと生成に使う位置まで準備し、ネイティブ呼び出しでさらに必要なら拡張します。Attentionの内積と値の重み付き和、softmax分母はCPUのFP32加算順序を踏襲します。RMSNormの並列集計とGPUの平方根・除算にはCPUとの丸め差があります。入力処理もQ/K正規化・RoPE・因果Attention・MLPを含めて全層を一つのGPUコマンドにまとめます。Attentionのスコア作業領域は最大16 MiBのタイルで再利用し、4096入力トークンでも入力長の二乗の領域を全頭分確保しません。スライディング境界では、各入力のAttentionが古いKVを参照し終えてから最後の窓を確定します。重み不足時は状態を変更せず既存の経路へ戻り、共有KVから再開できます。`compute.fused_decodes`は全層をまとめて実行した生成ステップ数、`fused_prefills`はまとめた入力処理の回数です。後者の累積値には起動時の固定接頭2方向分も含まれます。
 
@@ -40,11 +69,13 @@ RoPEのcos/sin表は、CPUと同じFP32の角度形成・倍精度の範囲縮�
 
 起動時の圧縮を一度だけ実施して別ファイルへ保存する[実行用重みファイルの事前作成](WEIGHT_CACHE.md)も利用できます。元のBF16値と演算精度を保ち、次回から保存済みのブロックを読み込みます。
 
-部分保持の生成時は、1トークンの射影に限り、保存済みの圧縮ブロックのmmapを一時Metalビューで直接参照し、共有バッファへの都度コピーを省きます。GPU完了後にビューを破棄し、OSがファイルページを再利用・回収できます。入力処理の複数トークン射影と、起動時に保持する重みは従来の経路を使います。保存済み領域の`pread`は最大64 MiBです。専用の重み保持予算は増やしませんが、OSのファイルページはその予算の外にあります。生成時の`decode_staged_bytes`は明示的な読み込み量、`decode_mapped_bytes`は直接参照した保存領域の量で、どちらも物理ディスクの読み出し量ではありません。[条件と測定データ](benchmarks/generation.json)を参照してください。
+専用バッファに収まらない行列も、保存済み圧縮ブロックのmmapをMetalビューで直接参照します。全射影が解決でき、ファイル参照分を含む重み作業領域がGPUの推奨量以内なら、入力処理・生成を全層1コマンドで実行します。ビューは再利用し、メモリ圧が高まった場合や専用コピーが増えた場合に解放します。全範囲の確認はモデルの状態を変える前に行い、欠損や作業領域の超過時は従来の行単位の処理に戻します。
+
+保存済み領域の`pread`は最大64 MiBです。専用コピーの保持予算は増やしませんが、GPUのファイルビューはその予算の外にあり、保持範囲は`compute.disk_cache_mapping_bytes`、GPU確保量は`compute.allocated_bytes`で確認します。生成時の`decode_staged_bytes`は明示的な読み込み量、`decode_mapped_bytes`は直接参照した保存領域の累積量で、物理ディスクの読み出し量ではありません。[実行用重みの条件と測定](WEIGHT_CACHE.md)を参照してください。
 
 Metalが確保した`StorageModeShared`のバッファへ、元BF16を8 MiB以下の`pread`で直接読み込みます。CPUの匿名重みキャッシュとGPU重みの二重コピーを作りません。活性値の入力・出力バッファも再利用します。
 
-既定の`PLAMO_WEIGHT_STORAGE=auto`は、計算用の元BF16行列がキャッシュ上限に収まらない場合に無損失圧縮を選びます。512値ごとの符号・仮数と指数差をビット列に保存し、行列演算のロード時に全16ビットを復元します。圧縮が有利な1 MiB以上の保持ブロックが対象です。保持領域を節約して、生成中のファイル読み込みを減らします。上限に収まるモデルは通常のBF16キャッシュを使います。
+既定の`PLAMO_WEIGHT_STORAGE=auto`は、準備済みの無損失ファイルがある場合、または計算用の元BF16行列がキャッシュ上限に収まらない場合に無損失圧縮を選びます。512値ごとの符号・仮数と指数差をビット列に保存し、行列演算のロード時に全16ビットを復元します。圧縮が有利な1 MiB以上の保持ブロックが対象です。保持領域を節約して、生成中のファイル読み込みを減らします。準備済みファイルがなく、上限に収まるモデルは通常のBF16キャッシュを使います。
 
 `PLAMO_WEIGHT_STORAGE=raw`で通常形式、`lossless`で圧縮形式を明示できます。CPUと`--memory stream`には適用しません。`memory.cached_weight_bytes`は元BF16換算、`cached_storage_bytes`はページ境界の余白を含む保持領域です。後者と`staging_bytes`の合計を`budget_bytes`以下に制限します。`compute.weight_storage`と`packed_weight_bytes`で形式と、圧縮して保持している元のデータ量を確認できます。圧縮後の必要量を記録し、メモリ圧で解放されたブロックが収まらなければ再読み込み・再解析を省きます。
 
@@ -56,9 +87,9 @@ Metalが確保した`StorageModeShared`のバッファへ、元BF16を8 MiB以�
 
 `auto`の上限は起動時の再利用可能メモリから2 GiBを引いた量と、GPUの推奨作業領域から128 MiBを引いた量の小さい方です。これを超えて拡張しません。空きが減れば末尾の保持ブロックを解放し、回復すれば起動時の上限内で保持量を増やします。通常のミスでは保持データを追い出さず、モデルの逐次走査で毎回全データが入れ替わることを防ぎます。
 
-prefillとdecodeでI/Oの行境界をそろえます。GPUの処理完了を待ってから共有読み込み領域を上書きし、メモリの調整も未完了のGPU処理がない状態で実行します。BF16ファイルのmmap・FDはCPUのEmbeddingなどにも使うため保持します。GPUの`auto`・`resident`に表示する`preloaded_weight_bytes`は起動時に先読みした行列データ量です。`auto`は推論順にQKV・出力射影・MLP・ヘッドを読み、保持できないタイルを読み飛ばします。通常の保持ブロックはページごとに1バイトを読むカーネルで、圧縮ブロックはGPUでの符号化で初回アクセスを済ませます。完了済みのブロックは再準備しません。さらに小さな正規化重み、正確なRoPE表、再利用するGPU作業領域を起動時に準備します。その後、必要な行列をすべて保持できた場合に限り、英日・日英の固定接頭を計算してKVを保存します。本文を含むダミー要求は送らず、論理的な要求状態はリセットしてから`ready`を通知します。
+prefillとdecodeでI/Oの行境界をそろえます。GPUの処理完了を待ってから共有読み込み領域を上書きし、メモリの調整も未完了のGPU処理がない状態で実行します。BF16ファイルのmmap・FDはCPUのEmbeddingなどにも使うため保持します。GPUの`auto`・`resident`に表示する`preloaded_weight_bytes`は起動時に先読みした行列データ量です。`auto`は推論順にQKV・出力射影・MLP・ヘッドを読み、保持できないタイルを読み飛ばします。通常の保持ブロックはページごとに1バイトを読むカーネルで、圧縮ブロックはGPUでの符号化で初回アクセスを済ませます。完了済みのブロックは再準備しません。さらに小さな正規化重み、正確なRoPE表、再利用するGPU作業領域を起動時に準備します。その後、必要な行列を専用バッファまたは実行用ファイルからGPUで参照できる場合に限り、英日・日英の固定接頭を計算してKVを保存します。本文を含むダミー要求は送らず、論理的な要求状態はリセットしてから`ready`を通知します。
 
-macOS 15以降では[Metal residency sets](https://developer.apple.com/documentation/metal/simplifying-gpu-resource-management-with-residency-sets)に保持中の重み・読み込み領域・活性値バッファを登録し、GPUへの常駐を要求します。新しい重み・作業領域の追加登録をGPUコマンドの送信前にまとめて反映します。これは[Appleの`commit`の手順](https://developer.apple.com/documentation/metal/mtlresidencyset/commit())に沿った処理です。メモリ圧での解放時は直ちに登録を反映し、空いたページを保持し続けません。`compute.residency_sets`で有効かを確認できます。古いOSでは通常のMetalリソース管理を使います。
+macOS 15以降では[Metal residency sets](https://developer.apple.com/documentation/metal/simplifying-gpu-resource-management-with-residency-sets)に保持中の重み・ファイルビュー・読み込み領域・活性値バッファを登録し、GPUへの常駐を要求します。新しい重み・作業領域の追加登録をGPUコマンドの送信前にまとめて反映します。これは[Appleの`commit`の手順](https://developer.apple.com/documentation/metal/mtlresidencyset/commit())に沿った処理です。メモリ圧での解放時は直ちに登録を反映し、空いたページを保持し続けません。`compute.residency_sets`で有効かを確認できます。古いOSでは通常のMetalリソース管理を使います。
 
 保持量・読み込み量・命中率は従来と同じ`memory`と`weight_io`で確認できます。OS全体のメモリやGPUリソース確保に対する厳密な上限、物理ページ固定を保証する仕組みではありません。8BのBF16は約17 GBあり、空きが少なければGPUを使っても読み込みが律速します。
 

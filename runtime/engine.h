@@ -16,7 +16,7 @@ struct plamo_engine_info {
     uint64_t prefix_tokens[2], prefix_bytes;
     struct plamo_weight_cache_info cache;
     struct plamo_metal_info gpu;
-    unsigned threads;
+    unsigned threads, speculative_tokens;
     double load_seconds, preload_seconds, prefix_seconds;
 };
 struct plamo_result {
@@ -27,8 +27,10 @@ struct plamo_result {
     uint64_t prefill_command_buffers, prefill_gpu_dispatches;
     uint64_t cached_prompt_tokens;
     uint64_t prefill_logits_hash, prefill_state_hash, logits_hash, state_hash;
+    uint64_t speculative_batches, speculative_tokens, proposed_tokens, accepted_tokens;
     double tokenize_seconds, prefill_seconds, decode_seconds, first_token_seconds, total_seconds;
     double decode_gpu_seconds, prefill_gpu_seconds;
+    double draft_seconds;
     const char *finish_reason;
 };
 struct plamo_callbacks {

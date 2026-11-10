@@ -28,8 +28,29 @@ inline ushort weight_bits(device const ushort *w, ulong i, constant Linear &p) {
     uint exponent = (h.exponent & 255) + exponent_delta(data, j, h.exponent >> 8);
     return ushort((low & 127) | ((low & 128) << 8) | (exponent << 7));
 }
-template<bool Packed>
+// Approximate weights are confined to a separate proposal model. The 8B
+// verifier continues to use original BF16 values and FP32 arithmetic.
+template<uint Storage>
+inline float weight_value(device const ushort *w, ulong i, constant Linear &p) {
+    if (Storage == 2) {
+        i += p.weight_offset;
+        device const uchar *block = (device const uchar *)w + (i / 32) * 20;
+        uint j = uint(i) & 31, value = block[4 + (j & 15)];
+        value = j < 16 ? value & 15 : value >> 4;
+        return float(int(value) - 8) * *((device const float *)block);
+    }
+    return bf16(weight_bits<Storage == 1>(w, i, p));
+}
+template<uint Packed>
 inline float4 weight4(device const ushort *w, ulong i, constant Linear &p) {
+    if (Packed == 2) {
+        i += p.weight_offset;
+        device const uchar *block = (device const uchar *)w + (i / 32) * 20;
+        uint j = uint(i) & 31;
+        uint4 value = uint4(*((device const uchar4 *)(block + 4 + (j & 15))));
+        value = j < 16 ? value & 15 : value >> 4;
+        return float4(int4(value) - 8) * *((device const float *)block);
+    }
     if (!Packed) return as_type<float4>(uint4(*((device const ushort4 *)(w + i))) << 16);
     i += p.weight_offset;
     PackBlock h = ((device const PackBlock *)w)[i / PACK_BLOCK];
@@ -103,7 +124,7 @@ kernel void plamo_cache_touch(device const uchar *weights [[buffer(0)]], device 
 }
 
 // One SIMD group reduces a row. Adjacent lanes read adjacent BF16 values.
-template<bool Packed>
+template<uint Packed>
 inline void matvec(device const ushort *w, device const float *x, device float *y,
                     constant Linear &p, uint3 group, uint simd, uint lane) {
     uint row = group.x * 4 + simd;
@@ -119,9 +140,9 @@ inline void matvec(device const ushort *w, device const float *x, device float *
             sum1 = fma(weights, input, sum1);
         } else {
             for (uint j = 0; j < 4; ++j) {
-                if (k + j < p.columns) sum0[j] = fma(bf16(weight_bits<Packed>(w, ulong(row) * p.columns + k + j, p)),
+                if (k + j < p.columns) sum0[j] = fma(weight_value<Packed>(w, ulong(row) * p.columns + k + j, p),
                     x[ulong(group.y) * p.input_stride + k + j], sum0[j]);
-                if (k + j + 4 < p.columns) sum1[j] = fma(bf16(weight_bits<Packed>(w, ulong(row) * p.columns + k + j + 4, p)),
+                if (k + j + 4 < p.columns) sum1[j] = fma(weight_value<Packed>(w, ulong(row) * p.columns + k + j + 4, p),
                     x[ulong(group.y) * p.input_stride + k + j + 4], sum1[j]);
             }
         }
@@ -133,7 +154,7 @@ inline void matvec(device const ushort *w, device const float *x, device float *
 
 // Narrow prompts benefit from independent SIMD reductions without matrix
 // tile barriers. Eight tokens reuse each BF16 load; operands stay FP32.
-template<bool Packed>
+template<uint Packed>
 inline void matmul_vector(device const ushort *w, device const float *x, device float *y,
                            constant Linear &p, uint3 group, uint simd, uint lane) {
     uint row = group.x * 4 + simd, first = group.y * 8;
@@ -146,7 +167,7 @@ inline void matmul_vector(device const ushort *w, device const float *x, device 
         if (!(p.columns % 4) && p.aligned_weights) {
             weights = weight4<Packed>(w, ulong(row) * p.columns + k, p);
         } else {
-            for (uint j = 0; j < 4; ++j) if (k + j < p.columns) weights[j] = bf16(weight_bits<Packed>(w, ulong(row) * p.columns + k + j, p));
+            for (uint j = 0; j < 4; ++j) if (k + j < p.columns) weights[j] = weight_value<Packed>(w, ulong(row) * p.columns + k + j, p);
         }
         #pragma unroll
         for (uint t = 0; t < 8; ++t) if (first + t < p.tokens) {
@@ -165,7 +186,7 @@ inline void matmul_vector(device const ushort *w, device const float *x, device 
 
 // 32 output rows x 8/16/24/32 prompt tokens. BF16 expands exactly to FP32; both
 // operands and accumulation remain FP32 in every temporary tile.
-template<bool Packed, uint N>
+template<uint Packed, uint N>
 inline void matmul_tile(device const ushort *w, device const float *x, device float *y,
                         constant Linear &p, uint3 group, uint tid, uint simd,
                         threadgroup float *weights, threadgroup float *inputs, threadgroup float *outputs) {
@@ -177,7 +198,7 @@ inline void matmul_tile(device const ushort *w, device const float *x, device fl
             if (row < p.rows && col + 3 < p.columns && !(p.columns % 4) && p.aligned_weights)
                 value = weight4<Packed>(w, ulong(row) * p.columns + col, p);
             else for (uint j = 0; j < 4; ++j)
-                if (row < p.rows && col + j < p.columns) value[j] = bf16(weight_bits<Packed>(w, ulong(row) * p.columns + col + j, p));
+                if (row < p.rows && col + j < p.columns) value[j] = weight_value<Packed>(w, ulong(row) * p.columns + col + j, p);
             for (uint j = 0; j < 4; ++j) weights[i * 4 + j] = value[j];
         }
         for (uint i = tid; i < N * 8; i += 128) {
@@ -222,8 +243,10 @@ kernel void NAME(device const ushort *w [[buffer(0)]], device const float *x [[b
                  uint lane [[thread_index_in_simdgroup]]) { BODY<PACKED>(w, x, y, p, group, simd, lane); }
 VECTOR_KERNEL(plamo_matvec, matvec, false)
 VECTOR_KERNEL(plamo_matvec_packed, matvec, true)
+VECTOR_KERNEL(plamo_matvec_q4, matvec, 2)
 VECTOR_KERNEL(plamo_matmul_vector, matmul_vector, false)
 VECTOR_KERNEL(plamo_matmul_vector_packed, matmul_vector, true)
+VECTOR_KERNEL(plamo_matmul_vector_q4, matmul_vector, 2)
 
 #define MATRIX_KERNEL(NAME, PACKED, N) \
 kernel void NAME(device const ushort *w [[buffer(0)]], device const float *x [[buffer(1)]], \
@@ -240,6 +263,10 @@ MATRIX_KERNEL(plamo_matmul_packed, true, 32)
 MATRIX_KERNEL(plamo_matmul8_packed, true, 8)
 MATRIX_KERNEL(plamo_matmul16_packed, true, 16)
 MATRIX_KERNEL(plamo_matmul_short_packed, true, 24)
+MATRIX_KERNEL(plamo_matmul_q4, 2, 32)
+MATRIX_KERNEL(plamo_matmul8_q4, 2, 8)
+MATRIX_KERNEL(plamo_matmul16_q4, 2, 16)
+MATRIX_KERNEL(plamo_matmul_short_q4, 2, 24)
 
 // RMSNorm stays entirely FP32; exponentials use the CPU polynomial.
 // Pairwise FP32 reduction of nonnegative squares. Each lane's partial and the
@@ -410,7 +437,7 @@ kernel void NAME(device float *state [[buffer(0)]], device const ushort *w [[buf
     for (uint i = tid; i < p.hidden; i += 128) state[base + i] += (branch[base + i] * inverse) * (bf16(w[i]) + OFFSET); }
 DECODE_RESIDUAL(plamo_decode_residual, 0.2f)
 
-struct Prefill { uint qh, kh, dim, prefix, tokens, capacity, query_offset; };
+struct Prefill { uint qh, kh, dim, prefix, tokens, capacity, query_offset, speculative; };
 
 // Normalize all prompt Q/K heads in parallel. For a sliding batch that would
 // overwrite a prefix still needed by earlier queries, retain normalized K/V
@@ -438,6 +465,10 @@ kernel void plamo_prefill_qkv(device float *qkv [[buffer(0)]], device const usho
         float2 r = rotate_pair(raw, float2(table[t], table[t + half_dim]));
         if (head < p.qh) {
             qkv[base + col] = r.x; qkv[base + col + half_dim] = r.y;
+        } else if (p.speculative) {
+            qkv[base + col] = raw.x; qkv[base + col + half_dim] = raw.y;
+            ulong dest = (ulong(token) * p.kh + head - p.qh) * p.dim + col;
+            rotated[dest] = r.x; rotated[dest + half_dim] = r.y;
         } else if (p.prefix + p.tokens <= p.capacity) {
             ulong dest = (ulong(p.prefix + token) * p.kh + head - p.qh) * p.dim + col;
             k[dest] = raw.x; k[dest + half_dim] = raw.y;
@@ -461,7 +492,7 @@ kernel void plamo_prefill_attention(device const float *qkv [[buffer(0)]], devic
     uint head = group.x, token = p.query_offset + group.y, kh = head / (p.qh / p.kh);
     uint count = min(p.prefix + token + 1, p.capacity), first = p.prefix + token + 1 - count;
     uint half_dim = p.dim / 2, kv_width = p.kh * p.dim, width = (p.qh + 2 * p.kh) * p.dim;
-    bool sliding = p.prefix + p.tokens > p.capacity;
+    bool sliding = p.speculative || p.prefix + p.tokens > p.capacity;
     device const float *q = qkv + ulong(token) * width + ulong(head) * p.dim;
     device float *s = scores + (ulong(group.y) * p.qh + head) * min(p.prefix + p.tokens, p.capacity);
     threadgroup float maximum, denominator;
@@ -538,5 +569,24 @@ kernel void plamo_prefill_store(device const float *qkv [[buffer(0)]], device fl
         k[dest] = raw.x; k[dest + half_dim] = raw.y;
         v[dest] = val.x; v[dest + half_dim] = val.y;
         rotated[dest] = r.x; rotated[dest + half_dim] = r.y;
+    }
+}
+
+// Q4 proposal-only cache: 32 original values -> FP32 scale + 16 nibble bytes.
+kernel void plamo_draft_quantize4(device const ushort *w [[buffer(0)]], device uchar *out [[buffer(1)]],
+                                   constant uint &count [[buffer(2)]], uint block [[threadgroup_position_in_grid]],
+                                   uint lane [[thread_index_in_simdgroup]]) {
+    uint i = block * 32 + lane;
+    float value = i < count ? bf16(w[i]) : 0.0f;
+    float maximum = simd_max(abs(value)), scale = maximum / 7.0f;
+    device uchar *data = out + ulong(block) * 20;
+    if (!lane) *((device float *)data) = scale;
+    if (lane < 16) {
+        uint first = block * 32 + lane, second = first + 16;
+        float a = first < count ? bf16(w[first]) : 0.0f;
+        float b = second < count ? bf16(w[second]) : 0.0f;
+        uint qa = scale ? uint(clamp(int(rint(a / scale)), -8, 7) + 8) : 8;
+        uint qb = scale ? uint(clamp(int(rint(b / scale)), -8, 7) + 8) : 8;
+        data[4 + lane] = uchar(qa | qb << 4);
     }
 }

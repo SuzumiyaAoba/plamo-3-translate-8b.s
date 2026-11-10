@@ -1,5 +1,6 @@
 #include "engine.h"
 #include "prompt_cache.h"
+#include "draft.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +28,8 @@ struct plamo_engine {
     struct plamo_weight_cache *weight_cache;
     struct plamo_parallel *parallel;
     struct plamo_metal *metal;
+    struct plamo_draft *draft;
+    int draft_prepared;
     struct plamo_prompt_cache *prefix[2];
     struct trie trie;
     const char *vocab, *rows[107521];
@@ -157,6 +160,12 @@ struct plamo_engine *plamo_engine_open(enum plamo_memory_mode mode, int tokenize
                 else if (!strcmp(storage, "lossless")) packing = PLAMO_PACK_LOSSLESS;
                 else { snprintf(error, cap, "PLAMO_WEIGHT_STORAGE must be auto, raw or lossless"); goto fail; }
             }
+            // An approximate proposer is a separate process. The 8B target
+            // can never select this storage format through this private flag.
+            const char *peer = getenv("_PLAMO_DRAFT_PEER");
+            if (peer && !strcmp(peer, "1") &&
+                (!strcmp(plamo_model_name, "plamo-3-translate-0.8b") || !strcmp(plamo_model_name, "plamo-3-translate-2b")))
+                packing = PLAMO_PACK_DRAFT_Q4;
             struct plamo_metal_config config = {
                 .memory = (enum plamo_metal_memory)mode,
                 .precision = PLAMO_METAL_FP32,
@@ -292,6 +301,26 @@ fail:
     return 0;
 }
 
+static void prepare_draft(struct plamo_engine *e) {
+    if (e->draft_prepared) return;
+    e->draft_prepared = 1;
+    if (!e->metal || !strcmp(e->info.memory_mode, "stream") || strcmp(plamo_model_name, "plamo-3-translate-8b")) return;
+    double start = now();
+    e->draft = plamo_draft_open();
+    if (e->draft) {
+        e->info.speculative_tokens = 8;
+        const char *setting = getenv("PLAMO_SPECULATIVE_TOKENS");
+        if (setting) {
+            char *end;
+            unsigned long value = strtoul(setting, &end, 10);
+            if (!*end && value >= 2 && value <= PLAMO_VERIFY_MAX) e->info.speculative_tokens = (unsigned)value;
+        }
+    }
+    double seconds = now() - start;
+    e->info.preload_seconds += seconds;
+    e->info.load_seconds += seconds;
+}
+
 int plamo_engine_prepare(struct plamo_engine *e, char *error, size_t cap) {
     const char *setting = getenv("PLAMO_PREFIX_CACHE");
     if (setting && strcmp(setting, "0") && strcmp(setting, "1")) {
@@ -299,7 +328,7 @@ int plamo_engine_prepare(struct plamo_engine *e, char *error, size_t cap) {
     }
     if (!prepare_weights(e, error, cap)) return 0;
     if (e->prefixes_prepared || !e->metal || !strcmp(e->info.memory_mode, "stream") ||
-        (setting && !strcmp(setting, "0"))) return 1;
+        (setting && !strcmp(setting, "0"))) { prepare_draft(e); return 1; }
     double start = now();
     for (unsigned direction = 0; direction < 2; ++direction) {
         const uint32_t *ids;
@@ -328,6 +357,7 @@ int plamo_engine_prepare(struct plamo_engine *e, char *error, size_t cap) {
     e->info.preload_seconds += e->info.prefix_seconds;
     e->info.load_seconds += e->info.prefix_seconds;
     e->prefixes_prepared = 1;
+    prepare_draft(e);
     return 1;
 }
 
@@ -360,6 +390,25 @@ uint64_t plamo_engine_tokenize(struct plamo_engine *e, const char *text, unsigne
     if (tokens == UINT64_MAX) { snprintf(error, cap, "tokenizer encoding failed"); return UINT64_MAX; }
     *ids = e->ids;
     return tokens;
+}
+
+static int emit_token(struct plamo_engine *e, uint32_t id, const struct plamo_callbacks *cb,
+                      struct plamo_result *r, double start, char *error, size_t cap) {
+    if (id == 1 || id == 16) { r->finish_reason = "stop"; return 0; }
+    if (id >= plamo_model.vocab) { snprintf(error, cap, "invalid generated token"); return -1; }
+    uint64_t n = plamo_decode_token(e->rows[id], e->rows[id + 1], 0, e->decoded, sizeof e->decoded, e->scratch, 4096);
+    if (n == UINT64_MAX) { snprintf(error, cap, "token decoding failed"); return -1; }
+    double ready = now() - start;
+    if (cb && cb->token && !cb->token(id, e->decoded, (size_t)n, cb->context)) {
+        r->finish_reason = "cancelled"; return 0;
+    }
+    if (!r->completion_tokens) r->first_token_seconds = ready;
+    ++r->completion_tokens;
+    return 1;
+}
+
+static void disable_draft(struct plamo_engine *e) {
+    plamo_draft_close(e->draft); e->draft = NULL; e->info.speculative_tokens = 0;
 }
 
 int plamo_engine_translate(struct plamo_engine *e, const char *text, unsigned direction,
@@ -397,6 +446,9 @@ int plamo_engine_translate(struct plamo_engine *e, const char *text, unsigned di
     if (e->metal && !prepare_weights(e, error, cap)) { munmap(states, bytes); return 0; }
     if (direction) result->cached_prompt_tokens = plamo_prompt_cache_restore(e->prefix[direction - 1], &plamo_model, ids, count);
     int ok = plamo_prefill(&plamo_model, ids + result->cached_prompt_tokens, count - result->cached_prompt_tokens, states);
+    if (ok) prepare_draft(e);
+    int speculate = ok && e->draft && max_tokens > 1;
+    if (speculate && !plamo_draft_reset(e->draft, text, direction)) { disable_draft(e); speculate = 0; }
     result->prefill_seconds = now() - prefill_start;
     if (e->metal) {
         plamo_metal_get_info(e->metal, &gpu_prefill_after);
@@ -413,19 +465,53 @@ int plamo_engine_translate(struct plamo_engine *e, const char *text, unsigned di
     struct plamo_metal_info gpu_before = {0}, gpu_after;
     if (e->metal) plamo_metal_get_info(e->metal, &gpu_before);
     double decode_start = now();
-    for (unsigned i = 0; i < max_tokens; ++i) {
-        uint64_t id = plamo_argmax(plamo_model.logits, plamo_model.vocab);
-        if (id == 1 || id == 16) { result->finish_reason = "stop"; break; }
-        if (id >= plamo_model.vocab) { snprintf(error, cap, "invalid generated token"); return 0; }
-        uint64_t n = plamo_decode_token(e->rows[id], e->rows[id + 1], 0, e->decoded, sizeof e->decoded, e->scratch, 4096);
-        if (n == UINT64_MAX) { snprintf(error, cap, "token decoding failed"); return 0; }
-        double token_ready = now() - start;
-        if (cb && cb->token && !cb->token((uint32_t)id, e->decoded, (size_t)n, cb->context)) {
-            result->finish_reason = "cancelled"; break;
+    unsigned block = e->info.speculative_tokens;
+    while (result->completion_tokens < max_tokens) {
+        uint32_t id = (uint32_t)plamo_argmax(plamo_model.logits, plamo_model.vocab);
+        int emitted = emit_token(e, id, cb, result, start, error, cap);
+        if (emitted < 0) return 0;
+        if (!emitted || result->completion_tokens == max_tokens) break;
+        if (speculate) {
+            unsigned limit = max_tokens - (unsigned)result->completion_tokens;
+            if (limit > block) limit = block;
+            uint32_t proposed[PLAMO_VERIFY_MAX], next[PLAMO_VERIFY_MAX];
+            double draft_start = now();
+            unsigned n = plamo_draft_propose(e->draft, id, limit, proposed);
+            result->draft_seconds += now() - draft_start;
+            if (!n) { disable_draft(e); speculate = 0; }
+            else {
+                int verified = plamo_metal_verify(e->metal, &plamo_model, proposed, n, next);
+                if (verified < 0) { snprintf(error, cap, "candidate verification failed"); return 0; }
+                if (verified) {
+                    ++result->speculative_batches;
+                    result->proposed_tokens += n - 1;
+                    unsigned consumed = 0;
+                    int stop = 0;
+                    for (unsigned j = 0; j < n; ++j) {
+                        if (j) {
+                            if (proposed[j] != next[j - 1]) break;
+                            emitted = emit_token(e, proposed[j], cb, result, start, error, cap);
+                            if (emitted < 0) return 0;
+                            if (!emitted) { stop = 1; break; }
+                        }
+                        if (plamo_metal_commit(e->metal, &plamo_model, j) != 1) {
+                            snprintf(error, cap, "candidate commit failed"); return 0;
+                        }
+                        ++consumed; ++result->decode_steps;
+                    }
+                    result->speculative_tokens += consumed;
+                    result->accepted_tokens += consumed ? consumed - 1 : 0;
+                    draft_start = now();
+                    if (!plamo_draft_accept(e->draft, consumed)) { disable_draft(e); speculate = 0; }
+                    result->draft_seconds += now() - draft_start;
+                    if (stop) break;
+                    continue;
+                }
+                // No target state has changed. The proposer may be discarded
+                // and the ordinary exact target step remains immediately safe.
+                disable_draft(e); speculate = 0;
+            }
         }
-        if (!result->completion_tokens) result->first_token_seconds = token_ready;
-        ++result->completion_tokens;
-        if (i + 1 == max_tokens) break;
         if (!plamo_forward(&plamo_model, id)) { snprintf(error, cap, "decode failed"); return 0; }
         ++result->decode_steps;
     }

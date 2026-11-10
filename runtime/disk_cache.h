@@ -23,6 +23,8 @@ _Static_assert(sizeof(struct plamo_disk_header) == 640, "disk cache header ABI")
 _Static_assert(sizeof(struct plamo_disk_entry) == 48, "disk cache directory ABI");
 
 struct plamo_disk_cache;
+/* Prefer prepared lossless pages even when the original matrices would fit. */
+int plamo_disk_cache_packed(const struct plamo_disk_cache *);
 /* A requested cache must match the compiled revision and original file sizes.
    Validate all packed-header offsets before exposing any data to the GPU.
    The mapping stays immutable/alive until close, including after rename/unlink. */

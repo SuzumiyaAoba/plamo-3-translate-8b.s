@@ -293,7 +293,7 @@ static void disk_cache(void) {
             gold[n] = malloc((size_t)ROWS * 2 * counts[n] * 4); CHECK(gold[n]);
             struct plamo_matmul p = {base, input, gold[n], ROWS * 2, COLS, counts[n], COLS, ROWS * 2}; CHECK(plamo_metal_linear(metal, &p));
         }
-        plamo_metal_close(metal); config.disk_cache_path = path;
+        plamo_metal_close(metal); config.disk_cache_path = path; config.packing = PLAMO_PACK_AUTO;
         metal = plamo_metal_open(&config, error, sizeof error); if (!metal) fprintf(stderr, "%s\n", error); CHECK(metal);
         CHECK(!unlink(path)); // Both bulk reads and borrowed GPU pages own the old archive lifetime.
         uint64_t reads = plamo_io_stats[0];
@@ -411,6 +411,76 @@ static void packed_cache(void) {
     puts("Metal lossless cache: PASS (bitwise FP32 parity with raw GPU, matvec/vector/matrix, aliases, pressure eviction/reload, physical bounds, no repeated analysis of known non-fitting ranges)");
 }
 
+static float unpack_bf16(uint16_t bits) {
+    uint32_t word = (uint32_t)bits << 16;
+    float value; memcpy(&value, &word, 4); return value;
+}
+
+static void draft_quantization(void) {
+    // The auxiliary model alone uses Q4. Check the GPU encoder and all three
+    // projection families against an independent CPU quantize/dequantize.
+    const unsigned columns[] = {65, 256};
+    for (unsigned shape = 0; shape < 2; ++shape) {
+        unsigned rows = 133, cols = columns[shape], words = rows * cols;
+        uint16_t *data = malloc(words * 2);
+        float *dequantized = calloc(words, 4);
+        CHECK(data && dequantized);
+        uint32_t seed = 123;
+        for (unsigned i = 0; i < words; ++i) {
+            seed = 1664525u * seed + 1013904223u;
+            data[i] = i < 32 ? 0 : (seed & 0x8000) | (0x3b00 + ((seed >> 16) % 1024));
+        }
+        for (unsigned first = 0; first < words; first += 32) {
+            unsigned end = first + 32 < words ? first + 32 : words;
+            float maximum = 0;
+            for (unsigned i = first; i < end; ++i) maximum = fmaxf(maximum, fabsf(unpack_bf16(data[i])));
+            float scale = maximum / 7.f;
+            for (unsigned i = first; i < end; ++i) {
+                float q = scale ? nearbyintf(unpack_bf16(data[i]) / scale) : 0;
+                dequantized[i] = fminf(7, fmaxf(-8, q)) * scale;
+            }
+        }
+        FILE *file = tmpfile();
+        CHECK(file && fwrite(data, 2, words, file) == words && !fflush(file));
+        int64_t fd = fileno(file);
+        void *base = mmap(NULL, words * 2, PROT_READ, MAP_PRIVATE, (int)fd, 0);
+        CHECK(base != MAP_FAILED);
+        struct plamo_mapping map = {base, words * 2};
+        uint64_t dims[] = {rows, cols};
+        struct plamo_weight_spec schema[] = {{"draft", 2, dims, &base}, {0}};
+        struct plamo_metal_config config = {.memory = PLAMO_METAL_RESIDENT, .packing = PLAMO_PACK_DRAFT_Q4,
+            .maps = &map, .fds = &fd, .count = 1, .schema = schema, .reserve = 64 * 1024 * 1024, .available = available};
+        char error[1024];
+        struct plamo_metal *metal = plamo_metal_open(&config, error, sizeof error);
+        CHECK(metal);
+        const unsigned counts[] = {1, 4, 8, 21};
+        for (unsigned c = 0; c < sizeof counts / sizeof *counts; ++c) {
+            unsigned tokens = counts[c], xs = cols + 7, ys = rows + 3;
+            float *x = malloc(tokens * xs * 4), *y = malloc(tokens * ys * 4);
+            CHECK(x && y);
+            for (unsigned i = 0; i < tokens * xs; ++i) x[i] = ((int)(i % 97) - 48) / 53.f;
+            for (unsigned i = 0; i < tokens * ys; ++i) y[i] = -123456;
+            struct plamo_matmul p = {base, x, y, rows, cols, tokens, xs, ys};
+            CHECK(plamo_metal_linear(metal, &p));
+            for (unsigned t = 0; t < tokens; ++t) for (unsigned r = 0; r < ys; ++r) {
+                double expected = -123456;
+                if (r < rows) {
+                    expected = 0;
+                    for (unsigned k = 0; k < cols; ++k) expected += (double)dequantized[r * cols + k] * x[t * xs + k];
+                }
+                CHECK(fabs(y[t * ys + r] - expected) < 2e-4 * (1 + fabs(expected)));
+            }
+            free(x); free(y);
+        }
+        struct plamo_metal_info info; plamo_metal_get_info(metal, &info);
+        CHECK(!strcmp(info.weight_storage, "q4-draft") && !info.errors && !info.cpu_fallbacks);
+        CHECK(info.cache.storage_bytes < words * 2);
+        plamo_metal_close(metal);
+        munmap(base, words * 2); fclose(file); free(data); free(dequantized);
+    }
+    puts("Metal draft Q4: PASS (CPU dequantization reference, zero blocks, tails, strided matvec/vector/matrix, reduced storage)");
+}
+
 int main(int argc, char **argv) {
     int require_gpu = argc == 2 && !strcmp(argv[1], "--require-gpu");
     int result = kernels(require_gpu);
@@ -420,5 +490,6 @@ int main(int argc, char **argv) {
     preload();
     packed_cache();
     disk_cache();
+    draft_quantization();
     return 0;
 }

@@ -1,4 +1,6 @@
 #include "../runtime/metal.h"
+#include "../runtime/disk_cache.h"
+#include "../runtime/packing.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -164,6 +166,45 @@ static void prefills(struct plamo_metal *metal, struct fixture *a, struct fixtur
     available_bytes = UINT64_C(128) * 1024 * 1024; plamo_metal_maintain(metal); preload(metal, &a->model);
     free(actual); free(expected); reset(a); reset(b);
 }
+static uint64_t fixture_hash(const struct fixture *);
+static void verification(struct plamo_metal *metal, struct fixture *a, struct fixture *b) {
+    const unsigned sizes[] = {1, 2, 3, 4, 6, 8, 12, 16};
+    uint32_t prefix[] = {2, 5}, ids[PLAMO_VERIFY_MAX], next[PLAMO_VERIFY_MAX], gold_next[PLAMO_VERIFY_MAX];
+    for (unsigned i = 0; i < PLAMO_VERIFY_MAX; ++i) ids[i] = (i * 7 + 3) % 17;
+    size_t h = a->model.hidden, v = a->model.vocab;
+    float *states = malloc(PLAMO_VERIFY_MAX * h * 4), *logits = malloc(PLAMO_VERIFY_MAX * v * 4);
+    float *initial = malloc(2 * h * 4); CHECK(states && logits && initial);
+    for (unsigned n = 0; n < sizeof sizes / sizeof *sizes; ++n) {
+        unsigned count = sizes[n]; reset(b);
+        CHECK(plamo_metal_prefill(metal, &b->model, prefix, 2, initial) == 1);
+        for (unsigned i = 0; i < count; ++i) {
+            CHECK(plamo_metal_forward(metal, &b->model, ids[i]) == 1);
+            memcpy(states + i * h, b->model.state, h * 4); memcpy(logits + i * v, b->model.logits, v * 4);
+            gold_next[i] = (uint32_t)plamo_argmax(b->model.logits, v);
+        }
+        reset(a); CHECK(plamo_metal_prefill(metal, &a->model, prefix, 2, initial) == 1);
+        uint64_t untouched = fixture_hash(a);
+        CHECK(plamo_metal_verify(metal, &a->model, ids, count, next) == 1 && fixture_hash(a) == untouched);
+        CHECK(!plamo_metal_commit(metal, &a->model, 1) && fixture_hash(a) == untouched);
+        for (unsigned i = 0; i < count; ++i) {
+            CHECK(next[i] == gold_next[i] && plamo_metal_commit(metal, &a->model, i) == 1);
+            equal_floats(a->model.state, states + i * h, h, "verified state");
+            equal_floats(a->model.logits, logits + i * v, v, "verified logits");
+        }
+        compare(a, b); CHECK(!plamo_metal_commit(metal, &a->model, count));
+        if (count >= 4) {
+            reset(b); CHECK(plamo_metal_prefill(metal, &b->model, prefix, 2, initial) == 1);
+            for (unsigned i = 0; i < 3; ++i) CHECK(plamo_metal_forward(metal, &b->model, ids[i]) == 1);
+            CHECK(plamo_metal_forward(metal, &b->model, 12) == 1);
+            reset(a); CHECK(plamo_metal_prefill(metal, &a->model, prefix, 2, initial) == 1);
+            CHECK(plamo_metal_verify(metal, &a->model, ids, count, next) == 1);
+            for (unsigned i = 0; i < 3; ++i) CHECK(plamo_metal_commit(metal, &a->model, i) == 1);
+            CHECK(plamo_metal_forward(metal, &a->model, 12) == 1 && !plamo_metal_commit(metal, &a->model, 3)); compare(a, b);
+        }
+    }
+    free(states); free(logits); free(initial); reset(a); reset(b);
+    puts("Metal verification: PASS (1..16 FP32 candidates, unchanged canonical state before commit, sequential-prefix commit, sliding KV, rejected suffix, ordinary-decode recovery)");
+}
 static int run(size_t h, size_t n, size_t dim, size_t capacity, int require_gpu) {
     size_t qh = 4, kh = 2, words = 35 * h + 2 * (4 * h + (qh + 2 * kh) * dim * h + 2 * dim + h * qh * dim + 3 * h * n);
     uint16_t *data = malloc(words * 2); CHECK(data);
@@ -189,6 +230,7 @@ static int run(size_t h, size_t n, size_t dim, size_t capacity, int require_gpu)
     free(untouched);
     preload(metal, &a.model); CHECK(plamo_metal_prepare_model(metal, &a.model));
     prefills(metal, &a, &b);
+    verification(metal, &a, &b);
     struct plamo_metal_info initial; plamo_metal_get_info(metal, &initial);
     CHECK((initial.packed_weight_bytes != 0) == (n > 1000));
     for (size_t step = 0; step < capacity && step < 140; ++step) {
@@ -229,11 +271,155 @@ static int run(size_t h, size_t n, size_t dim, size_t capacity, int require_gpu)
     destroy(&a); destroy(&b); CHECK(!munmap(base, words * 2)); CHECK(!fclose(file));
     return 0;
 }
+
+static uint64_t plentiful(void) { return UINT64_C(128) * 1024 * 1024; }
+static uint64_t page_round(uint64_t n) { return (n + 16383) / 16384 * 16384; }
+static void archive(const char *path, const struct fixture *f, const void *base, size_t bytes, int complete) {
+    struct { const uint16_t *data; uint32_t rows, columns; } ranges[9];
+    unsigned count = 0;
+    for (unsigned i = 0; i < 2; ++i) {
+        const struct layer *l = &f->layer[i]; const struct qkv *q = &f->qkv[i]; const struct mlp *p = &f->mlp[i];
+        ranges[count++] = (__typeof__(ranges[0])){q->weight, (q->qh + 2 * q->kh) * q->dim, q->hidden};
+        ranges[count++] = (__typeof__(ranges[0])){l->mixer->weight, l->hidden, q->qh * q->dim};
+        ranges[count++] = (__typeof__(ranges[0])){p->gu, 2 * p->intermediate, p->hidden};
+        ranges[count++] = (__typeof__(ranges[0])){p->down, p->hidden, p->intermediate};
+    }
+    if (complete) ranges[count++] = (__typeof__(ranges[0])){f->model.head, f->model.vocab, f->model.hidden};
+    FILE *file = fopen(path, "wb"); CHECK(file);
+    unsigned char metadata[PLAMO_DISK_ALIGNMENT] = {0};
+    struct plamo_disk_header *h = (void *)metadata;
+    memcpy(h->magic, PLAMO_DISK_MAGIC, 8); h->version = 1; h->alignment = PLAMO_DISK_ALIGNMENT;
+    h->entries = count; h->sources = 1; h->source_bytes[0] = bytes; strcpy(h->revision, "file-graph");
+    struct plamo_disk_entry *entries = (void *)(h + 1);
+    uint64_t offset = sizeof metadata;
+    for (unsigned i = 0; i < count; ++i) {
+        uint64_t values = (uint64_t)ranges[i].rows * ranges[i].columns, blocks = (values + 511) / 512;
+        unsigned char *out = calloc(1, (size_t)page_round(blocks * (8 + 1024) + 16)); CHECK(out);
+        struct plamo_bf16_block *headers = (void *)out;
+        for (uint64_t b = 0; b < blocks; ++b) {
+            unsigned lo = 255, hi = 0, bits = 0;
+            for (uint64_t j = b * 512; j < values && j < (b + 1) * 512; ++j) {
+                unsigned e = (ranges[i].data[j] >> 7) & 255; if (e < lo) lo = e; if (e > hi) hi = e;
+            }
+            while ((1u << bits) <= hi - lo) ++bits;
+            headers[b].exponent = lo | bits << 8;
+        }
+        uint64_t length = plamo_bf16_pack_offsets(headers, values); CHECK(length);
+        for (uint64_t j = 0; j < values; ++j) {
+            const struct plamo_bf16_block *b = &headers[j / 512]; uint16_t v = ranges[i].data[j];
+            unsigned bits = b->exponent >> 8, delta = ((v >> 7) & 255) - (b->exponent & 255), k = j % 512;
+            out[b->offset + k] = (v & 127) | ((v >> 8) & 128);
+            for (unsigned bit = 0; bit < bits; ++bit)
+                out[b->offset + 512 + (k * bits + bit) / 8] |= ((delta >> bit) & 1) << ((k * bits + bit) % 8);
+        }
+        entries[i] = (struct plamo_disk_entry){0, 1, (const char *)ranges[i].data - (const char *)base,
+            values * 2, offset, length, ranges[i].rows, ranges[i].columns};
+        CHECK(!fseek(file, (long)offset, SEEK_SET) && fwrite(out, 1, (size_t)page_round(length), file) == page_round(length));
+        offset += page_round(length); free(out);
+    }
+    h->file_bytes = offset;
+    CHECK(!fseek(file, 0, SEEK_SET) && fwrite(metadata, 1, sizeof metadata, file) == sizeof metadata && !fclose(file));
+}
+static void compare_bits(const struct fixture *a, const struct fixture *b) {
+    CHECK(!memcmp(a->model.state, b->model.state, a->model.hidden * 4));
+    CHECK(!memcmp(a->model.logits, b->model.logits, a->model.vocab * 4));
+    for (unsigned i = 0; i < 2; ++i) {
+        const struct cache *ac = &a->cache[i], *bc = &b->cache[i]; CHECK(ac->count == bc->count);
+        size_t bytes = ac->capacity * ac->width * 4;
+        CHECK(!memcmp(ac->k, bc->k, bytes) && !memcmp(ac->v, bc->v, bytes));
+        CHECK(!memcmp(a->rotation[i].out, b->rotation[i].out, bytes));
+        CHECK(a->rotation[i].processed_count == b->rotation[i].processed_count && a->rotation[i].scale_bits == b->rotation[i].scale_bits);
+    }
+}
+static uint64_t fixture_hash(const struct fixture *f) {
+    uint64_t hash = UINT64_C(0xcbf29ce484222325);
+#define HASH(data, bytes) do { const unsigned char *p = (const void *)(data); \
+    for (size_t i = 0; i < (bytes); ++i) hash = (hash ^ p[i]) * UINT64_C(0x100000001b3); } while (0)
+    HASH(f->model.state, f->model.hidden * 4); HASH(f->model.logits, f->model.vocab * 4);
+    for (unsigned i = 0; i < 2; ++i) {
+        const struct cache *c = &f->cache[i]; const struct rotation *r = &f->rotation[i];
+        size_t bytes = c->capacity * c->width * 4;
+        HASH(c->k, bytes); HASH(c->v, bytes); HASH(r->out, bytes);
+        HASH(&c->count, sizeof c->count); HASH(&r->processed_count, sizeof r->processed_count); HASH(&r->scale_bits, sizeof r->scale_bits);
+    }
+#undef HASH
+    return hash;
+}
+static void mapped_graph(void) {
+    const size_t h = 128, n = 257, dim = 128, capacity = 160;
+    size_t words = 35 * h + 2 * (4 * h + 8 * dim * h + 2 * dim + h * 4 * dim + 3 * h * n);
+    uint16_t *data = malloc(words * 2); CHECK(data);
+    for (size_t i = 0; i < words; ++i) data[i] = 0x3c00 | (i * 93 & 255) | ((i & 1) ? 0x8000 : 0);
+    FILE *file = tmpfile(); CHECK(file && fwrite(data, 2, words, file) == words && !fflush(file)); free(data);
+    int64_t fd = fileno(file); void *base = mmap(NULL, words * 2, PROT_READ, MAP_PRIVATE, (int)fd, 0); CHECK(base != MAP_FAILED);
+    struct plamo_mapping map = {base, words * 2};
+    struct fixture a, b; initialize(&a, base, h, n, dim, capacity); initialize(&b, base, h, n, dim, capacity);
+    struct plamo_metal_config config = {.memory = PLAMO_METAL_AUTO, .maps = &map, .fds = &fd, .count = 1,
+        .packing = PLAMO_PACK_RAW, .reserve = 64 * 1024 * 1024, .available = plentiful, .revision = "file-graph"};
+    char error[1024], path[] = "/tmp/plamo-file-graph-XXXXXX";
+    int cache_fd = mkstemp(path); CHECK(cache_fd >= 0 && !close(cache_fd)); archive(path, &a, base, words * 2, 1);
+    struct plamo_metal *reference = plamo_metal_open(&config, error, sizeof error); CHECK(reference); preload(reference, &b.model);
+    const unsigned counts[] = {1, 9, 33}; uint64_t expected_hashes[3][9]; float expected_states[3][33 * 128];
+    // A process owns one backend. Save the complete raw-GPU reference before
+    // reopening it with file-backed weights, preserving every intermediate hash.
+    for (unsigned phase = 0; phase < 3; ++phase) {
+        reset(&b); unsigned count = counts[phase]; uint32_t ids[33];
+        for (unsigned i = 0; i < count; ++i) ids[i] = (i * 7 + 2) % 17;
+        CHECK(plamo_metal_prefill(reference, &b.model, ids, count, expected_states[phase]) == 1);
+        expected_hashes[phase][0] = fixture_hash(&b);
+        for (unsigned step = 0; step < 8; ++step) {
+            CHECK(plamo_metal_forward(reference, &b.model, step % 17) == 1);
+            expected_hashes[phase][step + 1] = fixture_hash(&b);
+        }
+    }
+    plamo_metal_close(reference);
+    config.packing = PLAMO_PACK_LOSSLESS; config.available = available; config.disk_cache_path = path;
+    available_bytes = plentiful();
+    struct plamo_metal *metal = plamo_metal_open(&config, error, sizeof error); CHECK(metal && !unlink(path));
+    for (unsigned phase = 0; phase < 3; ++phase) {
+        reset(&a); available_bytes = phase ? plentiful() : 1; plamo_metal_maintain(metal);
+        if (phase == 2) {
+            const struct qkv *q = &a.qkv[0]; CHECK(plamo_metal_preload(metal, q->weight, 8 * q->dim * h * 2));
+        }
+        unsigned count = counts[phase];
+        uint32_t ids[33]; for (unsigned i = 0; i < count; ++i) ids[i] = (i * 7 + 2) % 17;
+        float actual[33 * 128];
+        struct plamo_metal_info before, after; plamo_metal_get_info(metal, &before);
+        CHECK(plamo_metal_prefill(metal, &a.model, ids, count, actual) == 1);
+        CHECK(!memcmp(actual, expected_states[phase], count * h * 4) && fixture_hash(&a) == expected_hashes[phase][0]);
+        plamo_metal_get_info(metal, &after);
+        CHECK(after.command_buffers == before.command_buffers + 1 && after.disk_cache_mapped_bytes > before.disk_cache_mapped_bytes);
+        uint64_t mappings = after.disk_cache_mapping_bytes;
+        CHECK((mappings > 0) == (phase > 0) && (after.cache.cached_bytes > 0) == (phase == 2));
+        for (unsigned step = 0; step < 8; ++step) {
+            CHECK(plamo_metal_forward(metal, &a.model, step % 17) == 1);
+            CHECK(fixture_hash(&a) == expected_hashes[phase][step + 1]);
+        }
+        plamo_metal_get_info(metal, &after); CHECK(after.disk_cache_mapping_bytes == mappings && !after.errors);
+        available_bytes = 1; plamo_metal_maintain(metal); plamo_metal_get_info(metal, &after);
+        CHECK(!after.disk_cache_mapping_bytes && !after.cache.cached_bytes);
+    }
+    compare_bits(&a, &b);
+    plamo_metal_close(metal); destroy(&a); destroy(&b);
+    initialize(&a, base, h, n, dim, capacity); initialize(&b, base, h, n, dim, capacity);
+    strcpy(path, "/tmp/plamo-file-graph-XXXXXX"); cache_fd = mkstemp(path); CHECK(cache_fd >= 0 && !close(cache_fd));
+    archive(path, &a, base, words * 2, 0); available_bytes = plentiful();
+    metal = plamo_metal_open(&config, error, sizeof error); CHECK(metal && !unlink(path));
+    struct plamo_metal_info before, after; plamo_metal_get_info(metal, &before);
+    uint32_t ids[] = {2, 5, 9}; float untouched[3 * 128] = {0};
+    CHECK(plamo_metal_forward(metal, &a.model, 2) == 0 && plamo_metal_prefill(metal, &a.model, ids, 3, untouched) == 0);
+    compare_bits(&a, &b); for (unsigned i = 0; i < 3 * 128; ++i) CHECK(!untouched[i]);
+    plamo_metal_get_info(metal, &after); CHECK(after.command_buffers == before.command_buffers && !after.disk_cache_mapping_bytes);
+    plamo_metal_close(metal); destroy(&a); destroy(&b); CHECK(!munmap(base, words * 2) && !fclose(file));
+    available_bytes = plentiful();
+    puts("Metal file graph: PASS (bitwise raw-GPU states/logits/KV, cached/uncached views, mixed private/file weights, unlink lifetime, pressure release, atomic missing-range fallback)");
+}
 int main(int argc, char **argv) {
     int require = argc == 2 && !strcmp(argv[1], "--require-gpu");
     int result = run(7, 11, 6, 4100, require); if (result) return result == 77 ? 0 : result;
     result = run(128, 257, 128, 19, require); if (result) return result == 77 ? 0 : result;
     result = run(128, 4097, 128, 19, require); if (result) return result == 77 ? 0 : result;
+    mapped_graph();
     puts("Metal decode/prefill: PASS (single command, full CPU reference, all prompt states/logits/KV, sliding batches, existing prefixes, odd widths, growth past 128 rows, stale rotations, request reset, pressure fallback/recovery)");
     return 0;
 }

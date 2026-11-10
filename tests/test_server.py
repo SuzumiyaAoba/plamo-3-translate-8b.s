@@ -30,6 +30,7 @@ backend=sys.argv[sys.argv.index('--backend')+1] if '--backend' in sys.argv else 
 compute={'backend':'metal' if backend.startswith('metal') else 'cpu','device':'Synthetic GPU','gpu_dispatches':0,'errors':0}
 send({'event':'ready','protocol':1,'model':'plamo-3-translate-8b','revision':'19ecab3fb31424ee937b7503730318b50e55771c','worker_pid':os.getpid(),'load_seconds':0.01,'preload_seconds':0.005,
       'compute':compute,
+      'speculative':{'enabled':backend.startswith('metal'),'block_tokens':8 if backend.startswith('metal') else 0},
       'threads':int(sys.argv[sys.argv.index('--threads')+1]) if '--threads' in sys.argv else 4,
       'memory':{'mode':'resident','weight_bytes':128,'preloaded_weight_bytes':128}})
 while True:
@@ -62,7 +63,9 @@ while True:
         generated+=1
     if memory: memory.update(budget_bytes=48, cached_weight_bytes=32)
     if compute['backend']=='metal': compute['gpu_dispatches']+=4
-    send({'event':'done','finish_reason':reason, 'compute':compute, **({'memory':memory} if memory else {}), 'usage':{'prompt_tokens':len(text),'completion_tokens':generated,'total_tokens':len(text)+generated},
+    send({'event':'done','finish_reason':reason, 'compute':compute, **({'memory':memory} if memory else {}),
+          **({'speculative':{'enabled':False,'block_tokens':0,'batches':1}} if text=='draft-failed' else {}),
+          'usage':{'prompt_tokens':len(text),'completion_tokens':generated,'total_tokens':len(text)+generated},
           'timings':{'prefill_seconds':0.01,'decode_seconds':0.02,'total_seconds':0.03},
           'weight_io':{'read_calls':0,'staged_bytes':0},'verification':{'logits_hash':'private-test-field'}})
 '''
@@ -142,6 +145,19 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(worker.health()['compute']['backend'], 'metal')
         worker.run(api.validate_request({'text': 'Hello.'}))
         self.assertEqual(worker.health()['compute']['gpu_dispatches'], 4)
+
+    def test_health_reflects_unavailable_draft_after_request(self):
+        root = Path(self.temp.name)
+        worker = api.PersistentWorker(root / 'fake-worker', root, startup_timeout=5, backend='metal')
+        self.addCleanup(worker.close)
+        deadline = time.monotonic() + 5
+        while worker.health()['status'] == 'loading' and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertTrue(worker.health()['speculative']['enabled'])
+        result = worker.run(api.validate_request({'text': 'draft-failed'}))
+        self.assertFalse(result['speculative']['enabled'])
+        self.assertEqual(result['translation'], 'こんにちは。')
+        self.assertEqual(worker.health()['speculative'], result['speculative'])
 
     def test_sse_reassembles_utf8_split_between_tokens(self):
         status, headers, payload = self.request(body={"text": "Hello.", "stream": True})

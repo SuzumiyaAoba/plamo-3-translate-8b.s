@@ -135,6 +135,7 @@ class PersistentWorker:
             result["compute"] = info.get("compute", {"backend": "cpu"})
             result["memory"] = info["memory"]
             result["prompt_cache"] = info.get("prompt_cache", {})
+            result["speculative"] = info.get("speculative", {"enabled": False, "block_tokens": 0})
         if error:
             result["error"] = error
         return result
@@ -186,7 +187,7 @@ class PersistentWorker:
                 while True:
                     event = self._read_event()
                     kind = event["event"]
-                    updates = {key: event[key] for key in ("memory", "compute") if key in event}
+                    updates = {key: event[key] for key in ("memory", "compute", "speculative") if key in event}
                     if updates:
                         with self._state_lock:
                             self._info = {**self._info, **updates}
