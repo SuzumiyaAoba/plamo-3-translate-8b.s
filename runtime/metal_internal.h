@@ -34,6 +34,7 @@ struct plamo_metal {
     id<MTLCommandQueue> queue;
     id<MTLComputePipelineState> matvec[3], vector[3], matmul[3][4], norm, swiglu, residual, touch, analyze, pack, quantize4;
     id<MTLComputePipelineState> matmul_split[3][4], split_reduce;
+    id<MTLComputePipelineState> compact[2], compact_split;
     id<MTLBuffer> split;
     unsigned split_k;
     id<MTLComputePipelineState> decode_keys, decode_qkv, decode_attention, decode_residual;
@@ -50,7 +51,7 @@ struct plamo_metal {
     uint64_t layer_count, rope_count;
     NSUInteger final_norm;
     id residency;
-    unsigned residency_dirty, use_packing, cache_mappings, verify_encoding, draft_quantized, raw_mappings;
+    unsigned residency_dirty, use_packing, cache_mappings, verify_encoding, draft_quantized, raw_mappings, raw_residency, fixed_bf16;
     uint64_t verification_tokens, verification_index;
     uint64_t maximum, capacity, used, staging_bytes;
     size_t entries;

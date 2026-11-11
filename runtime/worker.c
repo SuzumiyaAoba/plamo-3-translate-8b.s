@@ -6,6 +6,7 @@
 #include "draft.h"
 #include <errno.h>
 #include <inttypes.h>
+#include <math.h>
 #include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -151,6 +152,15 @@ static void usage(void) {
 /* This process owns only an approximate proposer. Its private binary channel
    never emits public tokens; the parent verifies every proposal with 8B. */
 static int draft_peer(struct plamo_engine *engine) {
+    const char *setting = getenv("PLAMO_DRAFT_MIN_MARGIN");
+    char *end;
+    float minimum_margin = setting ? strtof(setting, &end) : 0.0f;
+    if (setting && (!*setting || *end || !isfinite(minimum_margin) || minimum_margin < 0)) return 64;
+    setting = getenv("PLAMO_DRAFT_MIN_TOKENS");
+    unsigned long minimum_tokens = setting ? strtoul(setting, &end, 10) : 2;
+    if (setting && (!*setting || *end || minimum_tokens < 1 || minimum_tokens > PLAMO_DRAFT_MAX)) return 64;
+    setting = getenv("PLAMO_DRAFT_TRACE");
+    int trace = setting && !strcmp(setting, "1");
     uint32_t ready[] = {PLAMO_DRAFT_MAGIC, 1, 107520, PLAMO_DRAFT_MAX};
     if (fwrite(ready, sizeof ready, 1, stdout) != 1 || fflush(stdout)) return 1;
     struct plamo_draft_checkpoint *saved = NULL;
@@ -171,22 +181,48 @@ static int draft_peer(struct plamo_engine *engine) {
             struct plamo_result result;
             reply.ok = !memchr(text, 0, frame[3]) &&
                 plamo_engine_translate(engine, text, frame[1], 1, NULL, &result, error, sizeof error);
+            if (trace) fprintf(stderr, "draft reset direction=%u\n", frame[1]);
         } else if (frame[0] == 2 && frame[1] < plamo_model.vocab && frame[2] && frame[2] <= PLAMO_DRAFT_MAX && !frame[3] && !saved) {
             saved = plamo_draft_checkpoint(&plamo_model, frame[2]);
             if (saved) {
                 ids[0] = frame[1]; processed = 0; proposed = 1;
+                float margins[PLAMO_DRAFT_MAX] = {0};
+                uint32_t alternatives[PLAMO_DRAFT_MAX] = {0};
+                float confidence = INFINITY;
                 int failed = 0;
                 while (proposed < frame[2] && ids[proposed - 1] != 1 && ids[proposed - 1] != 16) {
+                    if (minimum_margin && proposed >= minimum_tokens && confidence < minimum_margin) break;
                     if (!plamo_forward(&plamo_model, ids[proposed - 1])) { failed = 1; break; }
                     ++processed;
-                    ids[proposed++] = (uint32_t)plamo_argmax(plamo_model.logits, plamo_model.vocab);
+                    uint32_t id = (uint32_t)plamo_argmax(plamo_model.logits, plamo_model.vocab);
+                    if (id >= plamo_model.vocab) { failed = 1; break; }
+                    if (minimum_margin || trace) {
+                        float maximum = plamo_model.logits[id];
+                        plamo_model.logits[id] = -INFINITY;
+                        uint32_t alternative = (uint32_t)plamo_argmax(plamo_model.logits, plamo_model.vocab);
+                        plamo_model.logits[id] = maximum;
+                        alternatives[proposed] = alternative;
+                        margins[proposed] = maximum - plamo_model.logits[alternative];
+                        if (margins[proposed] < confidence) confidence = margins[proposed];
+                        if (minimum_margin && proposed >= minimum_tokens && confidence < minimum_margin) break;
+                    }
+                    ids[proposed++] = id;
+                }
+                if (trace) {
+                    fprintf(stderr, "draft proposal count=%u processed=%u", proposed, processed);
+                    for (unsigned i = 0; i < proposed; ++i) fprintf(stderr, " %u:%.4f/%u", ids[i], margins[i], alternatives[i]);
+                    fputc('\n', stderr);
                 }
                 reply.ok = !failed; reply.count = proposed;
                 memcpy(reply.ids, ids, proposed * sizeof *ids);
             }
         } else if (frame[0] == 3 && saved && frame[1] <= proposed && !frame[2] && !frame[3]) {
             unsigned accepted = frame[1];
-            if (accepted <= processed) reply.ok = plamo_draft_restore(saved, processed, accepted);
+            if (trace) fprintf(stderr, "draft accept count=%u\n", accepted);
+            // No rollback is needed when every forwarded token was consumed.
+            // Preserve the already valid rotated-key cache in that case.
+            if (accepted == processed) reply.ok = 1;
+            else if (accepted < processed) reply.ok = plamo_draft_restore(saved, processed, accepted);
             else if (accepted == processed + 1) reply.ok = plamo_forward(&plamo_model, ids[processed]);
             plamo_draft_checkpoint_free(saved); saved = NULL;
         }

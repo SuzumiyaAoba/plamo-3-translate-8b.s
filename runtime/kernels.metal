@@ -253,6 +253,89 @@ inline void matmul_tile(device const ushort *w, device const float *x, device fl
     }
 }
 
+// Keep all original BF16 bits in threadgroup memory. A half matrix is only
+// a 16-bit carrier: expand its raw bits into float matrix fragments before
+// the same FP32 MMA sequence. No half arithmetic or weight rounding occurs.
+template<uint Packed, uint N, uint K, uint Parts, uint R>
+inline void matmul_compact(device const ushort *w, device const float *x, device float *y,
+                        constant Linear &p, uint3 group, uint tid, uint simd,
+                        threadgroup ushort *weights, threadgroup float *inputs, threadgroup float *outputs) {
+    simdgroup_float8x8 total0(0.0f), total1(0.0f), total2(0.0f), total3(0.0f);
+    y += ulong(group.z) * p.rows * p.tokens;
+    for (uint base = group.z * (p.columns / Parts); base < (group.z + 1) * (p.columns / Parts); base += K) {
+        for (uint i = tid; i < R * (K / 4); i += R * 4) {
+            uint row = group.x * R + i / (K / 4), col = base + (i % (K / 4)) * 4;
+            float4 value = 0.0f;
+            if (row < p.rows && col + 3 < p.columns && !(p.columns % 4) && p.aligned_weights)
+                value = weight4<Packed>(w, ulong(row) * p.columns + col, p);
+            else for (uint j = 0; j < 4; ++j)
+                if (row < p.rows && col + j < p.columns) value[j] = weight_value<Packed>(w, ulong(row) * p.columns + col + j, p);
+            *((threadgroup ushort4 *)(weights + i * 4)) = ushort4(as_type<uint4>(value) >> 16);
+        }
+        for (uint i = tid; i < N * (K / 4); i += R * 4) {
+            uint token = group.y * N + i / (K / 4), col = base + (i % (K / 4)) * 4;
+            float4 value = 0.0f;
+            if (token < p.tokens && col + 3 < p.columns && !(p.input_stride % 4))
+                value = *((device const float4 *)(x + ulong(token) * p.input_stride + col));
+            else for (uint j = 0; j < 4; ++j)
+                if (token < p.tokens && col + j < p.columns) value[j] = x[ulong(token) * p.input_stride + col + j];
+            for (uint j = 0; j < 4; ++j) inputs[i * 4 + j] = value[j];
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        for (uint k = 0; k < K; k += 8) {
+            simdgroup_float8x8 a, b0, b1, b2, b3;
+            simdgroup_half8x8 bits;
+            simdgroup_load(bits, (threadgroup half *)weights + simd * 8 * K + k, K);
+            for (uint i = 0; i < 2; ++i) a.thread_elements()[i] = bf16(as_type<ushort>(bits.thread_elements()[i]));
+            simdgroup_load(b0, inputs + k, K, ulong2(0), true);
+            if (N > 8) simdgroup_load(b1, inputs + 8 * K + k, K, ulong2(0), true);
+            if (N > 16) simdgroup_load(b2, inputs + 16 * K + k, K, ulong2(0), true);
+            if (N > 24) simdgroup_load(b3, inputs + 24 * K + k, K, ulong2(0), true);
+            simdgroup_multiply_accumulate(total0, a, b0, total0);
+            if (N > 8) simdgroup_multiply_accumulate(total1, a, b1, total1);
+            if (N > 16) simdgroup_multiply_accumulate(total2, a, b2, total2);
+            if (N > 24) simdgroup_multiply_accumulate(total3, a, b3, total3);
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+    simdgroup_store(total0, outputs + simd * 8 * N, N);
+    if (N > 8) simdgroup_store(total1, outputs + simd * 8 * N + 8, N);
+    if (N > 16) simdgroup_store(total2, outputs + simd * 8 * N + 16, N);
+    if (N > 24) simdgroup_store(total3, outputs + simd * 8 * N + 24, N);
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    for (uint i = tid; i < R * N; i += R * 4) {
+        uint row = group.x * R + i / N, token = group.y * N + i % N;
+        if (row < p.rows && token < p.tokens) y[ulong(token) * p.output_stride + row] = outputs[i];
+    }
+}
+kernel void plamo_matmul8_compact(device const ushort *w [[buffer(0)]], device const float *x [[buffer(1)]],
+                                      device float *y [[buffer(2)]], constant Linear &p [[buffer(3)]],
+                                      uint3 group [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]],
+                                      uint simd [[simdgroup_index_in_threadgroup]]) {
+    threadgroup ushort4 weights[512];
+    threadgroup float inputs[8 * 64];
+    matmul_compact<0, 8, 64, 1, 32>(w, x, y, p, group, tid, simd,
+        (threadgroup ushort *)weights, inputs, (threadgroup float *)weights);
+}
+kernel void plamo_matmul16_compact(device const ushort *w [[buffer(0)]], device const float *x [[buffer(1)]],
+                                      device float *y [[buffer(2)]], constant Linear &p [[buffer(3)]],
+                                      uint3 group [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]],
+                                      uint simd [[simdgroup_index_in_threadgroup]]) {
+    threadgroup ushort4 weights[512];
+    threadgroup float inputs[16 * 32];
+    matmul_compact<0, 16, 32, 1, 64>(w, x, y, p, group, tid, simd,
+        (threadgroup ushort *)weights, inputs, (threadgroup float *)weights);
+}
+kernel void plamo_matmul16_split_compact(device const ushort *w [[buffer(0)]], device const float *x [[buffer(1)]],
+                                      device float *y [[buffer(2)]], constant Linear &p [[buffer(3)]],
+                                      uint3 group [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]],
+                                      uint simd [[simdgroup_index_in_threadgroup]]) {
+    threadgroup ushort4 weights[256];
+    threadgroup float inputs[16 * 32];
+    matmul_compact<0, 16, 32, 4, 32>(w, x, y, p, group, tid, simd,
+        (threadgroup ushort *)weights, inputs, (threadgroup float *)weights);
+}
+
 #define VECTOR_KERNEL(NAME, BODY, PACKED) \
 kernel void NAME(device const ushort *w [[buffer(0)]], device const float *x [[buffer(1)]], \
                  device float *y [[buffer(2)]], constant Linear &p [[buffer(3)]], \
@@ -719,49 +802,6 @@ kernel void plamo_draft_quantize4(device const ushort *w [[buffer(0)]], device u
     uint i = block * 32 + lane;
     float value = i < count ? bf16(w[i]) : 0.0f;
     float maximum = simd_max(abs(value)), scale = maximum / 7.0f;
-    device uchar *data = out + ulong(block) * 20;
-    if (!lane) *((device float *)data) = scale;
-    if (lane < 16) {
-        uint first = block * 32 + lane, second = first + 16;
-        float a = first < count ? bf16(w[first]) : 0.0f;
-        float b = second < count ? bf16(w[second]) : 0.0f;
-        uint qa = scale ? uint(clamp(int(rint(a / scale)), -8, 7) + 8) : 8;
-        uint qb = scale ? uint(clamp(int(rint(b / scale)), -8, 7) + 8) : 8;
-        data[4 + lane] = uchar(qa | qb << 4);
-    }
-}
-
-// Proposal-only Q4: choose the lowest-error scale from a bounded search and
-// two least-squares refinements. The original quantizer is a candidate, so
-// every block retains or improves its measured reconstruction error.
-kernel void plamo_draft_quantize4_mse(device const ushort *w [[buffer(0)]], device uchar *out [[buffer(1)]],
-                                       constant uint &count [[buffer(2)]], uint block [[threadgroup_position_in_grid]],
-                                       uint lane [[thread_index_in_simdgroup]]) {
-    uint i = block * 32 + lane;
-    float value = i < count ? bf16(w[i]) : 0.0f;
-    float maximum = simd_max(abs(value)), original = maximum / 7.0f;
-    uint leader = simd_min(abs(value) == maximum ? lane : 32u);
-    float extreme = simd_shuffle(value, leader);
-    float scale = original;
-    float q = original ? clamp(rint(value / original), -8.0f, 7.0f) : 0.0f;
-    float delta = value - q * original;
-    float best = simd_sum(delta * delta);
-    for (uint step = 0; step < 13; ++step) {
-        float candidate = -(extreme / 8.0f) * (0.75f + float(step) / 24.0f);
-        float quant = candidate ? clamp(rint(value / candidate), -8.0f, 7.0f) : 0.0f;
-        float error = value - quant * candidate;
-        float squared = simd_sum(error * error);
-        if (squared < best) { best = squared; scale = candidate; }
-    }
-    for (uint iteration = 0; iteration < 2; ++iteration) {
-        float quant = scale ? clamp(rint(value / scale), -8.0f, 7.0f) : 0.0f;
-        float norm = simd_sum(quant * quant);
-        float candidate = norm ? simd_sum(value * quant) / norm : 0.0f;
-        quant = candidate ? clamp(rint(value / candidate), -8.0f, 7.0f) : 0.0f;
-        float error = value - quant * candidate;
-        float squared = simd_sum(error * error);
-        if (squared < best) { best = squared; scale = candidate; }
-    }
     device uchar *data = out + ulong(block) * 20;
     if (!lane) *((device float *)data) = scale;
     if (lane < 16) {

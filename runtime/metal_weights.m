@@ -9,8 +9,10 @@
 
 void plamo_metal_release_mappings(struct plamo_metal *m) {
     for (size_t i = 0; i < m->mapped_count; ++i) {
+        if (m->raw_residency) plamo_metal_residency_remove(m, m->mapped[i].buffer);
         [m->mapped[i].buffer release];
     }
+    if (m->raw_residency) plamo_metal_residency_commit(m);
     m->mapped_count = 0;
     m->info.disk_cache_mapping_bytes = 0;
 }
@@ -27,6 +29,7 @@ id<MTLBuffer> plamo_metal_mapped_weights(struct plamo_metal *m, const void *data
     if (m->cache_mappings && m->mapped_count < MAX_ENTRIES) {
         m->mapped[m->mapped_count++] = (struct mapped_weight){data, bytes, buffer};
         m->info.disk_cache_mapping_bytes += bytes;
+        if (m->raw_residency) plamo_metal_residency_add(m, buffer);
         return buffer;
     }
     return [buffer autorelease];
@@ -34,7 +37,7 @@ id<MTLBuffer> plamo_metal_mapped_weights(struct plamo_metal *m, const void *data
 
 void plamo_metal_maintain(struct plamo_metal *m) {
     m->checked_at = plamo_metal_now();
-    if (m->config.memory != PLAMO_METAL_AUTO) return;
+    if (m->config.memory != PLAMO_METAL_AUTO || m->fixed_bf16) return;
     uint64_t available = m->config.available(), owned = m->used + m->staging_bytes;
     m->cache_mappings = m->raw_mappings || available >= m->config.reserve;
     if (!m->cache_mappings) plamo_metal_release_mappings(m);

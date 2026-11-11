@@ -24,10 +24,11 @@ static int kernels(int require_gpu) {
     }
     const size_t shapes[][3] = {{0, 0, 0}, {0, 128, 9}, {4, 0, 4}, {1, 1, 1}, {3, 7, 2},
         {5, 12, 17}, {35, 65, 9}, {129, 513, 3}, {259, 1027, 9},
-        {259, 1027, 65}, {1024, 1024, 21}, {1024, 4096, 1}, {2053, 1536, 8}, {1025, 16384, 9}};
+        {259, 1027, 65}, {1024, 1024, 21}, {1024, 4096, 1}, {2053, 1536, 8}, {1025, 16384, 9}, {1056, 16384, 8}};
     double maximum_error = 0;
     for (size_t s = 0; s < sizeof shapes / sizeof *shapes; ++s) {
         size_t rows = shapes[s][0], cols = shapes[s][1], tokens = shapes[s][2], xs = cols + 7, ys = rows + 9;
+        if (rows == 1056 && cols == 16384) xs = 2 * cols;
         uint16_t *w = malloc((rows * cols + 1) * 2);
         float *x = malloc((tokens * xs + 1) * 4), *reference = malloc((tokens * ys + 1) * 4), *actual = malloc((tokens * ys + 1) * 4);
         CHECK(w && x && reference && actual);
