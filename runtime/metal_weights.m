@@ -9,10 +9,8 @@
 
 void plamo_metal_release_mappings(struct plamo_metal *m) {
     for (size_t i = 0; i < m->mapped_count; ++i) {
-        plamo_metal_residency_remove(m, m->mapped[i].buffer);
         [m->mapped[i].buffer release];
     }
-    plamo_metal_residency_commit(m);
     m->mapped_count = 0;
     m->info.disk_cache_mapping_bytes = 0;
 }
@@ -23,12 +21,12 @@ id<MTLBuffer> plamo_metal_mapped_weights(struct plamo_metal *m, const void *data
     id<MTLBuffer> buffer = [m->device newBufferWithBytesNoCopy:(void *)data length:(NSUInteger)bytes
                                                    options:MTLResourceStorageModeShared deallocator:nil];
     if (!buffer) return nil;
-    // Keep file-backed GPU resources resident just like private weights.
-    // Maintenance drops them before evicting private copies under pressure.
+    // Reuse wrappers, but let the command buffer manage the residency of file
+    // pages. Holding borrowed pages in the explicit residency set competes with
+    // the private weight budget and the small resident proposer.
     if (m->cache_mappings && m->mapped_count < MAX_ENTRIES) {
         m->mapped[m->mapped_count++] = (struct mapped_weight){data, bytes, buffer};
         m->info.disk_cache_mapping_bytes += bytes;
-        plamo_metal_residency_add(m, buffer);
         return buffer;
     }
     return [buffer autorelease];
@@ -38,7 +36,7 @@ void plamo_metal_maintain(struct plamo_metal *m) {
     m->checked_at = plamo_metal_now();
     if (m->config.memory != PLAMO_METAL_AUTO) return;
     uint64_t available = m->config.available(), owned = m->used + m->staging_bytes;
-    m->cache_mappings = available >= m->config.reserve;
+    m->cache_mappings = m->raw_mappings || available >= m->config.reserve;
     if (!m->cache_mappings) plamo_metal_release_mappings(m);
     uint64_t total = available > UINT64_MAX - owned ? UINT64_MAX : available + owned;
     uint64_t target = total > m->config.reserve ? total - m->config.reserve : 0;
@@ -222,6 +220,7 @@ id<MTLBuffer> plamo_metal_weights(struct plamo_metal *m, const void *source, uin
 static int prepare_buffer(struct plamo_metal *, id<MTLBuffer>);
 
 int plamo_metal_preload(struct plamo_metal *m, const void *source, uint64_t bytes) {
+    if (m->raw_mappings) return 1;
     if (!bytes) return 1;
     @autoreleasepool {
         uint64_t errors = m->info.errors;
@@ -352,6 +351,14 @@ int plamo_metal_resolve_projection(struct plamo_metal *m, const uint16_t *w, uin
         if (found) {
             out->tiles[out->count++] = (struct tile){found->buffer, address - found->source, first, count, 0, found->packed, NULL};
         } else {
+            if (mapped && m->raw_mappings) {
+                size_t file; uint64_t source_offset;
+                if (!file_range(m, address, count * row_bytes, &file, &source_offset)) return 0;
+                uint64_t prefix = address % PLAMO_DISK_ALIGNMENT;
+                uint64_t length = plamo_metal_aligned(prefix + count * row_bytes);
+                out->tiles[out->count++] = (struct tile){nil, prefix, first, count, length, 0, (const void *)(address - prefix)};
+                continue;
+            }
             if (!mapped || !m->use_packing) return 0;
             uint64_t stored = 0;
             const void *data = plamo_disk_cache_get(m->disk_cache, (const void *)address, count * row_bytes, 1, &stored);

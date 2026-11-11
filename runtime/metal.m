@@ -72,6 +72,23 @@ void plamo_metal_encode_linear(struct plamo_metal *m, id<MTLComputeCommandEncode
     // compiled tile: e.g. 69 tokens use 3 x 24 rather than 3 x 32.
     uint64_t panels = (tokens + 31) / 32;
     uint64_t tile_tokens = ((tokens + panels - 1) / panels + 7) / 8 * 8;
+    if (m->split_k && batched && tokens <= 32 && columns >= 8192 && !(columns % 128) && rows <= 4096) {
+        params.ys = (uint32_t)rows;
+        [encoder setComputePipelineState:m->matmul_split[packed][tile_tokens / 8 - 1]];
+        [encoder setBuffer:w offset:packed ? 0 : offset atIndex:0];
+        [encoder setBuffer:x offset:0 atIndex:1];
+        [encoder setBuffer:m->split offset:0 atIndex:2];
+        [encoder setBytes:&params length:sizeof params atIndex:3];
+        [encoder dispatchThreadgroups:MTLSizeMake((rows + 31) / 32, (tokens + tile_tokens - 1) / tile_tokens, 4) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+        params.ys = (uint32_t)ys;
+        [encoder setComputePipelineState:m->split_reduce];
+        [encoder setBuffer:m->split offset:0 atIndex:0];
+        [encoder setBuffer:y offset:output_offset atIndex:1];
+        [encoder setBytes:&params length:sizeof params atIndex:2];
+        [encoder dispatchThreadgroups:MTLSizeMake((rows * tokens + 127) / 128, 1, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+        m->info.dispatches += 2;
+        return;
+    }
     [encoder setComputePipelineState:batched ? m->matmul[packed][tile_tokens / 8 - 1] : vector ? m->vector[packed] : m->matvec[packed]];
     [encoder setBuffer:w offset:packed ? 0 : offset atIndex:0];
     [encoder setBuffer:x offset:0 atIndex:1];
@@ -271,8 +288,14 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
             for (unsigned n = 0; n < 4; ++n) {
                 fn = [library newFunctionWithName:[names[n] stringByAppendingString:suffix]];
                 m->matmul[packed][n] = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+                fn = [library newFunctionWithName:[NSString stringWithFormat:@"plamo_matmul%u_split%@", (n + 1) * 8, suffix]];
+                m->matmul_split[packed][n] = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
             }
         }
+        fn = [library newFunctionWithName:@"plamo_split_reduce"];
+        m->split_reduce = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+        const char *split_k = getenv("PLAMO_METAL_SPLIT_K");
+        m->split_k = split_k && !strcmp(split_k, "4");
         fn = [library newFunctionWithName:@"plamo_mlp_norm"];
         m->norm = [m->device newComputePipelineStateWithFunction:fn error:&failure];
         [fn release];
@@ -292,7 +315,8 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
         m->pack = [m->device newComputePipelineStateWithFunction:fn error:&failure];
         [fn release];
         if (m->draft_quantized) {
-            fn = [library newFunctionWithName:@"plamo_draft_quantize4"];
+            const char *mse = getenv("PLAMO_DRAFT_Q4_MSE");
+            fn = [library newFunctionWithName:mse && !strcmp(mse, "1") ? @"plamo_draft_quantize4_mse" : @"plamo_draft_quantize4"];
             m->quantize4 = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
         }
         fn = [library newFunctionWithName:@"plamo_decode_keys"];
@@ -309,11 +333,18 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
         m->prefill_attention = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
         fn = [library newFunctionWithName:@"plamo_prefill_store"];
         m->prefill_store = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+        fn = [library newFunctionWithName:@"plamo_verify_scores"];
+        m->verify_scores = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+        fn = [library newFunctionWithName:@"plamo_verify_softmax"];
+        m->verify_softmax = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
+        fn = [library newFunctionWithName:@"plamo_verify_values"];
+        m->verify_values = [m->device newComputePipelineStateWithFunction:fn error:&failure]; [fn release];
         [library release];
         m->queue = [m->device newCommandQueue];
         int pipelines = (!m->draft_quantized || m->quantize4) && m->norm && m->swiglu && m->residual && m->touch && m->analyze && m->pack && m->queue &&
                         m->decode_keys && m->decode_qkv && m->decode_attention && m->decode_residual &&
-                        m->prefill_qkv && m->prefill_attention && m->prefill_store;
+                        m->prefill_qkv && m->prefill_attention && m->prefill_store &&
+                        m->verify_scores && m->verify_softmax && m->verify_values;
         for (unsigned packed = 0; packed < (m->draft_quantized ? 3u : 2u); ++packed) {
             pipelines = pipelines && m->matvec[packed] && m->vector[packed] &&
                 m->matvec[packed].threadExecutionWidth == 32 && m->vector[packed].threadExecutionWidth == 32 &&
@@ -352,12 +383,17 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
         m->use_packing = config->memory != PLAMO_METAL_STREAM &&
             (config->packing == PLAMO_PACK_LOSSLESS ||
              (config->packing == PLAMO_PACK_AUTO && working > m->capacity - m->staging_bytes));
+        const char *raw_mappings = getenv("PLAMO_METAL_RAW_MMAP");
+        m->raw_mappings = raw_mappings && !strcmp(raw_mappings, "1") &&
+            config->memory != PLAMO_METAL_STREAM && !m->draft_quantized;
+        if (m->raw_mappings) m->use_packing = 0;
         if (config->memory == PLAMO_METAL_RESIDENT &&
             ((!m->use_packing && !m->draft_quantized && total > spare) || (m->use_packing && total / 2 > m->capacity - m->staging_bytes))) {
             snprintf(error, cap, "Metal BF16 preload requires weights plus the memory reserve"); goto fail;
         }
         m->staging = [m->device newBufferWithLength:(NSUInteger)m->staging_bytes options:MTLResourceStorageModeShared];
         if (!m->staging) { snprintf(error, cap, "cannot allocate a shared Metal weight window"); goto fail; }
+        if (m->split_k && !plamo_metal_ensure_buffer(m, &m->split, 2 * MIB)) { snprintf(error, cap, "cannot allocate split-K workspace"); goto fail; }
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
         if (@available(macOS 15.0, *)) {
             MTLResidencySetDescriptor *descriptor = [[MTLResidencySetDescriptor alloc] init];
@@ -372,7 +408,7 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
             m->info.residency_sets = 1;
         }
 #endif
-        if (config->disk_cache_path && config->memory != PLAMO_METAL_STREAM && !m->draft_quantized) {
+        if (config->disk_cache_path && config->memory != PLAMO_METAL_STREAM && !m->draft_quantized && !m->raw_mappings) {
             m->disk_cache = plamo_disk_cache_open(config->disk_cache_path, config->revision, config->maps,
                                                 config->count, m->info.note, sizeof m->info.note);
             if (config->packing == PLAMO_PACK_AUTO && plamo_disk_cache_packed(m->disk_cache)) m->use_packing = 1;
@@ -380,7 +416,7 @@ struct plamo_metal *plamo_metal_open(const struct plamo_metal_config *config, ch
         m->config.disk_cache_path = NULL; // The path is borrowed only during open.
         for (size_t i = 0; i < config->count; ++i) (void)fcntl((int)config->fds[i], F_NOCACHE, 1);
         m->checked_at = plamo_metal_now();
-        if (config->memory == PLAMO_METAL_RESIDENT && !plamo_metal_preload_schema(m)) { snprintf(error, cap, "%s", m->info.note); goto fail; }
+        if (config->memory == PLAMO_METAL_RESIDENT && !m->raw_mappings && !plamo_metal_preload_schema(m)) { snprintf(error, cap, "%s", m->info.note); goto fail; }
         plamo_weight_context = m;
         plamo_weight_provider = acquire;
         // The GPU module owns row tiling and combines resident tiles into one
@@ -405,7 +441,7 @@ void plamo_metal_get_info(const struct plamo_metal *m, struct plamo_metal_info *
     out->cache.max_budget_bytes = m->maximum;
     out->cache.staging_bytes = m->staging_bytes;
     out->cache.storage_bytes = m->used;
-    snprintf(out->weight_storage, sizeof out->weight_storage, "%s", m->draft_quantized ? "q4-draft" : m->info.packed_weight_bytes || m->info.disk_cache_mapped_bytes ? "lossless-bf16" : "bf16");
+    snprintf(out->weight_storage, sizeof out->weight_storage, "%s", m->draft_quantized ? "q4-draft" : m->raw_mappings ? "mapped-bf16" : m->info.packed_weight_bytes || m->info.disk_cache_mapped_bytes ? "lossless-bf16" : "bf16");
     out->allocated_bytes = m->device.currentAllocatedSize;
     out->recommended_working_set_bytes = m->device.recommendedMaxWorkingSetSize;
 }
@@ -435,14 +471,16 @@ void plamo_metal_close(struct plamo_metal *m) {
     [m->state release]; [m->normalized release]; [m->gate release]; [m->branch release]; [m->norms release];
     for (unsigned packed = 0; packed < (m->draft_quantized ? 3u : 2u); ++packed) {
         [m->matvec[packed] release]; [m->vector[packed] release];
-        for (unsigned n = 0; n < 4; ++n) [m->matmul[packed][n] release];
+        for (unsigned n = 0; n < 4; ++n) { [m->matmul[packed][n] release]; [m->matmul_split[packed][n] release]; }
     }
     [m->norm release]; [m->swiglu release]; [m->residual release];
     [m->touch release];
     [m->pack_headers release]; [m->analyze release]; [m->pack release]; [m->quantize4 release];
     [m->decode_keys release]; [m->decode_qkv release]; [m->decode_attention release]; [m->decode_residual release];
     [m->prefill_qkv release]; [m->prefill_attention release]; [m->prefill_store release];
+    [m->verify_scores release]; [m->verify_softmax release]; [m->verify_values release];
     [m->decode_norms release]; [m->qkv release]; [m->attention release]; [m->scores release]; [m->logits release];
+    [m->split release]; [m->split_reduce release];
     [m->queue release]; [m->device release];
     plamo_disk_cache_close(m->disk_cache);
     for (size_t i = 0; i < m->config.count; ++i)

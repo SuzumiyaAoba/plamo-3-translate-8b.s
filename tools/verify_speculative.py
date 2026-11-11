@@ -94,14 +94,18 @@ def error(actual, reference):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--probe', type=Path, default=ROOT / 'build/generation-probe')
+    parser.add_argument('--reference-probe', type=Path,
+                        help='saved, unmodified FP32 probe; default: use --probe for ordinary decoding too')
     parser.add_argument('--data-dir', type=Path, default=ROOT)
     parser.add_argument('--report', type=Path, default=ROOT / 'build/speculative-accuracy.json')
     parser.add_argument('--case', action='append', choices=[c['name'] for c in CASES], help='run selected cases only')
     args = parser.parse_args()
     probe = args.probe.resolve()
+    reference = (args.reference_probe or probe).resolve()
     digest = hashlib.sha256(probe.read_bytes()).hexdigest()
+    reference_digest = hashlib.sha256(reference.read_bytes()).hexdigest()
     cases = [c for c in CASES if not args.case or c['name'] in args.case]
-    before = capture(probe, args.data_dir, 0, cases)
+    before = capture(reference, args.data_dir, 0, cases)
     after = capture(probe, args.data_dir, 1, cases)
     comparisons = []
     for case, ref, candidate in zip(cases, before, after):
@@ -127,9 +131,11 @@ def main():
     assert all(x['finish_reason'] == 'cancelled' for x in comparisons if x['name'].startswith('cancel-'))
     assert all(x['prompt_tokens'] > 2048 for x in comparisons if x['name'] == 'sliding-kv')
     assert hashlib.sha256(probe.read_bytes()).hexdigest() == digest
+    assert hashlib.sha256(reference.read_bytes()).hexdigest() == reference_digest
     report = dict(timestamp_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                   target_precision='original BF16 weights, FP32 arithmetic', auxiliary_storage='Q4 proposals only',
                   probe_sha256=digest, all_token_sequences_and_finish_states_match=True,
+                  reference_probe_sha256=reference_digest,
                   relative_l2_tolerance=1e-4, max_abs_tolerance='2e-4 * (1 + maximum reference magnitude)',
                   cases=comparisons)
     args.report.parent.mkdir(parents=True, exist_ok=True)

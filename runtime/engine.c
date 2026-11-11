@@ -253,8 +253,9 @@ static int prepare_weights(struct plamo_engine *e, char *error, size_t cap) {
     struct plamo_engine_info info;
     plamo_engine_get_info(e, &info);
     e->info.preloaded_weight_bytes = info.cache.cached_bytes;
-    e->info.preload_seconds = now() - start;
-    e->info.load_seconds += e->info.preload_seconds;
+    double seconds = now() - start;
+    e->info.preload_seconds += seconds;
+    e->info.load_seconds += seconds;
     e->prepared = 1;
     return 1;
 fail:
@@ -287,9 +288,12 @@ int plamo_engine_prepare(struct plamo_engine *e, char *error, size_t cap) {
     if (setting && strcmp(setting, "0") && strcmp(setting, "1")) {
         snprintf(error, cap, "PLAMO_PREFIX_CACHE must be 0 or 1"); return 0;
     }
+    // Reserve the small, fully resident proposer before the target can claim
+    // the available memory for its adaptive weights and borrowed file views.
+    prepare_draft(e);
     if (!prepare_weights(e, error, cap)) return 0;
     if (e->prefixes_prepared || !e->metal || !strcmp(e->info.memory_mode, "stream") ||
-        (setting && !strcmp(setting, "0"))) { prepare_draft(e); return 1; }
+        (setting && !strcmp(setting, "0"))) return 1;
     double start = now();
     for (unsigned direction = 0; direction < 2; ++direction) {
         const uint32_t *ids;
@@ -316,7 +320,6 @@ int plamo_engine_prepare(struct plamo_engine *e, char *error, size_t cap) {
     e->info.preload_seconds += e->info.prefix_seconds;
     e->info.load_seconds += e->info.prefix_seconds;
     e->prefixes_prepared = 1;
-    prepare_draft(e);
     return 1;
 }
 
@@ -377,10 +380,12 @@ int plamo_engine_translate(struct plamo_engine *e, const char *text, unsigned di
     // A one-shot CLI has not passed through worker readiness. Fill only the
     // retainable projections before dispatch, so its very first prompt can
     // use the complete GPU graph too. This I/O remains in request timings.
-    if (e->metal && !prepare_weights(e, error, cap)) { munmap(states, bytes); return 0; }
+    if (e->metal) {
+        if (max_tokens > 1) prepare_draft(e);
+        if (!prepare_weights(e, error, cap)) { munmap(states, bytes); return 0; }
+    }
     if (direction) result->cached_prompt_tokens = plamo_prompt_cache_restore(e->prefix[direction - 1], &plamo_model, ids, count);
     int ok = plamo_prefill(&plamo_model, ids + result->cached_prompt_tokens, count - result->cached_prompt_tokens, states);
-    if (ok) prepare_draft(e);
     int speculate = ok && e->draft && max_tokens > 1;
     if (speculate && !plamo_draft_reset(e->draft, text, direction)) { disable_draft(e); speculate = 0; }
     result->prefill_seconds = now() - prefill_start;

@@ -130,20 +130,36 @@ inline void matvec(device const ushort *w, device const float *x, device float *
     uint row = group.x * 4 + simd;
     if (row >= p.rows) return;
     float4 sum0 = 0.0f, sum1 = 0.0f;
-    for (uint k = lane * 8; k < p.columns; k += 256) {
-        if (!(p.columns % 8) && p.aligned_weights) {
-            float4 weights = weight4<Packed>(w, ulong(row) * p.columns + k, p);
-            float4 input = *((device const float4 *)(x + ulong(group.y) * p.input_stride + k));
-            sum0 = fma(weights, input, sum0);
-            weights = weight4<Packed>(w, ulong(row) * p.columns + k + 4, p);
-            input = *((device const float4 *)(x + ulong(group.y) * p.input_stride + k + 4));
-            sum1 = fma(weights, input, sum1);
-        } else {
-            for (uint j = 0; j < 4; ++j) {
-                if (k + j < p.columns) sum0[j] = fma(weight_value<Packed>(w, ulong(row) * p.columns + k + j, p),
-                    x[ulong(group.y) * p.input_stride + k + j], sum0[j]);
-                if (k + j + 4 < p.columns) sum1[j] = fma(weight_value<Packed>(w, ulong(row) * p.columns + k + j + 4, p),
-                    x[ulong(group.y) * p.input_stride + k + j + 4], sum1[j]);
+    if (Packed == 2 && !(p.columns % 32) && !(p.weight_offset % 32)) {
+        for (uint k = lane * 8; k < p.columns; k += 256) {
+            uint i = row * p.columns + k + p.weight_offset, j = i & 31;
+            device const uchar *block = (device const uchar *)w + ulong(i >> 5) * 20;
+            float scale = *((device const float *)block);
+            uint4 low = uint4(*((device const uchar4 *)(block + 4 + (j & 15))));
+            uint4 high = uint4(*((device const uchar4 *)(block + 8 + (j & 15))));
+            low = j < 16 ? low & 15 : low >> 4;
+            high = j < 16 ? high & 15 : high >> 4;
+            float4 input0 = *((device const float4 *)(x + ulong(group.y) * p.input_stride + k));
+            float4 input1 = *((device const float4 *)(x + ulong(group.y) * p.input_stride + k + 4));
+            sum0 = fma(float4(int4(low) - 8) * scale, input0, sum0);
+            sum1 = fma(float4(int4(high) - 8) * scale, input1, sum1);
+        }
+    } else {
+        for (uint k = lane * 8; k < p.columns; k += 256) {
+            if (!(p.columns % 8) && p.aligned_weights) {
+                float4 weights = weight4<Packed>(w, ulong(row) * p.columns + k, p);
+                float4 input = *((device const float4 *)(x + ulong(group.y) * p.input_stride + k));
+                sum0 = fma(weights, input, sum0);
+                weights = weight4<Packed>(w, ulong(row) * p.columns + k + 4, p);
+                input = *((device const float4 *)(x + ulong(group.y) * p.input_stride + k + 4));
+                sum1 = fma(weights, input, sum1);
+            } else {
+                for (uint j = 0; j < 4; ++j) {
+                    if (k + j < p.columns) sum0[j] = fma(weight_value<Packed>(w, ulong(row) * p.columns + k + j, p),
+                        x[ulong(group.y) * p.input_stride + k + j], sum0[j]);
+                    if (k + j + 4 < p.columns) sum1[j] = fma(weight_value<Packed>(w, ulong(row) * p.columns + k + j + 4, p),
+                        x[ulong(group.y) * p.input_stride + k + j + 4], sum1[j]);
+                }
             }
         }
     }
@@ -186,12 +202,13 @@ inline void matmul_vector(device const ushort *w, device const float *x, device 
 
 // 32 output rows x 8/16/24/32 prompt tokens. BF16 expands exactly to FP32; both
 // operands and accumulation remain FP32 in every temporary tile.
-template<uint Packed, uint N>
+template<uint Packed, uint N, uint Parts = 1>
 inline void matmul_tile(device const ushort *w, device const float *x, device float *y,
                         constant Linear &p, uint3 group, uint tid, uint simd,
                         threadgroup float *weights, threadgroup float *inputs, threadgroup float *outputs) {
     simdgroup_float8x8 total0(0.0f), total1(0.0f), total2(0.0f), total3(0.0f);
-    for (uint base = 0; base < p.columns; base += 32) {
+    y += ulong(group.z) * p.rows * p.tokens;
+    for (uint base = group.z * (p.columns / Parts); base < (group.z + 1) * (p.columns / Parts); base += 32) {
         for (uint i = tid; i < 32 * 8; i += 128) {
             uint row = group.x * 32 + i / 8, col = base + (i % 8) * 4;
             float4 value = 0.0f;
@@ -267,6 +284,36 @@ MATRIX_KERNEL(plamo_matmul_q4, 2, 32)
 MATRIX_KERNEL(plamo_matmul8_q4, 2, 8)
 MATRIX_KERNEL(plamo_matmul16_q4, 2, 16)
 MATRIX_KERNEL(plamo_matmul_short_q4, 2, 24)
+
+
+#define SPLIT_MATRIX_KERNEL(NAME, PACKED, N) \
+kernel void NAME(device const ushort *w [[buffer(0)]], device const float *x [[buffer(1)]], \
+                 device float *y [[buffer(2)]], constant Linear &p [[buffer(3)]], \
+                 uint3 group [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]], \
+                 uint simd [[simdgroup_index_in_threadgroup]]) { \
+    threadgroup float weights[32 * 32], inputs[N * 32]; \
+    matmul_tile<PACKED, N, 4>(w, x, y, p, group, tid, simd, weights, inputs, weights); }
+SPLIT_MATRIX_KERNEL(plamo_matmul8_split, 0, 8)
+SPLIT_MATRIX_KERNEL(plamo_matmul16_split, 0, 16)
+SPLIT_MATRIX_KERNEL(plamo_matmul24_split, 0, 24)
+SPLIT_MATRIX_KERNEL(plamo_matmul32_split, 0, 32)
+SPLIT_MATRIX_KERNEL(plamo_matmul8_split_packed, 1, 8)
+SPLIT_MATRIX_KERNEL(plamo_matmul16_split_packed, 1, 16)
+SPLIT_MATRIX_KERNEL(plamo_matmul24_split_packed, 1, 24)
+SPLIT_MATRIX_KERNEL(plamo_matmul32_split_packed, 1, 32)
+SPLIT_MATRIX_KERNEL(plamo_matmul8_split_q4, 2, 8)
+SPLIT_MATRIX_KERNEL(plamo_matmul16_split_q4, 2, 16)
+SPLIT_MATRIX_KERNEL(plamo_matmul24_split_q4, 2, 24)
+SPLIT_MATRIX_KERNEL(plamo_matmul32_split_q4, 2, 32)
+
+kernel void plamo_split_reduce(device const float *partial [[buffer(0)]], device float *out [[buffer(1)]],
+                                constant Linear &p [[buffer(2)]], uint i [[thread_position_in_grid]]) {
+    uint count = p.rows * p.tokens;
+    if (i >= count) return;
+    float value = partial[i];
+    for (uint part = 1; part < 4; ++part) value += partial[ulong(part) * count + i];
+    out[ulong(i / p.rows) * p.output_stride + i % p.rows] = value;
+}
 
 // RMSNorm stays entirely FP32; exponentials use the CPU polynomial.
 // Pairwise FP32 reduction of nonnegative squares. Each lane's partial and the
@@ -488,6 +535,7 @@ kernel void plamo_prefill_attention(device const float *qkv [[buffer(0)]], devic
                                      device const float *v [[buffer(2)]], device const float *rotated [[buffer(3)]],
                                      device const float *table [[buffer(4)]], device float *out [[buffer(5)]],
                                      device float *scores [[buffer(6)]], constant Prefill &p [[buffer(7)]],
+                                     device const float *proposed_rotated [[buffer(8)]],
                                      uint2 group [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]]) {
     uint head = group.x, token = p.query_offset + group.y, kh = head / (p.qh / p.kh);
     uint count = min(p.prefix + token + 1, p.capacity), first = p.prefix + token + 1 - count;
@@ -499,9 +547,12 @@ kernel void plamo_prefill_attention(device const float *qkv [[buffer(0)]], devic
     float scale = 1.0f / sqrt(float(p.dim));
     for (uint row = tid; row < count; row += 128) {
         float sum = 0.0f;
-        if (!sliding) {
+        if (p.prefix + p.tokens <= p.capacity) {
+            device const float *key = p.speculative && row >= p.prefix ?
+                proposed_rotated + (ulong(row - p.prefix) * p.kh + kh) * p.dim :
+                rotated + (ulong(row) * p.kh + kh) * p.dim;
             for (uint col = 0; col < p.dim; ++col)
-                sum = fma(q[col], rotated[(ulong(row) * p.kh + kh) * p.dim + col], sum);
+                sum = fma(q[col], key[col], sum);
         } else {
             uint source = first + row;
             device const float *key = source < p.prefix ? k + ulong(source) * kv_width + kh * p.dim :
@@ -546,6 +597,95 @@ kernel void plamo_prefill_attention(device const float *qkv [[buffer(0)]], devic
     }
 }
 
+// A causal score tile shares sixteen keys across four queries. Each score
+// retains the original column-by-column FP32 FMA order. Padding avoids bank
+// conflicts while loading row-major keys into the transposed shared tile.
+kernel void plamo_verify_scores(device const float *qkv [[buffer(0)]],
+                                  device const float *rotated [[buffer(1)]],
+                                  device const float *proposed [[buffer(2)]],
+                                  device float *scores [[buffer(3)]], constant Prefill &p [[buffer(4)]],
+                                  uint3 group [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]]) {
+    threadgroup float keys[128 * 17], queries[4 * 129];
+    uint head = group.x, kh = head / (p.qh / p.kh), width = (p.qh + 2 * p.kh) * 128;
+    uint first_query = group.y * 4, first_key = group.z * 16, count = p.prefix + p.tokens;
+    for (uint i = tid; i < 4 * 128; i += 64) {
+        uint token = first_query + i / 128, col = i % 128;
+        queries[(i / 128) * 129 + col] = token < p.tokens ? qkv[ulong(token) * width + head * 128 + col] : 0.0f;
+    }
+    for (uint i = tid; i < 16 * 128; i += 64) {
+        uint row = first_key + i / 128, col = i % 128;
+        float value = 0.0f;
+        if (row < count) {
+            device const float *key = row < p.prefix ? rotated + (ulong(row) * p.kh + kh) * 128 :
+                proposed + (ulong(row - p.prefix) * p.kh + kh) * 128;
+            value = key[col];
+        }
+        keys[col * 17 + i / 128] = value;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    uint query = tid / 16, key = tid % 16, token = first_query + query, row = first_key + key;
+    if (token < p.tokens && row < p.prefix + token + 1) {
+        float sum = 0.0f;
+        for (uint col = 0; col < 128; ++col) sum = fma(queries[query * 129 + col], keys[col * 17 + key], sum);
+        scores[(ulong(token) * p.qh + head) * count + row] = sum * (1.0f / sqrt(128.0f));
+    }
+}
+
+kernel void plamo_verify_softmax(device float *scores [[buffer(0)]], constant Prefill &p [[buffer(1)]],
+                                   uint2 group [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]]) {
+    uint count = p.prefix + group.y + 1;
+    device float *s = scores + (ulong(group.y) * p.qh + group.x) * (p.prefix + p.tokens);
+    threadgroup float maximum, denominator;
+    if (!tid) {
+        float value = s[0];
+        for (uint row = 1; row < count; ++row) value = max(value, s[row]);
+        maximum = value;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    for (uint row = tid; row < count; row += 128) s[row] = plamo_exp(s[row] - maximum);
+    threadgroup_barrier(mem_flags::mem_device);
+    if (!tid) {
+        float sum = 0.0f;
+        for (uint row = 0; row < count; ++row) sum += s[row];
+        denominator = sum;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    for (uint row = tid; row < count; row += 128) s[row] /= denominator;
+}
+
+// Two queries reuse each 32-key value tile. The row loop is still ascending
+// and sequential for each output component; this is a memory transformation.
+kernel void plamo_verify_values(device const float *qkv [[buffer(0)]], device const float *v [[buffer(1)]],
+                                  device const float *scores [[buffer(2)]], device float *out [[buffer(3)]],
+                                  constant Prefill &p [[buffer(4)]], uint3 group [[threadgroup_position_in_grid]],
+                                  uint tid [[thread_index_in_threadgroup]]) {
+    threadgroup float values[32 * 65], weights[2 * 32];
+    uint head = group.x, kh = head / (p.qh / p.kh), first_query = group.y * 2, first_col = group.z * 64;
+    uint width = (p.qh + 2 * p.kh) * 128, query = tid / 64, col = tid % 64, token = first_query + query;
+    uint maximum = p.prefix + p.tokens, count = p.prefix + token + 1;
+    float sum = 0.0f;
+    for (uint first = 0; first < maximum; first += 32) {
+        for (uint i = tid; i < 32 * 64; i += 128) {
+            uint row = first + i / 64, component = first_col + i % 64;
+            float value = 0.0f;
+            if (row < maximum) value = row < p.prefix ? v[(ulong(row) * p.kh + kh) * 128 + component] :
+                qkv[ulong(row - p.prefix) * width + (p.qh + p.kh + kh) * 128 + component];
+            values[(i / 64) * 65 + i % 64] = value;
+        }
+        if (tid < 64) {
+            uint q = tid / 32, row = first + tid % 32, qt = first_query + q;
+            weights[tid] = qt < p.tokens && row < p.prefix + qt + 1 ?
+                scores[(ulong(qt) * p.qh + head) * maximum + row] : 0.0f;
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        if (token < p.tokens)
+            for (uint row = 0; row < 32 && first + row < count; ++row)
+                sum = fma(weights[query * 32 + row], values[row * 65 + col], sum);
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+    if (token < p.tokens) out[(ulong(token) * p.qh + head) * 128 + first_col + col] = sum;
+}
+
 // Commit only the final sliding window after every query has consumed the old
 // prefix. A thread owns a coordinate pair and copies rows forward in order.
 kernel void plamo_prefill_store(device const float *qkv [[buffer(0)]], device float *k [[buffer(1)]],
@@ -579,6 +719,49 @@ kernel void plamo_draft_quantize4(device const ushort *w [[buffer(0)]], device u
     uint i = block * 32 + lane;
     float value = i < count ? bf16(w[i]) : 0.0f;
     float maximum = simd_max(abs(value)), scale = maximum / 7.0f;
+    device uchar *data = out + ulong(block) * 20;
+    if (!lane) *((device float *)data) = scale;
+    if (lane < 16) {
+        uint first = block * 32 + lane, second = first + 16;
+        float a = first < count ? bf16(w[first]) : 0.0f;
+        float b = second < count ? bf16(w[second]) : 0.0f;
+        uint qa = scale ? uint(clamp(int(rint(a / scale)), -8, 7) + 8) : 8;
+        uint qb = scale ? uint(clamp(int(rint(b / scale)), -8, 7) + 8) : 8;
+        data[4 + lane] = uchar(qa | qb << 4);
+    }
+}
+
+// Proposal-only Q4: choose the lowest-error scale from a bounded search and
+// two least-squares refinements. The original quantizer is a candidate, so
+// every block retains or improves its measured reconstruction error.
+kernel void plamo_draft_quantize4_mse(device const ushort *w [[buffer(0)]], device uchar *out [[buffer(1)]],
+                                       constant uint &count [[buffer(2)]], uint block [[threadgroup_position_in_grid]],
+                                       uint lane [[thread_index_in_simdgroup]]) {
+    uint i = block * 32 + lane;
+    float value = i < count ? bf16(w[i]) : 0.0f;
+    float maximum = simd_max(abs(value)), original = maximum / 7.0f;
+    uint leader = simd_min(abs(value) == maximum ? lane : 32u);
+    float extreme = simd_shuffle(value, leader);
+    float scale = original;
+    float q = original ? clamp(rint(value / original), -8.0f, 7.0f) : 0.0f;
+    float delta = value - q * original;
+    float best = simd_sum(delta * delta);
+    for (uint step = 0; step < 13; ++step) {
+        float candidate = -(extreme / 8.0f) * (0.75f + float(step) / 24.0f);
+        float quant = candidate ? clamp(rint(value / candidate), -8.0f, 7.0f) : 0.0f;
+        float error = value - quant * candidate;
+        float squared = simd_sum(error * error);
+        if (squared < best) { best = squared; scale = candidate; }
+    }
+    for (uint iteration = 0; iteration < 2; ++iteration) {
+        float quant = scale ? clamp(rint(value / scale), -8.0f, 7.0f) : 0.0f;
+        float norm = simd_sum(quant * quant);
+        float candidate = norm ? simd_sum(value * quant) / norm : 0.0f;
+        quant = candidate ? clamp(rint(value / candidate), -8.0f, 7.0f) : 0.0f;
+        float error = value - quant * candidate;
+        float squared = simd_sum(error * error);
+        if (squared < best) { best = squared; scale = candidate; }
+    }
     device uchar *data = out + ulong(block) * 20;
     if (!lane) *((device float *)data) = scale;
     if (lane < 16) {

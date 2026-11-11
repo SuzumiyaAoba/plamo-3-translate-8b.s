@@ -96,7 +96,9 @@ struct plamo_draft *plamo_draft_open(void) {
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     posix_spawn_file_actions_addchdir_np(&actions, root);
 #pragma clang diagnostic pop
-    char *args[] = {executable, "--draft-peer", "--backend", "metal", "--memory", "auto", "--threads", "1", NULL};
+    /* A partially retained proposer cannot amortize its I/O. The small Q4
+       peer must keep its projections available for every draft step. */
+    char *args[] = {executable, "--draft-peer", "--backend", "metal", "--memory", "resident", "--threads", "1", NULL};
     pid_t pid;
     int status = posix_spawn(&pid, executable, &actions, NULL, args, environ);
     posix_spawn_file_actions_destroy(&actions);

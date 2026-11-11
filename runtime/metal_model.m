@@ -448,21 +448,44 @@ static int prefill_batch(struct plamo_metal *m, struct model *model, const uint3
             [e setBytes:p length:sizeof p atIndex:7];
             [e dispatchThreadgroups:MTLSizeMake(q->qh + q->kh, tokens, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
             ++m->info.dispatches;
-            [e setComputePipelineState:m->prefill_attention];
-            [e setBuffer:qkv_buffer offset:0 atIndex:0];
-            [e setBuffer:d->k.buffer offset:d->k.offset atIndex:1];
-            [e setBuffer:d->v.buffer offset:d->v.offset atIndex:2];
-            [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:3];
-            [e setBuffer:table offset:0 atIndex:4];
-            [e setBuffer:m->attention offset:0 atIndex:5];
-            [e setBuffer:m->scores offset:0 atIndex:6];
-            for (uint64_t first = 0; first < tokens; first += queries) {
-                uint64_t count = tokens - first;
-                if (count > queries) count = queries;
-                p[6] = (uint32_t)first;
-                [e setBytes:p length:sizeof p atIndex:7];
-                [e dispatchThreadgroups:MTLSizeMake(q->qh, count, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
-                ++m->info.dispatches;
+            if (verification && q->dim == 128 && c->count + tokens <= c->capacity && queries == tokens) {
+                [e setComputePipelineState:m->verify_scores];
+                [e setBuffer:qkv_buffer offset:0 atIndex:0];
+                [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:1];
+                [e setBuffer:d->proposal_rotated offset:0 atIndex:2];
+                [e setBuffer:m->scores offset:0 atIndex:3];
+                [e setBytes:p length:sizeof p atIndex:4];
+                [e dispatchThreadgroups:MTLSizeMake(q->qh, (tokens + 3) / 4, (c->count + tokens + 15) / 16) threadsPerThreadgroup:MTLSizeMake(64, 1, 1)];
+                [e setComputePipelineState:m->verify_softmax];
+                [e setBuffer:m->scores offset:0 atIndex:0];
+                [e setBytes:p length:sizeof p atIndex:1];
+                [e dispatchThreadgroups:MTLSizeMake(q->qh, tokens, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+                [e setComputePipelineState:m->verify_values];
+                [e setBuffer:qkv_buffer offset:0 atIndex:0];
+                [e setBuffer:d->v.buffer offset:d->v.offset atIndex:1];
+                [e setBuffer:m->scores offset:0 atIndex:2];
+                [e setBuffer:m->attention offset:0 atIndex:3];
+                [e setBytes:p length:sizeof p atIndex:4];
+                [e dispatchThreadgroups:MTLSizeMake(q->qh, (tokens + 1) / 2, 2) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+                m->info.dispatches += 3;
+            } else {
+                [e setComputePipelineState:m->prefill_attention];
+                [e setBuffer:qkv_buffer offset:0 atIndex:0];
+                [e setBuffer:d->k.buffer offset:d->k.offset atIndex:1];
+                [e setBuffer:d->v.buffer offset:d->v.offset atIndex:2];
+                [e setBuffer:d->rotated.buffer offset:d->rotated.offset atIndex:3];
+                [e setBuffer:table offset:0 atIndex:4];
+                [e setBuffer:m->attention offset:0 atIndex:5];
+                [e setBuffer:m->scores offset:0 atIndex:6];
+                [e setBuffer:verification ? d->proposal_rotated : d->rotated.buffer offset:verification ? 0 : d->rotated.offset atIndex:8];
+                for (uint64_t first = 0; first < tokens; first += queries) {
+                    uint64_t count = tokens - first;
+                    if (count > queries) count = queries;
+                    p[6] = (uint32_t)first;
+                    [e setBytes:p length:sizeof p atIndex:7];
+                    [e dispatchThreadgroups:MTLSizeMake(q->qh, count, 1) threadsPerThreadgroup:MTLSizeMake(128, 1, 1)];
+                    ++m->info.dispatches;
+                }
             }
             if (!verification && c->count + tokens > c->capacity) {
                 [e setComputePipelineState:m->prefill_store];
